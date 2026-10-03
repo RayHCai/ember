@@ -122,6 +122,8 @@ export interface AppState {
   setAgentTab: (tab: AgentTab) => void;
   setConnection: (state: ConnectionState) => void;
   setActiveZone: (id: string | null) => void;
+  /** Change the sim clock locally (mock mode has no server to ask). */
+  setSimLocal: (change: { speed?: number; paused?: boolean }) => void;
   applyEvent: (event: KnownEvent) => void;
 }
 
@@ -183,6 +185,19 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setAgentTab: (agentTab) => set({ agentTab }),
   setConnection: (connection) => set({ connection }),
   setActiveZone: (activeZoneId) => set({ activeZoneId }),
+  setSimLocal: (change) =>
+    set((s) => {
+      if (!s.sim) return {};
+      const now = Date.now();
+      return {
+        sim: {
+          simTimeMs: simNow(s.sim, now),
+          syncedAtMs: now,
+          speed: change.speed ?? s.sim.speed,
+          paused: change.paused ?? s.sim.paused,
+        },
+      };
+    }),
 
   applyEvent: (event) => {
     if (LOG_KINDS.has(event.kind)) {

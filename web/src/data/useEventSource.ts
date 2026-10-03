@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { config } from "../config";
 import { useAppStore } from "../state/store";
+import { startLiveStream } from "./liveStream";
 import { startMockStream } from "./mockStream";
 
-/** Feeds the store from the mock stream or the live server. */
+/** Feeds the store from the mock stream (VITE_USE_MOCK=1) or the live server. */
 export function useEventSource(): void {
   useEffect(() => {
     const { applyEvent, setConnection } = useAppStore.getState();
@@ -11,7 +12,6 @@ export function useEventSource(): void {
       setConnection("mock");
       return startMockStream(applyEvent);
     }
-    setConnection("connecting");
-    return undefined;
+    return startLiveStream(applyEvent, setConnection);
   }, []);
 }

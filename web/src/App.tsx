@@ -10,6 +10,7 @@ import { BottomDock } from "./hud/BottomDock";
 import { CursorReadout } from "./hud/CursorReadout";
 import { LayersPanel } from "./hud/LayersPanel";
 import { MapBadge } from "./hud/MapBadge";
+import { Toasts } from "./hud/Toasts";
 import { TopBar } from "./hud/TopBar";
 import { useAppStore } from "./state/store";
 
@@ -38,6 +39,7 @@ export function App() {
           <BottomDock />
         </div>
       </div>
+      <Toasts />
     </main>
   );
 }

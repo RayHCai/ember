@@ -20,3 +20,6 @@ web/playwright-report/
 out/
 
 .DS_Store
+
+# Desktop app
+.ember-server.pid

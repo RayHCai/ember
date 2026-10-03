@@ -1,5 +1,6 @@
 import { Color, Viewer } from "cesium";
 import { useEffect, useRef, type RefObject } from "react";
+import { appLog } from "../shell";
 import { useAppStore } from "../state/store";
 import { setWholeEarthView } from "./camera";
 import { applyFilter, createFilterStages } from "./filters";
@@ -47,7 +48,10 @@ export function Globe({ creditContainer }: GlobeProps) {
     });
 
     void loadMap(viewer).then((loaded) => {
-      if (loaded && !viewer.isDestroyed()) setMapSource(loaded.info);
+      if (!loaded || viewer.isDestroyed()) return;
+      setMapSource(loaded.info);
+      const { label, fallbackReason } = loaded.info;
+      appLog("info", `Map loaded: ${label}${fallbackReason ? ` (fallback: ${fallbackReason})` : ""}`);
     });
 
     setViewer(viewer);

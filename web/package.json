@@ -7,12 +7,15 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && playwright test"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
+    "test": "npm run typecheck && playwright test",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@fontsource/chakra-petch": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@tauri-apps/api": "^2.12.1",
+    "@tauri-apps/plugin-log": "^2.10.0",
     "cesium": "^1.146.0",
     "mgrs": "^2.2.0",
     "react": "^18.3.1",
@@ -21,6 +24,8 @@
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
+    "@tauri-apps/cli": "^2.12.1",
+    "@types/node": "^20.19.43",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^5.2.0",

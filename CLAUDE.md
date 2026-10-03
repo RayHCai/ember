@@ -2,7 +2,7 @@
 
 ## What this is
 
-Ember is a wildfire watch system for forest and city land managers, built in 24 hours at MHacks 2026.
+Ember is a wildfire watch system for forest and city land managers, built in 24 hours at MHacks 2026. It ships as a desktop application (Tauri), not a website.
 
 1. The operator draws a watch zone on a 3D globe.
 2. Ember suggests where to put edge servers (drone docks with local networking). The operator adjusts and deploys them.
@@ -23,12 +23,16 @@ Ember is a wildfire watch system for forest and city land managers, built in 24 
 agent/    Python package `ember` (already exists). Spread model, evacuation, tools, ASI:One loop, guardrails.
 server/   FastAPI app. REST + WebSocket, sim clock, drone sim, survey scheduler. Imports `ember`.
 web/      Vite + React + TypeScript operator console with a CesiumJS globe.
+web/src-tauri/  Tauri 2 desktop shell. Starts the server on launch and stops it on quit.
 ```
+
+Run it with `make app` (desktop app), `make dev` (server and console in a browser, for debugging), and `make test`.
 
 ## Stack
 
 - Web: Vite, React 18, TypeScript (strict), CesiumJS through `vite-plugin-cesium`, Zustand for state. Pick one styling approach (CSS modules or Tailwind) and keep it.
 - Map: Google Photorealistic 3D Tiles through CesiumJS when a key is set. Fallback 1: Cesium World Terrain plus satellite imagery from Cesium ion. Fallback 2: OpenStreetMap imagery on the ellipsoid. Always show data attribution. Check the current CesiumJS docs for API names instead of guessing.
+- Desktop: Tauri 2. The operator console is the app's only window. In development the app runs the server from the repo's `.venv`; a bundled app ships the server as an `ember-server` sidecar binary (PyInstaller). The one browser page is the resident alert page, which the server serves to phones on the local network.
 - Server: Python 3.11, FastAPI, uvicorn, pydantic, pytest. The `ember` core stays standard-library only.
 - Agent reasoning: ASI:One (OpenAI-compatible tool calling) through `agent/ember/brain.py`. The fallback pipeline must keep working with no key.
 - Voice: ElevenLabs text to speech, already wired in `agent/ember/channels.py`.
@@ -91,7 +95,7 @@ Brief: a tactical "god's eye" operator console, like a satellite intelligence UI
 
 - Start each phase in plan mode, get the plan approved, then build. Commit at the end of each phase.
 - Never fake an integration silently. If a key is missing or a service is down, show a visible badge such as "Offline: using fallback map" and keep working.
-- After each phase, run the app and look at it. Fix console errors before moving on.
+- After each phase, run the app (`make app`) and look at it. Fix console errors before moving on. In the desktop app, webview errors are forwarded to the app log.
 - Python logic gets unit tests. The web app gets a smoke test that loads with the mock event stream.
 - Secrets live in gitignored `.env` files. `.env.example` lists every key.
 - Assumptions about hardware (drone speed, endurance, charge time, camera swath, payload) live in one config file with comments saying they are assumptions.

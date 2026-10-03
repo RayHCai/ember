@@ -8,6 +8,11 @@
   padding: 6px 12px;
 }
 
+/* Room for the macOS window buttons drawn over the top bar. */
+:global(html[data-shell="desktop"]) .bar {
+  padding-left: 88px;
+}
+
 .left,
 .right {
   display: flex;
@@ -70,7 +75,7 @@
 
 .clock {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
 }
 
@@ -79,8 +84,37 @@
   color: var(--text);
 }
 
-.speed {
-  min-width: 44px;
+.speeds {
+  display: flex;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.speedButton {
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.speedButton:hover:not(:disabled) {
+  border-color: var(--panel-border);
+  color: var(--text);
+}
+
+.speedButton:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.speedOn {
+  border-color: var(--panel-border);
+  background: var(--signal-dim);
   color: var(--signal);
 }
 

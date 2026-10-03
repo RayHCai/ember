@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { config } from "../config";
+import { attempt, request } from "../data/api";
 import { cx, formatSimTime } from "../lib/format";
 import {
   FILTERS,
@@ -48,14 +50,55 @@ function SimClockDisplay() {
   }, [sim]);
 
   return (
-    <div className={styles.clock}>
+    <div className={styles.clock} data-tauri-drag-region>
       <span className={hud.label}>Sim time</span>
       <span className={cx(hud.mono, styles.clockTime)} data-testid="sim-time">
         {sim ? formatSimTime(simNow(sim)) : "--"}
       </span>
-      <span className={cx(hud.mono, styles.speed)}>
-        {sim ? (sim.paused ? "Paused" : `${sim.speed}x`) : ""}
-      </span>
+      <SpeedControls />
+    </div>
+  );
+}
+
+const SPEEDS = [1, 60, 360];
+
+function SpeedControls() {
+  const speed = useAppStore((s) => s.sim?.speed);
+  const paused = useAppStore((s) => s.sim?.paused ?? false);
+  const hasClock = useAppStore((s) => s.sim !== null);
+
+  const setSpeed = (next: number) => {
+    if (config.useMock) useAppStore.getState().setSimLocal({ speed: next, paused: false });
+    else void attempt("Changing sim speed", () => request("/sim/speed", { method: "POST", json: { speed: next } }));
+  };
+  const togglePause = () => {
+    if (config.useMock) useAppStore.getState().setSimLocal({ paused: !paused });
+    else void attempt(paused ? "Resuming" : "Pausing", () => request(paused ? "/sim/resume" : "/sim/pause", { method: "POST" }));
+  };
+
+  return (
+    <div className={styles.speeds} role="group" aria-label="Sim speed">
+      {SPEEDS.map((s) => (
+        <button
+          key={s}
+          type="button"
+          className={cx(styles.speedButton, speed === s && !paused && styles.speedOn)}
+          aria-pressed={speed === s && !paused}
+          disabled={!hasClock}
+          onClick={() => setSpeed(s)}
+        >
+          {s}x
+        </button>
+      ))}
+      <button
+        type="button"
+        className={cx(styles.speedButton, paused && styles.speedOn)}
+        aria-pressed={paused}
+        disabled={!hasClock}
+        onClick={togglePause}
+      >
+        {paused ? "Resume" : "Pause"}
+      </button>
     </div>
   );
 }
@@ -102,14 +145,15 @@ function FilterSwitch() {
 
 export function TopBar() {
   return (
-    <header className={cx(hud.panel, styles.bar)}>
-      <div className={styles.left}>
+    // In the desktop app the top bar doubles as the window's title bar.
+    <header className={cx(hud.panel, styles.bar)} data-tauri-drag-region>
+      <div className={styles.left} data-tauri-drag-region>
         <span className={styles.product}>EMBER</span>
         <span className={styles.rule} />
         <ZoneStatus />
       </div>
       <SimClockDisplay />
-      <div className={styles.right}>
+      <div className={styles.right} data-tauri-drag-region>
         <Connection />
         <FilterSwitch />
       </div>

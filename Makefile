@@ -1,7 +1,7 @@
 PY := .venv/bin/python
 PYTHON311 ?= python3.11
 
-.PHONY: setup dev test test-agent test-server test-web
+.PHONY: setup app dev test test-agent test-server test-web
 
 # Create the Python env (shared by agent and server) and install web deps.
 setup:
@@ -15,7 +15,11 @@ setup:
 	fi
 	npm --prefix web install
 
-# Run server (:8000) and web (:5173) together. Ctrl-C stops both.
+# Run Ember as a desktop app. The app starts and stops the server itself.
+app:
+	npm --prefix web run tauri dev
+
+# Run server (:8000) and web (:5173) together in a browser. Ctrl-C stops both.
 dev:
 	@trap 'kill 0' INT TERM EXIT; \
 	$(PY) -m uvicorn app.main:app --reload --app-dir server --port 8000 & \
