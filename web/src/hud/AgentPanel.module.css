@@ -86,6 +86,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-height: 0;
 }
 
 .chatForm {
@@ -105,4 +106,260 @@
   color: var(--signal);
   font-size: 11px;
   cursor: pointer;
+}
+
+/* Tier counts */
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.countItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tier {
+  padding: 0 6px;
+  border-radius: 2px;
+  font-family: var(--font-hud);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--void);
+}
+
+.evacuate {
+  background: var(--heat);
+}
+
+.prepare {
+  background: var(--warn);
+}
+
+.watch {
+  background: var(--signal);
+}
+
+/* Agent runs */
+.run {
+  margin: 8px 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: rgba(3, 7, 10, 0.35);
+}
+
+.runHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode {
+  margin-left: auto;
+  padding: 0 6px;
+  border: 1px solid var(--muted);
+  border-radius: 2px;
+  color: var(--muted);
+  font-family: var(--font-hud);
+  font-size: 10px;
+}
+
+.modeAsi {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.trigger {
+  margin: 5px 0 6px;
+  font-family: var(--font-hud);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid var(--panel-border);
+}
+
+.step {
+  margin-left: 8px;
+}
+
+.stepHead {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stepHead:disabled {
+  cursor: default;
+}
+
+.tool {
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.stepText {
+  line-height: 1.4;
+}
+
+.detail {
+  margin: 2px 0 6px;
+  padding: 6px 8px;
+  overflow-x: auto;
+  border-radius: 3px;
+  background: rgba(3, 7, 10, 0.6);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  white-space: pre-wrap;
+}
+
+.decision {
+  margin-top: 8px;
+  padding: 7px 9px;
+  border-left: 2px solid var(--signal);
+  background: rgba(63, 224, 255, 0.05);
+}
+
+.decision p {
+  margin: 3px 0 0;
+  line-height: 1.45;
+}
+
+.decision ul {
+  margin: 5px 0 0;
+  padding-left: 16px;
+  color: var(--muted);
+}
+
+/* Approvals */
+.sectionTitle {
+  padding: 10px 12px 4px;
+  color: var(--muted);
+  font-family: var(--font-hud);
+  font-size: 11px;
+}
+
+.plain {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.approval,
+.sent {
+  margin: 6px 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+}
+
+.approval {
+  border-left: 2px solid var(--warn);
+}
+
+.recipients {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.reason {
+  margin: 6px 0;
+  line-height: 1.45;
+}
+
+.quote {
+  margin: 6px 0;
+  padding: 6px 9px;
+  border-left: 2px solid var(--panel-border);
+  background: rgba(3, 7, 10, 0.4);
+  line-height: 1.45;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sentText {
+  margin: 6px 0 4px;
+  line-height: 1.45;
+}
+
+.by {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Chat */
+.thread {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  list-style: none;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: 7px 10px;
+  border-radius: 10px;
+  line-height: 1.45;
+}
+
+.operator {
+  align-self: flex-end;
+  background: var(--signal-dim);
+}
+
+.agent {
+  align-self: flex-start;
+  border: 1px solid var(--panel-border);
+}
+
+.voice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--panel-border);
+}
+
+.dotOn {
+  background: var(--signal);
+  box-shadow: 0 0 8px var(--signal);
 }

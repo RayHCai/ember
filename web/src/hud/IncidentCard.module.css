@@ -1,0 +1,108 @@
+.card {
+  width: min(640px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 2px solid var(--muted);
+}
+
+.warn {
+  border-top-color: var(--warn);
+}
+
+.heat {
+  border-top-color: var(--heat);
+}
+
+.quiet {
+  border-top-color: var(--muted);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.status {
+  font-family: var(--font-hud);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.text_warn {
+  color: var(--warn);
+}
+
+.text_heat {
+  color: var(--heat);
+}
+
+.text_quiet {
+  color: var(--muted);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-left: 6px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.containment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-hud);
+  font-size: 12px;
+}
+
+.ring {
+  width: 30px;
+  height: 30px;
+}
+
+.ringTrack {
+  fill: none;
+  stroke: var(--panel-border);
+  stroke-width: 4;
+}
+
+.ringFill {
+  fill: none;
+  stroke: var(--signal);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dasharray 400ms ease-out;
+}
+
+.scrubber {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range {
+  flex: 1;
+  accent-color: var(--heat);
+}
+
+.when {
+  min-width: 62px;
+  text-align: right;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.small {
+  height: 26px;
+  font-size: 11px;
+}

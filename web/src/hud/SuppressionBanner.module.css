@@ -1,0 +1,9 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 640px;
+  padding: 7px 12px;
+  border-left: 2px solid var(--signal);
+  font-size: 12px;
+}

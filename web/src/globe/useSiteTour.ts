@@ -1,36 +1,9 @@
-import { Cartesian3, HeadingPitchRange, Math as CesiumMath, Matrix4, type Viewer } from "cesium";
+import { Math as CesiumMath } from "cesium";
 import { useEffect, useRef } from "react";
 import { selectActiveZone, useAppStore, type FilterId } from "../state/store";
 import { pushToast } from "../state/toasts";
-import { flyToPoint, flyToPoints, prefersReducedMotion } from "./camera";
+import { flyToPoint, flyToPoints, prefersReducedMotion, startOrbit } from "./camera";
 import { captureView, waitForTiles } from "./capture";
-
-const ORBIT_RAD_PER_FRAME = 0.0018;
-
-/** Slow orbit around a point until stopped or the operator touches the map. */
-function startOrbit(viewer: Viewer, lat: number, lon: number): () => void {
-  const center = Cartesian3.fromDegrees(lon, lat, 0);
-  let heading = viewer.camera.heading;
-  const pitch = viewer.camera.pitch;
-  const range = Cartesian3.distance(viewer.camera.positionWC, center);
-  let stopped = false;
-  const removeFrame = viewer.scene.preRender.addEventListener(() => {
-    heading += ORBIT_RAD_PER_FRAME;
-    viewer.camera.lookAt(center, new HeadingPitchRange(heading, pitch, range));
-  });
-  const stop = () => {
-    if (stopped) return;
-    stopped = true;
-    removeFrame();
-    canvas.removeEventListener("pointerdown", stop);
-    canvas.removeEventListener("wheel", stop);
-    if (!viewer.isDestroyed()) viewer.camera.lookAtTransform(Matrix4.IDENTITY);
-  };
-  const canvas = viewer.scene.canvas;
-  canvas.addEventListener("pointerdown", stop);
-  canvas.addEventListener("wheel", stop, { passive: true });
-  return stop;
-}
 
 /**
  * The report's signature moment. Selecting a site flies to an oblique view,

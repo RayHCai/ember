@@ -60,3 +60,32 @@ export async function airborneDroneOnScreen(page: Page): Promise<{ x: number; y:
     return null;
   });
 }
+
+/** Where a lat/lon is on screen right now. */
+export async function screenOf(page: Page, lat: number, lon: number): Promise<{ x: number; y: number }> {
+  const p = await page.evaluate(
+    ([la, lo]) => {
+      const rad = Math.PI / 180;
+      const v = (window as unknown as { __emberViewer: {
+        scene: {
+          globe: { ellipsoid: { cartographicToCartesian(c: object): unknown } };
+          cartesianToCanvasCoordinates(p: unknown): { x: number; y: number } | undefined;
+        };
+      } }).__emberViewer;
+      const cart = v.scene.globe.ellipsoid.cartographicToCartesian({ longitude: lo! * rad, latitude: la! * rad, height: 0 });
+      const c = v.scene.cartesianToCanvasCoordinates(cart);
+      return c ? { x: c.x, y: c.y } : null;
+    },
+    [lat, lon],
+  );
+  if (!p) throw new Error(`${lat}, ${lon} is not on screen`);
+  return p;
+}
+
+/** Click the globe at a lat/lon, failing if a panel covers that spot. */
+export async function clickMap(page: Page, lat: number, lon: number): Promise<void> {
+  const p = await screenOf(page, lat, lon);
+  const tag = await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.tagName ?? "", [p.x, p.y]);
+  if (tag !== "CANVAS") throw new Error(`${lat}, ${lon} is under a panel (${tag}), not on the map`);
+  await page.mouse.click(p.x, p.y);
+}

@@ -135,11 +135,10 @@ function toSimClock(s: SimClockState): SimClock {
 const LOG_LIMIT = 500;
 
 /** Agent-facing kinds shown in the Agent log. */
+// Spread and route data are drawn on the map, not listed.
 const LOG_KINDS = new Set([
   "agent_run",
   "log",
-  "spread",
-  "route",
   "dispatch",
   "alert",
   "approval_request",
@@ -168,7 +167,7 @@ export interface AppState {
   reports: Record<string, Report>;
   captures: Record<string, Zoned<Capture>>;
   incidents: Record<string, Zoned<Incident>>;
-  notifications: Zoned<Notification>[];
+  notifications: (Zoned<Notification> & { ts?: string })[];
   suppression: Record<string, Zoned<Suppression>>;
   approvals: Record<string, EmberEvent<"approval_request", ApprovalRequest>>;
   log: EmberEvent[];
@@ -424,7 +423,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         return;
       case "notification":
         set((s) => ({
-          notifications: [...s.notifications.filter((n) => n.id !== event.payload.id), zoned(event)],
+          notifications: [...s.notifications.filter((n) => n.id !== event.payload.id), { ...zoned(event), ts: event.ts }],
         }));
         return;
       case "suppression":
@@ -483,3 +482,13 @@ export function selectZoneServers(s: AppState, zoneId: string | null): EdgeServe
 }
 
 const EMPTY_SERVERS: EdgeServer[] = [];
+
+/** The incident to show for the active zone: the newest one still burning, else the newest. */
+export function selectActiveIncident(s: AppState) {
+  const zoneId = s.activeZoneId;
+  if (!zoneId) return null;
+  const list = Object.values(s.incidents).filter((i) => i.zone_id === zoneId && i.status !== "dismissed");
+  if (list.length === 0) return null;
+  const burning = list.filter((i) => i.status !== "contained");
+  return (burning.length ? burning : list).at(-1) ?? null;
+}

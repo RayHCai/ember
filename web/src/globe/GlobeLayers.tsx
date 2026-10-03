@@ -1,9 +1,13 @@
 import { CoverageLayer } from "./layers/CoverageLayer";
 import { DronesLayer } from "./layers/DronesLayer";
 import { EdgeLayer } from "./layers/EdgeLayer";
+import { FireLayer } from "./layers/FireLayer";
 import { HeatmapLayer } from "./layers/HeatmapLayer";
 import { PlacesLayer } from "./layers/PlacesLayer";
+import { RecipientsLayer } from "./layers/RecipientsLayer";
+import { RoutesLayer } from "./layers/RoutesLayer";
 import { SitesLayer } from "./layers/SitesLayer";
+import { SuppressionLayer } from "./layers/SuppressionLayer";
 import { SurveyLayer } from "./layers/SurveyLayer";
 import { ZonesLayer } from "./layers/ZonesLayer";
 import { PhonePreviewTool, TestFireTool } from "./tools/ClickTools";
@@ -19,8 +23,12 @@ export function GlobeLayers() {
       <CoverageLayer />
       <HeatmapLayer />
       <SurveyLayer />
+      <FireLayer />
+      <SuppressionLayer />
       <ZonesLayer />
       <PlacesLayer />
+      <RoutesLayer />
+      <RecipientsLayer />
       <EdgeLayer />
       <SitesLayer />
       <DronesLayer />

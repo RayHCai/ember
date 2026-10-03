@@ -29,6 +29,6 @@ export const useToasts = create<ToastState>()((set) => ({
 
 export function pushToast(message: string, tone: ToastTone = "info", action?: Toast["action"]): number {
   const id = useToasts.getState().push({ message, tone, action });
-  if (!action) window.setTimeout(() => useToasts.getState().dismiss(id), tone === "error" ? 9000 : 5000);
+  window.setTimeout(() => useToasts.getState().dismiss(id), action ? 12000 : tone === "error" ? 9000 : 5000);
   return id;
 }

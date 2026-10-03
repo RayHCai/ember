@@ -72,3 +72,13 @@ export const DRONE_ICON = svgUrl(
     <path d="M12 2 L17 17 L12 14 L7 17 Z" fill="#FFFFFF" stroke="#03070A" stroke-width="1"/>
   </svg>`,
 );
+
+/** Incident marker: a flame in a ring, in warn (suspected) or heat (confirmed). */
+export function fireIcon(color: string): string {
+  return svgUrl(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 34 34">
+      <circle cx="17" cy="17" r="15" fill="#03070A" fill-opacity="0.85" stroke="${color}" stroke-width="2.5"/>
+      <path d="M17 7 C21 12 23 15 23 19 A6 6 0 0 1 11 19 C11 16 13 14 14 12 C15 15 16 16 17 16 C17 13 16 10 17 7 Z" fill="${color}"/>
+    </svg>`,
+  );
+}

@@ -595,7 +595,8 @@ export class DemoPlayer {
     const containment = Math.round(Math.min(84, share * 92));
     const band = headBand(spreadField(this.fire, this.incidentId));
     const treated = band.slice(0, Math.round(band.length * Math.min(1, share * 1.2)));
-    const key = `${sorties}:${containment}`;
+    // Report every sortie, and every 4 points of containment.
+    const key = `${sorties}:${Math.floor(containment / 4)}`;
     if (key !== this.lastSuppression) {
       this.lastSuppression = key;
       this.emit("suppression", { incident_id: this.incidentId, sorties_done: sorties, sorties_planned: 12, containment_pct: containment, treated_cells: treated, simulated: true });

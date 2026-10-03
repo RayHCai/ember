@@ -11,9 +11,13 @@ import credits from "./hud/Attribution.module.css";
 import { BottomDock, DemoBar } from "./hud/BottomDock";
 import { CursorReadout } from "./hud/CursorReadout";
 import { DroneInspector } from "./hud/DroneInspector";
+import { IncidentCard } from "./hud/IncidentCard";
 import { LayersPanel } from "./hud/LayersPanel";
 import { ReportPanel } from "./hud/ReportPanel";
+import { SuppressionBanner } from "./hud/SuppressionBanner";
 import { MapBadge } from "./hud/MapBadge";
+import { PanelBoundary } from "./hud/PanelBoundary";
+import { PhonePreview } from "./hud/PhonePreview";
 import { Toasts } from "./hud/Toasts";
 import { TopBar } from "./hud/TopBar";
 import { ZonePanel } from "./hud/ZonePanel";
@@ -35,24 +39,43 @@ export function App() {
       <Globe creditContainer={creditRef} />
       <GlobeLayers />
       <div className={styles.hud}>
-        <TopBar />
-        <div className={styles.left}>
-          <LayersPanel />
-          <ZonePanel />
+        <PanelBoundary name="Top bar">
+          <TopBar />
+        </PanelBoundary>
+        <div className={styles.center}>
+          <PanelBoundary name="Incident">
+            <SuppressionBanner />
+            <IncidentCard />
+          </PanelBoundary>
+          <Toasts />
+          <PanelBoundary name="Phone preview">
+            <PhonePreview />
+          </PanelBoundary>
         </div>
-        {rightPanel === "report" ? <ReportPanel /> : <AgentPanel />}
+        <div className={styles.left}>
+          <PanelBoundary name="Layers">
+            <LayersPanel />
+          </PanelBoundary>
+          <PanelBoundary name="Zones">
+            <ZonePanel />
+          </PanelBoundary>
+        </div>
+        <PanelBoundary name={rightPanel === "report" ? "Report" : "Agent"}>
+          {rightPanel === "report" ? <ReportPanel /> : <AgentPanel />}
+        </PanelBoundary>
         <div className={styles.bottomLeft}>
           <MapBadge />
           <CursorReadout />
           <div ref={creditRef} className={credits.credits} />
         </div>
         <div className={styles.bottomCenter}>
-          <DroneInspector />
-          <DemoBar />
-          <BottomDock />
+          <PanelBoundary name="Dock">
+            <DroneInspector />
+            <DemoBar />
+            <BottomDock />
+          </PanelBoundary>
         </div>
       </div>
-      <Toasts />
     </main>
   );
 }

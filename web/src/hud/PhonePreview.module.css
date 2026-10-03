@@ -1,0 +1,102 @@
+.panel {
+  align-self: flex-end;
+  width: 290px;
+}
+
+.close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.phone {
+  position: relative;
+  margin: 12px;
+  min-height: 300px;
+  padding: 30px 12px 14px;
+  border: 2px solid #23343b;
+  border-radius: 26px;
+  background: #060b0e;
+}
+
+.notch {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 70px;
+  height: 7px;
+  border-radius: 4px;
+  background: #23343b;
+  transform: translateX(-50%);
+}
+
+.hint {
+  margin: 40px 6px;
+  color: var(--muted);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 11px;
+  border-radius: 14px;
+  background: rgba(227, 246, 251, 0.08);
+}
+
+.appRow {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.app {
+  font-family: var(--font-hud);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tier {
+  align-self: flex-start;
+  padding: 1px 7px;
+  border-radius: 2px;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--void);
+}
+
+.evacuate {
+  background: var(--heat);
+}
+
+.prepare {
+  background: var(--warn);
+}
+
+.watch {
+  background: var(--signal);
+}
+
+.text {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.detail,
+.footer {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.audio {
+  width: 100%;
+  height: 30px;
+}

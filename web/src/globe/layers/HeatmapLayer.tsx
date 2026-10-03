@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useAppStore } from "../../state/store";
+import { selectActiveIncident, useAppStore } from "../../state/store";
 import type { GridInfo, ReportCell } from "../../types/events";
 import { GridOverlay, type CellColor } from "../gridOverlay";
 
@@ -29,6 +29,11 @@ export function HeatmapLayer() {
   const report = useAppStore((s) => (zoneId ? s.reports[zoneId] : undefined));
   const show = useAppStore((s) => s.layers.surveyHeatmap);
   const surveying = useAppStore((s) => (zoneId ? s.surveys[zoneId]?.status === "running" : false));
+  // While a fire burns, the risk heatmap steps back so it is not mistaken for the fire.
+  const fireActive = useAppStore((s) => {
+    const i = selectActiveIncident(s);
+    return Boolean(i && i.status !== "contained");
+  });
 
   useEffect(() => {
     if (!viewer || !grid || !report) return;
@@ -40,11 +45,12 @@ export function HeatmapLayer() {
     }
     overlay.paint((i) => {
       const score = scores.get(i);
-      return score === undefined ? null : scoreColor(score);
+      const color = score === undefined ? null : scoreColor(score);
+      return color && fireActive ? [color[0], color[1], color[2], Math.round(color[3] * 0.35)] : color;
     });
     overlay.show = show && !surveying;
     return () => overlay.destroy();
-  }, [viewer, grid, report, show, surveying]);
+  }, [viewer, grid, report, show, surveying, fireActive]);
 
   return null;
 }

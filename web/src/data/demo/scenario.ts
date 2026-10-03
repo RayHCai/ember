@@ -1,3 +1,4 @@
+import { spreadGrid } from "../../globe/spreadGrid";
 import { cellCenter, makeGrid, pointInPolygon, projector, zoneCellIndexes } from "../../geo/grid";
 import type {
   Community,
@@ -168,8 +169,8 @@ export function makeReport(surveyId: string, createdAt: string): Report {
 
 // --- Fire --------------------------------------------------------------------------
 
-const HEAD_BEARING_DEG = 200; // downhill toward Sierra Madre
-const HEAD_M_PER_MIN = 17;
+const HEAD_BEARING_DEG = 192; // downhill toward Sierra Madre
+const HEAD_M_PER_MIN = 24; // wind-driven chaparral, red flag conditions
 const FLANK_M_PER_MIN = 5.5;
 const BACK_M_PER_MIN = 2.5;
 const CELL_M = 100;
@@ -252,8 +253,15 @@ export function residents(fire: LatLon, spread: Spread): Resident[] {
   const rand = seeded(29);
   const project = projector(fire);
   const total = COMMUNITIES.reduce((s, c) => s + (c.population ?? 1000), 0);
-  const arrival = new Map<string, number>();
-  for (const [lat, lon, m] of spread.cells) arrival.set(`${lat.toFixed(3)},${lon.toFixed(3)}`, m);
+  const sg = spreadGrid(spread);
+  const arrivalAt = (lat: number, lon: number): number | undefined => {
+    if (!sg) return undefined;
+    const row = Math.floor((lat - sg.grid.south) / sg.grid.dlat);
+    const col = Math.floor((lon - sg.grid.west) / sg.grid.dlon);
+    if (row < 0 || row >= sg.grid.rows || col < 0 || col >= sg.grid.cols) return undefined;
+    const m = sg.arrival[row * sg.grid.cols + col]!;
+    return Number.isFinite(m) ? m : undefined;
+  };
   const out: Resident[] = [];
   for (const c of COMMUNITIES) {
     const n = Math.max(12, Math.round((300 * (c.population ?? 1000)) / total));
@@ -264,7 +272,7 @@ export function residents(fire: LatLon, spread: Spread): Resident[] {
       const lon = c.lon + (Math.cos(a) * r) / (111_320 * Math.cos((c.lat * Math.PI) / 180));
       const [x, y] = project([lat, lon]);
       const km = Math.hypot(x, y) / 1000;
-      const m = arrival.get(`${lat.toFixed(3)},${lon.toFixed(3)}`);
+      const m = arrivalAt(lat, lon);
       let tier: Tier | null = null;
       if ((m !== undefined && m <= 90) || km <= 1.5) tier = "evacuate";
       else if ((m !== undefined && m <= 180) || km <= 4) tier = "prepare";

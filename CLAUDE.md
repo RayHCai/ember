@@ -67,7 +67,24 @@ New kinds:
 | `report` | id, survey_id, created_at, summary, mode, cells `[{lat, lon, score}]`, sites, trend |
 | `incident` | id, lat, lon, status (`suspected`, `confirmed`, `contained`), confidence |
 | `notification` | id, tier (`evacuate`, `prepare`, `watch`), recipients_count, text, audio_url, approved_by |
-| `suppression` | incident_id, sorties_done, sorties_planned, containment_pct, treated_cells, simulated |
+| `suppression` | incident_id, sorties_done, sorties_planned, containment_pct, treated_cells `[[lat, lon], ...]`, simulated |
+| `fleet` | drones `[drone payloads]` (replaces a zone's fleet when its docks change) |
+| `survey_cells` | survey_id, cells `[grid cell indexes]`, reset (true on a new survey) |
+| `recipients` | incident_id, residents `[{id, lat, lon, tier or null, community}]`, simulated |
+| `agent_run` | run_id, trigger, mode (`asi1`, `fallback`, `policy`) |
+
+Fields the console reads from the agent kinds:
+
+| kind | payload |
+| --- | --- |
+| `log` | message, level, source, and for a step of an agent run: run_id, tool, args, result |
+| `decision` | summary, actions, run_id, approval_id (set when it resolves an approval) |
+| `approval_request` | id, reason, tier, texts, recipients_count, incident_id |
+| `spread` | incident_id, cell_m, cells `[[lat, lon, arrival_min], ...]`, head_bearing_deg, horizon_min, communities `[{name, lat, lon, arrival_min}]`, with_suppression |
+| `route` | id, incident_id, community, shelter, path `[[lat, lon], ...]`, distance_km, eta_min |
+| `dispatch`, `alert` | message, incident_id, drone_ids |
+
+Operator actions the console sends: `POST /approvals/{id}/approve`, `POST /approvals/{id}/hold`, `POST /zones/{id}/incidents` (test fire), `POST /incidents/{id}/suppression`, `POST /agent/chat` `{zone_id, text}` returning `{reply}`, `POST /zones/{id}/surveys`.
 
 ## Simulation clock
 

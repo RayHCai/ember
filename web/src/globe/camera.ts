@@ -3,6 +3,7 @@ import {
   Cartesian3,
   HeadingPitchRange,
   Math as CesiumMath,
+  Matrix4,
   type Viewer,
 } from "cesium";
 import type { LatLon } from "../types/events";
@@ -21,9 +22,47 @@ export interface FlyOptions {
   heightM?: number;
 }
 
+let stopActiveOrbit: (() => void) | null = null;
+
+/** Stop the slow orbit, if one is running (any new camera move does this). */
+export function stopOrbit(): void {
+  stopActiveOrbit?.();
+}
+
+const ORBIT_RAD_PER_FRAME = 0.0018;
+
+/** Slow orbit around a point until stopped, a new flight starts, or the operator touches the map. */
+export function startOrbit(viewer: Viewer, lat: number, lon: number): () => void {
+  stopOrbit();
+  const center = Cartesian3.fromDegrees(lon, lat, 0);
+  let heading = viewer.camera.heading;
+  const pitch = viewer.camera.pitch;
+  const range = Cartesian3.distance(viewer.camera.positionWC, center);
+  const canvas = viewer.scene.canvas;
+  let stopped = false;
+  const removeFrame = viewer.scene.preRender.addEventListener(() => {
+    heading += ORBIT_RAD_PER_FRAME;
+    viewer.camera.lookAt(center, new HeadingPitchRange(heading, pitch, range));
+  });
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    removeFrame();
+    canvas.removeEventListener("pointerdown", stop);
+    canvas.removeEventListener("wheel", stop);
+    if (!viewer.isDestroyed()) viewer.camera.lookAtTransform(Matrix4.IDENTITY);
+    if (stopActiveOrbit === stop) stopActiveOrbit = null;
+  };
+  canvas.addEventListener("pointerdown", stop);
+  canvas.addEventListener("wheel", stop, { passive: true });
+  stopActiveOrbit = stop;
+  return stop;
+}
+
 /** Fly to an oblique view looking at a point. Resolves when the flight ends. */
 export function flyToPoint(viewer: Viewer, lat: number, lon: number, opts: FlyOptions = {}): Promise<void> {
   const { range = 9000, pitchDeg = -35, headingDeg = 0, duration = 3, heightM = 0 } = opts;
+  stopOrbit();
   const sphere = new BoundingSphere(Cartesian3.fromDegrees(lon, lat, heightM), 1);
   return new Promise((resolve) => {
     viewer.camera.flyToBoundingSphere(sphere, {

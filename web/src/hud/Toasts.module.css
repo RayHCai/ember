@@ -1,13 +1,9 @@
+/* Lives in the middle column under the incident card, so it never covers it. */
 .stack {
-  position: fixed;
-  top: 70px;
-  left: 50%;
-  z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: min(520px, calc(100vw - 32px));
-  transform: translateX(-50%);
+  width: min(520px, 100%);
   pointer-events: none;
 }
 
