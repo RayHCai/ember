@@ -93,11 +93,17 @@ export function AgentPanel() {
   const tab = useAppStore((s) => s.agentTab);
   const setTab = useAppStore((s) => s.setAgentTab);
   const pendingCount = useAppStore((s) => Object.keys(s.approvals).length);
+  const hasReport = useAppStore((s) => (s.activeZoneId ? Boolean(s.reports[s.activeZoneId]) : false));
 
   return (
     <section className={cx(hud.panel, styles.panel)} aria-label="Agent">
       <div className={hud.header}>
         <h2 className={hud.title}>Agent</h2>
+        {hasReport && (
+          <button type="button" className={styles.link} onClick={() => useAppStore.getState().setRightPanel("report")}>
+            Open report
+          </button>
+        )}
       </div>
       <div className={styles.tabs} role="tablist">
         {TABS.map((t) => (

@@ -14,6 +14,7 @@ interface ObservedState {
   zones: Record<string, ObservedCells>;
   add: (zoneId: string, surveyId: string, cells: number[], reset?: boolean) => void;
   removeZone: (zoneId: string) => void;
+  clear: () => void;
 }
 
 export const useObserved = create<ObservedState>()((set) => ({
@@ -28,6 +29,7 @@ export const useObserved = create<ObservedState>()((set) => ({
       if (!fresh) for (const c of cells) next.cells.add(c);
       return { zones: { ...s.zones, [zoneId]: next } };
     }),
+  clear: () => set({ zones: {} }),
   removeZone: (zoneId) =>
     set((s) => {
       const zones = { ...s.zones };

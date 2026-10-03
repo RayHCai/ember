@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { config } from "../config";
 import { attempt, request } from "../data/api";
+import { inDemo } from "../data/source";
 import { cx, formatDuration, formatSimTime } from "../lib/format";
 import {
   FILTERS,
@@ -102,11 +102,14 @@ function SpeedControls() {
   const hasClock = useAppStore((s) => s.sim !== null);
 
   const setSpeed = (next: number) => {
-    if (config.useMock) useAppStore.getState().setSimLocal({ speed: next, paused: false });
+    if (inDemo()) useAppStore.getState().setSimLocal({ speed: next });
     else void attempt("Changing sim speed", () => request("/sim/speed", { method: "POST", json: { speed: next } }));
   };
   const togglePause = () => {
-    if (config.useMock) useAppStore.getState().setSimLocal({ paused: !paused });
+    if (inDemo()) {
+      useAppStore.getState().setSimLocal({ paused: !paused });
+      useAppStore.getState().setDemo({ status: paused ? "playing" : "paused" });
+    }
     else void attempt(paused ? "Resuming" : "Pausing", () => request(paused ? "/sim/resume" : "/sim/pause", { method: "POST" }));
   };
 
@@ -138,7 +141,7 @@ function SpeedControls() {
 }
 
 const CONNECTION_LABEL: Record<ConnectionState, string> = {
-  mock: "Mock stream",
+  mock: "Demo data",
   connecting: "Connecting",
   open: "Live",
   reconnecting: "Reconnecting",

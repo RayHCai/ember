@@ -36,6 +36,8 @@ export function Globe({ creditContainer }: GlobeProps) {
       infoBox: false,
       selectionIndicator: false,
       creditContainer: credits,
+      // Keeps the canvas readable so site photos can be captured from the map.
+      contextOptions: { webgl: { preserveDrawingBuffer: true } },
     });
     // Editing tools own clicks. Drop the viewer's own select and double-click zoom.
     viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);

@@ -1,0 +1,99 @@
+/* The printed report. Hidden on screen; the only thing on the page when printing. */
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+    background: #fff;
+    color: #111;
+  }
+
+  #root {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block;
+    font-family: system-ui, sans-serif;
+    font-size: 11pt;
+    line-height: 1.45;
+  }
+
+  #print-root .product {
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    color: #0a6a80;
+  }
+
+  #print-root h1 {
+    margin: 4px 0;
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 18pt;
+  }
+
+  #print-root h2 {
+    margin: 16px 0 6px;
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 13pt;
+  }
+
+  #print-root .meta,
+  #print-root .sim {
+    margin: 2px 0;
+    color: #555;
+    font-size: 9pt;
+  }
+
+  #print-root .map {
+    width: 100%;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+  }
+
+  #print-root table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+  }
+
+  #print-root th,
+  #print-root td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  #print-root .num {
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  #print-root .photos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  #print-root figure {
+    margin: 0;
+    break-inside: avoid;
+  }
+
+  #print-root figure img {
+    width: 100%;
+  }
+
+  #print-root figcaption {
+    color: #555;
+    font-size: 8.5pt;
+  }
+}

@@ -98,3 +98,11 @@
 .chatInput {
   flex: 1;
 }
+
+.link {
+  border: 0;
+  background: transparent;
+  color: var(--signal);
+  font-size: 11px;
+  cursor: pointer;
+}

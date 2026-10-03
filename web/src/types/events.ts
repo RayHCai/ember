@@ -207,6 +207,10 @@ export interface Notification {
   text: string;
   audio_url: string | null;
   approved_by: string | null;
+  incident_id?: string;
+  /** The evacuation route and shelter in the message, for evacuate alerts. */
+  route_id?: string | null;
+  shelter?: string | null;
 }
 
 export interface Suppression {
@@ -218,8 +222,89 @@ export interface Suppression {
   simulated: true;
 }
 
-// Payloads emitted by the existing agent. Kept loose until they are matched
-// to agent/ember (see agent/README.md).
+// --- Agent events -----------------------------------------------------------
+// The fire and alert logic runs on a separate service. These are the fields
+// the console reads; the service must send them (see CLAUDE.md, "Events").
+
+export type AgentMode = "asi1" | "fallback" | "policy";
+
+/** An agent run began. Its log steps and decision carry the same run_id. */
+export interface AgentRun {
+  run_id: string;
+  trigger: string;
+  mode: AgentMode;
+}
+
+export interface AgentLog {
+  message: string;
+  level?: "info" | "warn";
+  source?: string;
+  run_id?: string;
+  /** Tool the agent called in this step, if any. */
+  tool?: string;
+  args?: Record<string, unknown>;
+  result?: unknown;
+}
+
+export interface Decision {
+  run_id?: string;
+  summary: string;
+  actions?: string[];
+  /** Set when the decision resolves a pending approval. */
+  approval_id?: string;
+}
+
+export interface Spread {
+  incident_id: string;
+  cell_m: number;
+  /** [lat, lon, minutes until the fire arrives]. */
+  cells: [number, number, number][];
+  head_bearing_deg: number;
+  horizon_min: number;
+  communities: { name: string; lat: number; lon: number; arrival_min: number | null }[];
+  /** True when this prediction includes suppression. */
+  with_suppression?: boolean;
+}
+
+export interface Route {
+  id: string;
+  incident_id: string;
+  community: string;
+  shelter: string;
+  path: LatLon[];
+  distance_km: number;
+  eta_min: number;
+}
+
+export interface ApprovalRequest {
+  id: string;
+  reason: string;
+  tier?: Tier;
+  texts: string[];
+  recipients_count?: number;
+  incident_id?: string;
+}
+
+export interface Dispatch {
+  message: string;
+  incident_id?: string;
+  drone_ids?: string[];
+}
+
+export interface Resident {
+  id: string;
+  lat: number;
+  lon: number;
+  tier: Tier | null;
+  community: string;
+}
+
+export interface Recipients {
+  incident_id: string;
+  residents: Resident[];
+  simulated: true;
+}
+
 export type AgentPayload = Record<string, unknown>;
 
 export interface SimClockState {
@@ -239,10 +324,13 @@ export interface Snapshot {
   reports: Record<string, Report>;
   captures: Zoned<Capture>[];
   incidents: Zoned<Incident>[];
-  approvals: EmberEvent[];
+  approvals: EmberEvent<"approval_request", ApprovalRequest>[];
   notifications: Zoned<Notification>[];
   suppression: Zoned<Suppression>[];
   log: EmberEvent[];
+  spread?: Record<string, Spread>;
+  routes?: Record<string, Route[]>;
+  recipients?: Record<string, Recipients>;
 }
 
 export type KnownEvent =
@@ -261,7 +349,12 @@ export type KnownEvent =
   | EmberEvent<"incident", Incident>
   | EmberEvent<"notification", Notification>
   | EmberEvent<"suppression", Suppression>
-  | EmberEvent<
-      "log" | "spread" | "route" | "dispatch" | "alert" | "approval_request" | "decision",
-      AgentPayload
-    >;
+  | EmberEvent<"agent_run", AgentRun>
+  | EmberEvent<"log", AgentLog>
+  | EmberEvent<"decision", Decision>
+  | EmberEvent<"spread", Spread>
+  | EmberEvent<"route", Route>
+  | EmberEvent<"approval_request", ApprovalRequest>
+  | EmberEvent<"dispatch", Dispatch>
+  | EmberEvent<"alert", AgentLog>
+  | EmberEvent<"recipients", Recipients>;

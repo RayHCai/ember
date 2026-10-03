@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { airborneDroneOnScreen, collectErrors, openConsole, waitForTiles } from "./helpers";
+import { airborneDroneOnScreen, collectErrors, openConsole, resetDemo, waitForTiles } from "./helpers";
 
 // Default Cesium widgets that must stay off.
 const DEFAULT_WIDGETS = [
@@ -25,7 +25,7 @@ test("loads the console with the mock stream and no console errors", async ({ pa
   await expect(page.getByText("EMBER", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Layers" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Agent" })).toBeVisible();
-  await expect(page.getByText("Mock stream", { exact: true })).toBeVisible();
+  await expect(page.getByText("Demo data", { exact: true })).toBeVisible();
 
   // No map keys in tests, so the labeled OpenStreetMap fallback must be active.
   const badge = page.getByTestId("map-badge");
@@ -53,7 +53,11 @@ test("loads the console with the mock stream and no console errors", async ({ pa
 test("shows mock drones and opens the drone inspector", async ({ page }) => {
   const errors = collectErrors(page);
   await openConsole(page, { reducedMotion: true });
+  await resetDemo(page);
   await waitForTiles(page);
+  const controls = page.getByTestId("demo-controls");
+  await controls.getByRole("button", { name: "Next step" }).click();
+  await controls.getByRole("button", { name: "Play" }).click();
   let spot: { x: number; y: number } | null = null;
   for (let i = 0; i < 60 && !spot; i++) {
     await page.waitForTimeout(250);
@@ -74,6 +78,7 @@ test("shows mock drones and opens the drone inspector", async ({ page }) => {
 test("switches map filters with keys 1 to 4", async ({ page }) => {
   const errors = collectErrors(page);
   await openConsole(page, { reducedMotion: true });
+  await resetDemo(page);
   await page.waitForTimeout(1500);
   await waitForTiles(page);
 

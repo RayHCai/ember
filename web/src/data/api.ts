@@ -42,7 +42,13 @@ export async function attempt<T>(what: string, action: () => Promise<T>): Promis
   try {
     return await action();
   } catch (err) {
-    pushToast(`${what} failed. ${err instanceof Error ? err.message : String(err)}`, "error");
+    const message =
+      err instanceof ApiError && err.status === 501
+        ? "The logic service does not support this yet. Run the demo to see it."
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    pushToast(`${what} failed. ${message}`, "error");
     return undefined;
   }
 }

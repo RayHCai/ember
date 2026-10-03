@@ -1,6 +1,8 @@
 import type { Viewer } from "cesium";
 import { create } from "zustand";
 import type {
+  AgentRun,
+  ApprovalRequest,
   Capture,
   EdgePlan,
   EdgeServer,
@@ -9,7 +11,10 @@ import type {
   KnownEvent,
   LatLon,
   Notification,
+  Recipients,
   Report,
+  Route,
+  Spread,
   Shelter,
   SimClockState,
   Snapshot,
@@ -58,11 +63,31 @@ export const LAYERS: { id: LayerId; label: string; sim: boolean }[] = [
 
 export type AgentTab = "log" | "approvals" | "chat";
 
+export type RightPanel = "agent" | "report";
+
+export type DemoStatus = "off" | "playing" | "paused" | "done";
+
+export interface DemoState {
+  status: DemoStatus;
+  step: number;
+  steps: number;
+  label: string;
+}
+
+/** A photo of a vulnerable site: a real capture, or one rendered from the 3D map. */
+export interface SitePhoto {
+  url: string;
+  simulated: boolean;
+  label: string;
+}
+
 /** The globe interaction that is active, if any. */
 export type Tool =
   | { kind: "draw-zone" }
   | { kind: "edit-edge"; zoneId: string }
-  | { kind: "edit-shelters"; zoneId: string };
+  | { kind: "edit-shelters"; zoneId: string }
+  | { kind: "test-fire"; zoneId: string }
+  | { kind: "phone-preview" };
 
 export interface EdgeDraft {
   zoneId: string;
@@ -111,6 +136,7 @@ const LOG_LIMIT = 500;
 
 /** Agent-facing kinds shown in the Agent log. */
 const LOG_KINDS = new Set([
+  "agent_run",
   "log",
   "spread",
   "route",
@@ -144,11 +170,22 @@ export interface AppState {
   incidents: Record<string, Zoned<Incident>>;
   notifications: Zoned<Notification>[];
   suppression: Record<string, Zoned<Suppression>>;
-  approvals: Record<string, EmberEvent>;
+  approvals: Record<string, EmberEvent<"approval_request", ApprovalRequest>>;
   log: EmberEvent[];
-  /** Latest spread and route payloads per zone, from the agent. */
-  spread: Record<string, EmberEvent>;
-  routes: Record<string, EmberEvent[]>;
+  agentRuns: Record<string, Zoned<AgentRun> & { ts: string }>;
+  /** Latest fire spread prediction per zone. */
+  spread: Record<string, Zoned<Spread>>;
+  routes: Record<string, Record<string, Route>>;
+  recipients: Record<string, Recipients>;
+
+  rightPanel: RightPanel;
+  selectedSiteId: string | null;
+  sitePhotos: Record<string, SitePhoto>;
+  /** Spread animation time, in minutes from now. */
+  spreadMinutes: number;
+  /** Where the operator last clicked in phone preview mode. */
+  phonePreviewAt: LatLon | null;
+  demo: DemoState;
 
   setViewer: (viewer: Viewer | null) => void;
   setMapSource: (info: MapSourceInfo) => void;
@@ -163,6 +200,12 @@ export interface AppState {
   setShelterDraft: (draft: ShelterDraft | null) => void;
   /** Change the sim clock locally (mock mode has no server to ask). */
   setSimLocal: (change: { speed?: number; paused?: boolean }) => void;
+  setRightPanel: (panel: RightPanel) => void;
+  selectSite: (siteId: string | null) => void;
+  setSitePhoto: (siteId: string, photo: SitePhoto) => void;
+  setSpreadMinutes: (minutes: number) => void;
+  setPhonePreviewAt: (at: LatLon | null) => void;
+  setDemo: (demo: Partial<DemoState>) => void;
   applyEvent: (event: KnownEvent) => void;
 }
 
@@ -172,9 +215,8 @@ function zoned<P extends object>(event: EmberEvent<string, P>): Zoned<P> {
   return { ...event.payload, zone_id: event.zone_id };
 }
 
-function approvalId(event: EmberEvent): string {
-  const payload = event.payload as Record<string, unknown>;
-  return String(payload.id ?? payload.approval_id ?? `${event.zone_id}:${event.ts}`);
+function approvalId(event: EmberEvent<string, ApprovalRequest>): string {
+  return event.payload.id || `${event.zone_id}:${event.ts}`;
 }
 
 function snapshotState(s: Snapshot): Partial<AppState> {
@@ -192,6 +234,18 @@ function snapshotState(s: Snapshot): Partial<AppState> {
     suppression: Object.fromEntries(s.suppression.map((x) => [x.incident_id, x])),
     approvals: Object.fromEntries(s.approvals.map((a) => [approvalId(a), a])),
     log: s.log.slice(-LOG_LIMIT),
+    agentRuns: Object.fromEntries(
+      s.log
+        .filter((e): e is EmberEvent<"agent_run", AgentRun> => e.kind === "agent_run")
+        .map((e) => [e.payload.run_id, { ...e.payload, zone_id: e.zone_id, ts: e.ts }]),
+    ),
+    spread: Object.fromEntries(Object.entries(s.spread ?? {}).map(([z, sp]) => [z, { ...sp, zone_id: z }])),
+    routes: Object.fromEntries(
+      Object.entries(s.routes ?? {}).map(([z, list]) => [z, Object.fromEntries(list.map((r) => [r.id, r]))]),
+    ),
+    recipients: s.recipients ?? {},
+    selectedSiteId: null,
+    sitePhotos: {},
   };
 }
 
@@ -221,8 +275,17 @@ export const useAppStore = create<AppState>()((set, get) => ({
   suppression: {},
   approvals: {},
   log: [],
+  agentRuns: {},
   spread: {},
   routes: {},
+  recipients: {},
+
+  rightPanel: "agent",
+  selectedSiteId: null,
+  sitePhotos: {},
+  spreadMinutes: 360,
+  phonePreviewAt: null,
+  demo: { status: "off", step: 0, steps: 0, label: "" },
 
   setViewer: (viewer) => set({ viewer }),
   setMapSource: (mapSource) => set({ mapSource }),
@@ -249,6 +312,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
       };
     }),
 
+  setRightPanel: (rightPanel) => set({ rightPanel }),
+  selectSite: (selectedSiteId) => set({ selectedSiteId }),
+  setSitePhoto: (siteId, photo) => set((s) => ({ sitePhotos: { ...s.sitePhotos, [siteId]: photo } })),
+  setSpreadMinutes: (spreadMinutes) => set({ spreadMinutes }),
+  setPhonePreviewAt: (phonePreviewAt) => set({ phonePreviewAt }),
+  setDemo: (demo) => set((s) => ({ demo: { ...s.demo, ...demo } })),
+
   applyEvent: (event) => {
     if (LOG_KINDS.has(event.kind)) {
       set((s) => ({ log: [...s.log.slice(-(LOG_LIMIT - 1)), event] }));
@@ -258,6 +328,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
       case "snapshot": {
         const next = snapshotState(event.payload);
         useTelemetry.getState().replaceAll(event.payload.drones);
+        useTelemetry.getState().select(null);
+        useObserved.getState().clear();
         for (const [zoneId, sc] of Object.entries(event.payload.survey_cells ?? {})) {
           useObserved.getState().add(zoneId, sc.survey_id, sc.cells, true);
         }
@@ -266,6 +338,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
         set({
           ...next,
           activeZoneId: active && next.zones?.[active] ? active : (zoneIds[0] ?? null),
+          rightPanel: "agent",
+          tool: null,
+          zoneDraft: null,
+          edgeDraft: null,
+          shelterDraft: null,
         });
         return;
       }
@@ -335,7 +412,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
         set((s) => ({ captures: { ...s.captures, [event.payload.id]: zoned(event) } }));
         return;
       case "report":
-        set((s) => ({ reports: { ...s.reports, [event.zone_id]: event.payload } }));
+        set((s) => ({
+          reports: { ...s.reports, [event.zone_id]: event.payload },
+          // A new report opens the report view (the operator can go back).
+          rightPanel: event.zone_id === s.activeZoneId ? "report" : s.rightPanel,
+          selectedSiteId: null,
+        }));
         return;
       case "incident":
         set((s) => ({ incidents: { ...s.incidents, [event.payload.id]: zoned(event) } }));
@@ -355,8 +437,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
         return;
       case "decision": {
         // A decision that resolves an approval removes it from the pending list.
-        const resolved = (event.payload as Record<string, unknown>).approval_id;
-        if (typeof resolved === "string") {
+        const resolved = event.payload.approval_id;
+        if (resolved) {
           set((s) => {
             const approvals = { ...s.approvals };
             delete approvals[resolved];
@@ -365,13 +447,21 @@ export const useAppStore = create<AppState>()((set, get) => ({
         }
         return;
       }
+      case "agent_run":
+        set((s) => ({
+          agentRuns: { ...s.agentRuns, [event.payload.run_id]: { ...event.payload, zone_id: event.zone_id, ts: event.ts } },
+        }));
+        return;
       case "spread":
-        set((s) => ({ spread: { ...s.spread, [event.zone_id]: event } }));
+        set((s) => ({ spread: { ...s.spread, [event.zone_id]: zoned(event) } }));
         return;
       case "route":
         set((s) => ({
-          routes: { ...s.routes, [event.zone_id]: [...(s.routes[event.zone_id] ?? []), event] },
+          routes: { ...s.routes, [event.zone_id]: { ...(s.routes[event.zone_id] ?? {}), [event.payload.id]: event.payload } },
         }));
+        return;
+      case "recipients":
+        set((s) => ({ recipients: { ...s.recipients, [event.zone_id]: event.payload } }));
         return;
       case "log":
       case "dispatch":

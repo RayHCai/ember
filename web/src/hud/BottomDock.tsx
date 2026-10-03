@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from "react";
+import { config } from "../config";
+import { demoPlayer, exitDemo, startDemo } from "../data/source";
 import { flyToPoint } from "../globe/camera";
 import { PRESETS } from "../globe/presets";
 import { geocode, geocoderLabel, type GeocodeResult } from "../geo/geocode";
@@ -112,12 +114,83 @@ function ZonePresets() {
 }
 
 function DemoControls() {
+  const demo = useAppStore((s) => s.demo);
+  const zoneId = useAppStore((s) => s.activeZoneId);
+  const tool = useAppStore((s) => s.tool);
+  const firing = tool?.kind === "test-fire";
+
+  const testFire = (
+    <button
+      type="button"
+      className={cx(hud.button, firing && hud.primary)}
+      disabled={!zoneId}
+      title="Click a point in the zone to start a simulated fire there"
+      onClick={() => useAppStore.getState().setTool(firing || !zoneId ? null : { kind: "test-fire", zoneId })}
+    >
+      {firing ? "Click the map" : "Start test fire"} <span className={hud.simTag}>SIM</span>
+    </button>
+  );
+
+  if (demo.status === "off") {
+    return (
+      <div className={styles.demo}>
+        <button type="button" className={cx(hud.button, hud.primary)} onClick={() => startDemo({ autoplay: true })}>
+          Run demo
+        </button>
+        {testFire}
+      </div>
+    );
+  }
+
+  return <span className={hud.label}>Demo running</span>;
+}
+
+/** Demo controls, in their own bar above the dock while a demo runs. */
+export function DemoBar() {
+  const demo = useAppStore((s) => s.demo);
+  const zoneId = useAppStore((s) => s.activeZoneId);
+  const tool = useAppStore((s) => s.tool);
+  if (demo.status === "off") return null;
+  const firing = tool?.kind === "test-fire";
+  const testFire = (
+    <button
+      type="button"
+      className={cx(hud.button, firing && hud.primary)}
+      disabled={!zoneId}
+      title="Click a point in the zone to start a simulated fire there"
+      onClick={() => useAppStore.getState().setTool(firing || !zoneId ? null : { kind: "test-fire", zoneId })}
+    >
+      {firing ? "Click the map" : "Start test fire"} <span className={hud.simTag}>SIM</span>
+    </button>
+  );
+  const playing = demo.status === "playing";
   return (
-    <div className={styles.demo}>
-      <span className={hud.label}>Demo</span>
-      <button type="button" className={hud.button} disabled title="Demo mode is not built yet">
-        Run demo
+    <div className={cx(hud.panel, styles.dock, styles.demo)} data-testid="demo-controls">
+      <span className={styles.demoStep}>
+        <span className={hud.label}>
+          Step {demo.step + 1} of {demo.steps}
+        </span>
+        <span className={styles.demoLabel}>{demo.label}</span>
+      </span>
+      <button
+        type="button"
+        className={cx(hud.button, !playing && hud.primary)}
+        onClick={() => (playing ? demoPlayer()?.pause() : demoPlayer()?.play())}
+      >
+        {playing ? "Pause" : demo.status === "done" ? "Replay" : "Play"}
       </button>
+      <button type="button" className={hud.button} onClick={() => demoPlayer()?.next()} disabled={demo.status === "done"}>
+        Next step
+      </button>
+      <button type="button" className={hud.button} onClick={() => startDemo()}>
+        Reset demo
+      </button>
+      {testFire}
+      {!config.useMock && (
+        <button type="button" className={hud.button} onClick={exitDemo}>
+          Exit demo
+        </button>
+      )}
     </div>
   );
 }

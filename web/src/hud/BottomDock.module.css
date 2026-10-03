@@ -21,7 +21,7 @@
 }
 
 .searchInput {
-  width: 220px;
+  width: 170px;
 }
 
 .results {
@@ -74,7 +74,7 @@
 }
 
 .presets {
-  width: 200px;
+  width: 150px;
   cursor: pointer;
 }
 
@@ -85,5 +85,19 @@
 .demo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.demoStep {
+  display: flex;
+  flex-direction: column;
+  min-width: 108px;
+  line-height: 1.2;
+}
+
+.demoLabel {
+  font-family: var(--font-hud);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }

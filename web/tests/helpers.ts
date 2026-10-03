@@ -17,6 +17,13 @@ export async function openConsole(page: Page, opts: { reducedMotion?: boolean } 
   await expect(page.locator(".cesium-widget canvas")).toBeVisible();
 }
 
+/** Restart the demo, paused on its first step, so a test controls the story. */
+export async function resetDemo(page: Page): Promise<void> {
+  const controls = page.getByTestId("demo-controls");
+  await controls.getByRole("button", { name: "Reset demo" }).click();
+  await expect(controls.getByText("Zone ready", { exact: true })).toBeVisible();
+}
+
 /** Waits until the globe has finished loading the tiles in view. */
 export async function waitForTiles(page: Page, timeoutMs = 20_000): Promise<void> {
   await page.waitForFunction(

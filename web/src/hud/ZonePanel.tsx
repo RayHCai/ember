@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { config } from "../config";
 import { attempt } from "../data/api";
 import { zonesApi } from "../data/zonesApi";
 import { sampleElevations } from "../geo/elevation";
@@ -12,7 +11,12 @@ import type { Zone } from "../types/events";
 import hud from "./hud.module.css";
 import styles from "./ZonePanel.module.css";
 
-const NEEDS_SERVER = "Needs the Ember server. The mock stream is on.";
+const NEEDS_SERVER = "Not available during the demo. Exit the demo to use the live server.";
+
+/** Zone setup talks to the server, so it is off while the demo drives the console. */
+function useDemoOn(): boolean {
+  return useAppStore((s) => s.demo.status !== "off");
+}
 
 function flyToZone(zone: Zone) {
   const viewer = useAppStore.getState().viewer;
@@ -157,6 +161,7 @@ function MapSourceNote({ zoneId }: { zoneId: string }) {
 }
 
 function EdgeServersStep({ zone }: { zone: Zone }) {
+  const demoOn = useDemoOn();
   const plan = useAppStore((s) => s.edgePlans[zone.id]);
   const draft = useAppStore((s) => (s.edgeDraft?.zoneId === zone.id ? s.edgeDraft : null));
   const grid = useAppStore((s) => s.zoneMaps[zone.id]?.grid);
@@ -231,8 +236,8 @@ function EdgeServersStep({ zone }: { zone: Zone }) {
           <button
             type="button"
             className={hud.button}
-            disabled={config.useMock}
-            title={config.useMock ? NEEDS_SERVER : undefined}
+            disabled={demoOn}
+            title={demoOn ? NEEDS_SERVER : undefined}
             onClick={() => {
               setEdgeDraft({ zoneId: zone.id, servers: plan.servers.map((s) => ({ ...s, status: "pending" })) });
               setTool({ kind: "edit-edge", zoneId: zone.id });
@@ -254,8 +259,8 @@ function EdgeServersStep({ zone }: { zone: Zone }) {
           type="button"
           className={cx(hud.button, hud.primary)}
           onClick={() => void suggest()}
-          disabled={busy || config.useMock}
-          title={config.useMock ? NEEDS_SERVER : undefined}
+          disabled={busy || demoOn}
+          title={demoOn ? NEEDS_SERVER : undefined}
         >
           {busy ? "Planning" : "Suggest edge servers"}
         </button>
@@ -265,6 +270,7 @@ function EdgeServersStep({ zone }: { zone: Zone }) {
 }
 
 function SurveysStep({ zone }: { zone: Zone }) {
+  const demoOn = useDemoOn();
   const deployed = useAppStore((s) => s.edgePlans[zone.id]?.servers.some((srv) => srv.status === "deployed") ?? false);
   const survey = useAppStore((s) => s.surveys[zone.id]);
   const sim = useAppStore((s) => s.sim);
@@ -305,8 +311,8 @@ function SurveysStep({ zone }: { zone: Zone }) {
           type="button"
           className={cx(hud.button, hud.primary)}
           onClick={() => void run()}
-          disabled={busy || running || config.useMock}
-          title={config.useMock ? NEEDS_SERVER : undefined}
+          disabled={busy || running || demoOn}
+          title={demoOn ? NEEDS_SERVER : undefined}
         >
           Run survey
         </button>
@@ -316,6 +322,7 @@ function SurveysStep({ zone }: { zone: Zone }) {
 }
 
 function SheltersStep({ zone }: { zone: Zone }) {
+  const demoOn = useDemoOn();
   const shelters = useAppStore((s) => s.zoneMaps[zone.id]?.shelters ?? []);
   const draft = useAppStore((s) => (s.shelterDraft?.zoneId === zone.id ? s.shelterDraft : null));
   const [busy, setBusy] = useState(false);
@@ -379,8 +386,8 @@ function SheltersStep({ zone }: { zone: Zone }) {
         <button
           type="button"
           className={hud.button}
-          disabled={config.useMock}
-          title={config.useMock ? NEEDS_SERVER : undefined}
+          disabled={demoOn}
+          title={demoOn ? NEEDS_SERVER : undefined}
           onClick={() => {
             setShelterDraft({ zoneId: zone.id, shelters });
             setTool({ kind: "edit-shelters", zoneId: zone.id });
@@ -394,10 +401,11 @@ function SheltersStep({ zone }: { zone: Zone }) {
 }
 
 function RemoveZone({ zone }: { zone: Zone }) {
+  const demoOn = useDemoOn();
   const [confirm, setConfirm] = useState(false);
   if (!confirm) {
     return (
-      <button type="button" className={styles.linkButton} onClick={() => setConfirm(true)} disabled={config.useMock}>
+      <button type="button" className={styles.linkButton} onClick={() => setConfirm(true)} disabled={demoOn}>
         Remove zone
       </button>
     );
@@ -420,6 +428,7 @@ function RemoveZone({ zone }: { zone: Zone }) {
 }
 
 export function ZonePanel() {
+  const demoOn = useDemoOn();
   const drawing = useAppStore((s) => s.tool?.kind === "draw-zone");
   const zone = useAppStore(selectActiveZone);
 
@@ -440,8 +449,8 @@ export function ZonePanel() {
             type="button"
             className={cx(hud.button, styles.small)}
             onClick={startDrawing}
-            disabled={config.useMock}
-            title={config.useMock ? NEEDS_SERVER : undefined}
+            disabled={demoOn}
+            title={demoOn ? NEEDS_SERVER : undefined}
           >
             New zone
           </button>

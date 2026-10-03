@@ -4,13 +4,15 @@ import { useEventSource } from "./data/useEventSource";
 import { Globe } from "./globe/Globe";
 import { GlobeLayers } from "./globe/GlobeLayers";
 import { useOpeningFlight } from "./globe/useOpeningFlight";
+import { useSiteTour } from "./globe/useSiteTour";
 import { useHotkeys } from "./hooks/useHotkeys";
 import { AgentPanel } from "./hud/AgentPanel";
 import credits from "./hud/Attribution.module.css";
-import { BottomDock } from "./hud/BottomDock";
+import { BottomDock, DemoBar } from "./hud/BottomDock";
 import { CursorReadout } from "./hud/CursorReadout";
 import { DroneInspector } from "./hud/DroneInspector";
 import { LayersPanel } from "./hud/LayersPanel";
+import { ReportPanel } from "./hud/ReportPanel";
 import { MapBadge } from "./hud/MapBadge";
 import { Toasts } from "./hud/Toasts";
 import { TopBar } from "./hud/TopBar";
@@ -21,10 +23,12 @@ export function App() {
   const creditRef = useRef<HTMLDivElement>(null);
   const globeReady = useAppStore((s) => s.viewer !== null);
   const filter = useAppStore((s) => s.filter);
+  const rightPanel = useAppStore((s) => s.rightPanel);
 
   useEventSource();
   useHotkeys();
   useOpeningFlight();
+  useSiteTour();
 
   return (
     <main data-globe-ready={globeReady} data-filter={filter}>
@@ -36,7 +40,7 @@ export function App() {
           <LayersPanel />
           <ZonePanel />
         </div>
-        <AgentPanel />
+        {rightPanel === "report" ? <ReportPanel /> : <AgentPanel />}
         <div className={styles.bottomLeft}>
           <MapBadge />
           <CursorReadout />
@@ -44,6 +48,7 @@ export function App() {
         </div>
         <div className={styles.bottomCenter}>
           <DroneInspector />
+          <DemoBar />
           <BottomDock />
         </div>
       </div>
