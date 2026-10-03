@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#140804" />
+        <title>Ember</title>
+        <link rel="stylesheet" href="/styles.css" />
+    </head>
+    <body>
+        <canvas id="bg" aria-hidden="true"></canvas>
+        <div id="flash" aria-hidden="true"></div>
+        <main id="signup-screen">
+            <h1>Ember</h1>
+            <form id="signup" action="/api/subscribe" method="post">
+                <label>
+                    Phone number
+                    <input
+                        name="phone"
+                        type="tel"
+                        inputmode="tel"
+                        autocomplete="tel"
+                        placeholder="(555) 555-5555"
+                        required
+                        maxlength="20"
+                    />
+                </label>
+                <label>
+                    ZIP code
+                    <input
+                        name="zip"
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="postal-code"
+                        placeholder="10001"
+                        required
+                        maxlength="10"
+                        pattern="[0-9]{5}"
+                    />
+                </label>
+                <div class="hp" aria-hidden="true">
+                    <label>
+                        Website
+                        <input name="website" type="text" tabindex="-1" autocomplete="off" />
+                    </label>
+                </div>
+                <button type="submit">Enter</button>
+                <p id="status" class="error" role="alert"></p>
+            </form>
+        </main>
+        <div id="confirm" class="sheet" hidden>
+            <div class="sheet-backdrop" data-close></div>
+            <div
+                class="sheet-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="confirm-title"
+            >
+                <p id="confirm-title">
+                    Submitted! We'll notice you of natural calamities in your area.
+                </p>
+                <button type="button" id="confirm-close" data-close>Close</button>
+            </div>
+        </div>
+        <script type="module" src="/scene.js"></script>
+        <script src="/app.js"></script>
+    </body>
+</html>
