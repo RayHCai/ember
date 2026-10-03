@@ -15,6 +15,14 @@
   pointer-events: none;
 }
 
+.left {
+  grid-area: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-height: 0;
+}
+
 .bottomLeft {
   grid-area: bottomLeft;
   display: flex;

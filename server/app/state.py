@@ -17,6 +17,7 @@ def approval_id(event: dict) -> str:
 class ConsoleState:
     def __init__(self) -> None:
         self.zones: dict[str, dict] = {}
+        self.zone_maps: dict[str, dict] = {}
         self.edge_plans: dict[str, dict] = {}
         self.drones: dict[str, dict] = {}
         self.surveys: dict[str, dict] = {}
@@ -37,6 +38,8 @@ class ConsoleState:
 
         if kind == "zone":
             self.zones[payload["id"]] = payload
+        elif kind == "zone_map":
+            self.zone_maps[zone_id] = payload
         elif kind == "zone_removed":
             self.forget_zone(zone_id)
         elif kind == "edge_plan":
@@ -67,6 +70,7 @@ class ConsoleState:
 
     def forget_zone(self, zone_id: str) -> None:
         self.zones.pop(zone_id, None)
+        self.zone_maps.pop(zone_id, None)
         self.edge_plans.pop(zone_id, None)
         self.surveys.pop(zone_id, None)
         self.reports.pop(zone_id, None)
@@ -81,6 +85,7 @@ class ConsoleState:
         return {
             "sim": sim,
             "zones": list(self.zones.values()),
+            "zone_maps": self.zone_maps,
             "edge_plans": self.edge_plans,
             "drones": list(self.drones.values()),
             "surveys": self.surveys,

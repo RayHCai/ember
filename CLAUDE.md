@@ -54,8 +54,11 @@ New kinds:
 
 | kind | payload |
 | --- | --- |
+| `sim` | sim_time, speed, paused (zone_id `*`; sent when the clock changes) |
 | `zone` | id, name, polygon `[[lat, lon], ...]`, area_km2 |
-| `edge_plan` | servers `[{id, lat, lon, radius_m, status: "pending" or "deployed"}]`, coverage_pct |
+| `zone_map` | source (`osm`, `cache`, `synthetic`), note, roads, communities, shelters, grid (100 m cells, `in_zone` mask), elevation (`terrain` or `flat`) |
+| `zone_removed` | id |
+| `edge_plan` | servers `[{id, lat, lon, radius_m, status: "pending" or "deployed", near_road}]`, coverage_pct |
 | `drone` | id, lat, lon, alt_m, heading_deg, battery_pct, state (`docked`, `charging`, `transit`, `surveying`, `verifying`, `returning`, `suppressing`), dock_id |
 | `survey` | id, status (`scheduled`, `running`, `complete`), progress_pct, next_at |
 | `capture` | id, survey_id, lat, lon, image_url, kind (`rgb` or `thermal`), simulated |
@@ -103,4 +106,4 @@ Brief: a tactical "god's eye" operator console, like a satellite intelligence UI
 ## Environment keys
 
 - web: `VITE_SERVER_URL`, `VITE_CESIUM_ION_TOKEN`, `VITE_GOOGLE_MAPS_API_KEY`, `VITE_USE_MOCK`
-- server: `ASI1_API_KEY`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `EMBER_SIM_SPEED`, `SPACETIMEDB_URL`, `SPACETIMEDB_DATABASE`, `SPACETIMEDB_TOKEN`
+- server: `ASI1_API_KEY`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `EMBER_SIM_SPEED`, `EMBER_OSM_OFFLINE`, `SPACETIMEDB_URL`, `SPACETIMEDB_DATABASE`, `SPACETIMEDB_TOKEN`

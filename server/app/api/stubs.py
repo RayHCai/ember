@@ -9,21 +9,6 @@ def not_built(what: str) -> HTTPException:
     return HTTPException(501, f"Not built yet: {what}.")
 
 
-@router.post("/zones")
-def create_zone() -> None:
-    raise not_built("zone creation")
-
-
-@router.post("/zones/{zone_id}/edge-plan")
-def edge_plan(zone_id: str) -> None:
-    raise not_built("edge server planning")
-
-
-@router.post("/zones/{zone_id}/edge-servers")
-def deploy_edge_servers(zone_id: str) -> None:
-    raise not_built("edge server deployment")
-
-
 @router.post("/zones/{zone_id}/surveys")
 def run_survey(zone_id: str) -> None:
     raise not_built("surveys")

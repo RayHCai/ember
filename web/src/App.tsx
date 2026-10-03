@@ -2,6 +2,7 @@ import { useRef } from "react";
 import styles from "./App.module.css";
 import { useEventSource } from "./data/useEventSource";
 import { Globe } from "./globe/Globe";
+import { GlobeLayers } from "./globe/GlobeLayers";
 import { useOpeningFlight } from "./globe/useOpeningFlight";
 import { useHotkeys } from "./hooks/useHotkeys";
 import { AgentPanel } from "./hud/AgentPanel";
@@ -12,6 +13,7 @@ import { LayersPanel } from "./hud/LayersPanel";
 import { MapBadge } from "./hud/MapBadge";
 import { Toasts } from "./hud/Toasts";
 import { TopBar } from "./hud/TopBar";
+import { ZonePanel } from "./hud/ZonePanel";
 import { useAppStore } from "./state/store";
 
 export function App() {
@@ -26,9 +28,13 @@ export function App() {
   return (
     <main data-globe-ready={globeReady} data-filter={filter}>
       <Globe creditContainer={creditRef} />
+      <GlobeLayers />
       <div className={styles.hud}>
         <TopBar />
-        <LayersPanel />
+        <div className={styles.left}>
+          <LayersPanel />
+          <ZonePanel />
+        </div>
         <AgentPanel />
         <div className={styles.bottomLeft}>
           <MapBadge />

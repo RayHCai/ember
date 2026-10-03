@@ -1,9 +1,20 @@
 .panel {
-  grid-area: left;
-  align-self: start;
-  max-height: 100%;
+  flex: none;
   display: flex;
   flex-direction: column;
+}
+
+.toggle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  color: var(--text);
 }
 
 .list {
@@ -16,7 +27,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 12px;
+  padding: 5px 12px;
   cursor: pointer;
   user-select: none;
 }

@@ -1,3 +1,4 @@
+import { makeGrid } from "../geo/grid";
 import type {
   Drone,
   EdgePlan,
@@ -8,6 +9,7 @@ import type {
   ReportCell,
   Snapshot,
   Zone,
+  ZoneMap,
 } from "../types/events";
 
 // Sample events of every kind, on a timer, so the UI can be built and tested
@@ -38,6 +40,25 @@ const DOCKS = [
   { id: "edge-3", lat: 34.22, lon: -118.07 },
   { id: "edge-4", lat: 34.222, lon: -118.038 },
 ];
+
+const ZONE_MAP: ZoneMap = {
+  source: "synthetic",
+  note: "Mock data. Roads, places and shelters are made up.",
+  roads: [
+    { id: "mock-r1", kind: "secondary", name: "Mock Ridge Road", points: [[34.248, -118.105], [34.246, -118.07], [34.25, -118.035], [34.244, -118.012]] },
+    { id: "mock-r2", kind: "residential", name: null, points: [[34.2, -118.07], [34.222, -118.068], [34.236, -118.06]] },
+  ],
+  communities: [
+    { id: "mock-c1", name: "Sierra Madre (mock)", lat: 34.198, lon: -118.05, kind: "town", population: 10900 },
+    { id: "mock-c2", name: "Altadena (mock)", lat: 34.205, lon: -118.11, kind: "town", population: 42800 },
+  ],
+  shelters: [
+    { id: "mock-s1", name: "Arcadia High School (mock)", lat: 34.185, lon: -118.04, kind: "school" },
+    { id: "mock-s2", name: "Community hall (mock)", lat: 34.19, lon: -118.1, kind: "community_centre" },
+  ],
+  grid: makeGrid(ZONE.polygon),
+  elevation: "flat",
+};
 
 const EDGE_PLAN: EdgePlan = {
   servers: DOCKS.map((d) => ({ ...d, radius_m: 1500, status: "deployed" as const })),
@@ -134,6 +155,7 @@ export function startMockStream(emit: (event: KnownEvent) => void): () => void {
   const snapshot: Snapshot = {
     sim: { sim_time: simTime(startedAt), speed: SIM_SPEED, paused: false },
     zones: [ZONE],
+    zone_maps: { [ZONE_ID]: ZONE_MAP },
     edge_plans: { [ZONE_ID]: EDGE_PLAN },
     drones: DOCKS.flatMap((_, i) => [drone(i, 0, false), drone(i + DOCKS.length, 0, false)]),
     surveys: {

@@ -3,16 +3,20 @@ import { create } from "zustand";
 import type {
   Capture,
   EdgePlan,
+  EdgeServer,
   EmberEvent,
   Incident,
   KnownEvent,
+  LatLon,
   Notification,
   Report,
+  Shelter,
   SimClockState,
   Snapshot,
   Suppression,
   Survey,
   Zone,
+  ZoneMap,
   Zoned,
 } from "../types/events";
 import { useTelemetry } from "./telemetry";
@@ -27,6 +31,7 @@ export const FILTERS: { id: FilterId; label: string; key: string }[] = [
 ];
 
 export type LayerId =
+  | "places"
   | "edgeServers"
   | "coverage"
   | "drones"
@@ -38,6 +43,7 @@ export type LayerId =
   | "suppression";
 
 export const LAYERS: { id: LayerId; label: string; sim: boolean }[] = [
+  { id: "places", label: "Roads and places", sim: false },
   { id: "edgeServers", label: "Edge servers", sim: false },
   { id: "coverage", label: "Coverage", sim: false },
   { id: "drones", label: "Drones", sim: true },
@@ -50,6 +56,28 @@ export const LAYERS: { id: LayerId; label: string; sim: boolean }[] = [
 ];
 
 export type AgentTab = "log" | "approvals" | "chat";
+
+/** The globe interaction that is active, if any. */
+export type Tool =
+  | { kind: "draw-zone" }
+  | { kind: "edit-edge"; zoneId: string }
+  | { kind: "edit-shelters"; zoneId: string };
+
+export interface EdgeDraft {
+  zoneId: string;
+  servers: EdgeServer[];
+}
+
+/** A zone outline being drawn. */
+export interface ZoneDraft {
+  points: LatLon[];
+  closed: boolean;
+}
+
+export interface ShelterDraft {
+  zoneId: string;
+  shelters: Shelter[];
+}
 
 export type ConnectionState = "mock" | "connecting" | "open" | "reconnecting";
 
@@ -99,8 +127,14 @@ export interface AppState {
   agentTab: AgentTab;
   connection: ConnectionState;
 
+  tool: Tool | null;
+  zoneDraft: ZoneDraft | null;
+  edgeDraft: EdgeDraft | null;
+  shelterDraft: ShelterDraft | null;
+
   sim: SimClock | null;
   zones: Record<string, Zone>;
+  zoneMaps: Record<string, ZoneMap>;
   activeZoneId: string | null;
   edgePlans: Record<string, EdgePlan>;
   surveys: Record<string, Survey>;
@@ -122,6 +156,10 @@ export interface AppState {
   setAgentTab: (tab: AgentTab) => void;
   setConnection: (state: ConnectionState) => void;
   setActiveZone: (id: string | null) => void;
+  setTool: (tool: Tool | null) => void;
+  setZoneDraft: (draft: ZoneDraft | null) => void;
+  setEdgeDraft: (draft: EdgeDraft | null) => void;
+  setShelterDraft: (draft: ShelterDraft | null) => void;
   /** Change the sim clock locally (mock mode has no server to ask). */
   setSimLocal: (change: { speed?: number; paused?: boolean }) => void;
   applyEvent: (event: KnownEvent) => void;
@@ -143,6 +181,7 @@ function snapshotState(s: Snapshot): Partial<AppState> {
   return {
     sim: toSimClock(s.sim),
     zones,
+    zoneMaps: s.zone_maps ?? {},
     edgePlans: s.edge_plans,
     surveys: s.surveys,
     reports: s.reports,
@@ -163,8 +202,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
   agentTab: "log",
   connection: "connecting",
 
+  tool: null,
+  zoneDraft: null,
+  edgeDraft: null,
+  shelterDraft: null,
+
   sim: null,
   zones: {},
+  zoneMaps: {},
   activeZoneId: null,
   edgePlans: {},
   surveys: {},
@@ -185,6 +230,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setAgentTab: (agentTab) => set({ agentTab }),
   setConnection: (connection) => set({ connection }),
   setActiveZone: (activeZoneId) => set({ activeZoneId }),
+  setTool: (tool) => set({ tool }),
+  setZoneDraft: (zoneDraft) => set({ zoneDraft }),
+  setEdgeDraft: (edgeDraft) => set({ edgeDraft }),
+  setShelterDraft: (shelterDraft) => set({ shelterDraft }),
   setSimLocal: (change) =>
     set((s) => {
       if (!s.sim) return {};
@@ -225,9 +274,45 @@ export const useAppStore = create<AppState>()((set, get) => ({
           activeZoneId: s.activeZoneId ?? event.payload.id,
         }));
         return;
-      case "edge_plan":
-        set((s) => ({ edgePlans: { ...s.edgePlans, [event.zone_id]: event.payload } }));
+      case "zone_map":
+        set((s) => ({ zoneMaps: { ...s.zoneMaps, [event.zone_id]: event.payload } }));
         return;
+      case "zone_removed":
+        set((s) => {
+          const id = event.zone_id;
+          const without = <T,>(table: Record<string, T>) => {
+            const next = { ...table };
+            delete next[id];
+            return next;
+          };
+          const zones = without(s.zones);
+          const editing = s.tool && "zoneId" in s.tool && s.tool.zoneId === id;
+          return {
+            zones,
+            zoneMaps: without(s.zoneMaps),
+            edgePlans: without(s.edgePlans),
+            surveys: without(s.surveys),
+            reports: without(s.reports),
+            activeZoneId: s.activeZoneId === id ? (Object.keys(zones)[0] ?? null) : s.activeZoneId,
+            tool: editing ? null : s.tool,
+            edgeDraft: s.edgeDraft?.zoneId === id ? null : s.edgeDraft,
+            shelterDraft: s.shelterDraft?.zoneId === id ? null : s.shelterDraft,
+          };
+        });
+        return;
+      case "edge_plan": {
+        const pending = event.payload.servers.some((srv) => srv.status === "pending");
+        set((s) => ({
+          edgePlans: { ...s.edgePlans, [event.zone_id]: event.payload },
+          // A new suggestion becomes the working copy; a deployment ends editing.
+          edgeDraft: pending
+            ? { zoneId: event.zone_id, servers: event.payload.servers }
+            : s.edgeDraft?.zoneId === event.zone_id
+              ? null
+              : s.edgeDraft,
+        }));
+        return;
+      }
       case "drone":
         useTelemetry.getState().upsert(event.payload);
         return;
@@ -287,3 +372,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
 export function selectActiveZone(s: AppState): Zone | null {
   return s.activeZoneId ? (s.zones[s.activeZoneId] ?? null) : null;
 }
+
+/** Edge servers to show for a zone: the working copy while editing, else the plan. */
+export function selectZoneServers(s: AppState, zoneId: string | null): EdgeServer[] {
+  if (!zoneId) return EMPTY_SERVERS;
+  if (s.edgeDraft?.zoneId === zoneId) return s.edgeDraft.servers;
+  return s.edgePlans[zoneId]?.servers ?? EMPTY_SERVERS;
+}
+
+const EMPTY_SERVERS: EdgeServer[] = [];

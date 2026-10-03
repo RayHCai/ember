@@ -6,11 +6,14 @@ import asyncio
 import logging
 import os
 from collections.abc import Coroutine
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .bus import EventBus
 from .sim.clock import SimClock
 from .state import ConsoleState
+
+if TYPE_CHECKING:
+    from .zones.zone import Zone
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +34,17 @@ class Runtime:
         self.state = ConsoleState()
         self.bus = EventBus(self.clock, self.state)
         self.clock.on_change(lambda sim: self.bus.emit("sim", "*", sim))
+        self.zones: dict[str, Zone] = {}
         self._tasks: set[asyncio.Task] = set()
+
+    def add_zone(self, zone: "Zone") -> None:
+        self.zones[zone.id] = zone
+
+    def remove_zone(self, zone_id: str) -> None:
+        self.zones.pop(zone_id, None)
+
+    def on_servers_deployed(self, zone: "Zone") -> None:
+        """Called after edge servers are deployed (the drone fleet hooks in here)."""
 
     def spawn(self, coro: Coroutine[Any, Any, Any], name: str) -> asyncio.Task:
         """Run a background task and log it if it crashes."""

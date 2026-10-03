@@ -1,4 +1,4 @@
-import { Color, Viewer } from "cesium";
+import { Color, ScreenSpaceEventType, Viewer } from "cesium";
 import { useEffect, useRef, type RefObject } from "react";
 import { appLog } from "../shell";
 import { useAppStore } from "../state/store";
@@ -37,6 +37,9 @@ export function Globe({ creditContainer }: GlobeProps) {
       selectionIndicator: false,
       creditContainer: credits,
     });
+    // Editing tools own clicks. Drop the viewer's own select and double-click zoom.
+    viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);
+    viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
     viewer.scene.backgroundColor = Color.fromCssColorString("#03070a");
     viewer.scene.globe.baseColor = Color.fromCssColorString("#0a1a20");
     setWholeEarthView(viewer, DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon);

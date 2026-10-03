@@ -27,6 +27,58 @@ export interface EdgeServer {
   lon: number;
   radius_m: number;
   status: EdgeServerStatus;
+  /** Within reach of a road for maintenance. Missing for operator-placed servers. */
+  near_road?: boolean;
+}
+
+export interface Road {
+  id: string;
+  kind: string;
+  name: string | null;
+  points: LatLon[];
+}
+
+export interface Community {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  kind: string;
+  population: number | null;
+}
+
+export interface Shelter {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  kind: string;
+}
+
+/** The zone grid: equal lat/lon steps from the south-west corner, row-major. */
+export interface GridInfo {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+  dlat: number;
+  dlon: number;
+  rows: number;
+  cols: number;
+  cell_m: number;
+  /** One "0" or "1" per cell. */
+  in_zone: string;
+}
+
+export interface ZoneMap {
+  /** "osm" (fresh), "cache", or "synthetic" (fallback road grid, SIM). */
+  source: "osm" | "cache" | "synthetic";
+  note: string | null;
+  roads: Road[];
+  communities: Community[];
+  shelters: Shelter[];
+  grid: GridInfo;
+  elevation: "terrain" | "flat";
 }
 
 export interface EdgePlan {
@@ -154,6 +206,7 @@ export interface SimClockState {
 export interface Snapshot {
   sim: SimClockState;
   zones: Zone[];
+  zone_maps: Record<string, ZoneMap>;
   edge_plans: Record<string, EdgePlan>;
   drones: Drone[];
   surveys: Record<string, Survey>;
@@ -170,6 +223,8 @@ export type KnownEvent =
   | EmberEvent<"snapshot", Snapshot>
   | EmberEvent<"sim", SimClockState>
   | EmberEvent<"zone", Zone>
+  | EmberEvent<"zone_map", ZoneMap>
+  | EmberEvent<"zone_removed", { id: string }>
   | EmberEvent<"edge_plan", EdgePlan>
   | EmberEvent<"drone", Drone>
   | EmberEvent<"survey", Survey>
