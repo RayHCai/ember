@@ -1,0 +1,366 @@
+@font-face {
+    font-family: 'Atkinson Hyperlegible';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/atkinson-hyperlegible-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Atkinson Hyperlegible';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/atkinson-hyperlegible-latin-700-normal.woff2') format('woff2');
+}
+
+:root {
+    --ink: #1a1a1a;
+    --line: #d9d9d9;
+    --ember: #e3532b;
+    --ember-press: #c2411c;
+    --paper: #ffffff;
+    color-scheme: light;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    background:
+        radial-gradient(ellipse at 50% 115%, rgba(227, 83, 43, 0.55), transparent 46%), #140804;
+    color: var(--ink);
+}
+
+body {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Atkinson Hyperlegible', 'Avenir Next', 'Segoe UI', sans-serif;
+    font-size: 1.125rem;
+    line-height: 1.45;
+}
+
+#bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+
+#flash {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    pointer-events: none;
+    background: radial-gradient(
+        circle,
+        rgba(255, 196, 110, 0.85),
+        rgba(227, 83, 43, 0.15) 42%,
+        transparent 68%
+    );
+    opacity: 0;
+}
+
+#flash.burst {
+    animation: burst 0.7s ease-out;
+}
+
+main {
+    position: relative;
+    z-index: 1;
+    width: min(26rem, calc(100% - 1.5rem));
+    margin: 1rem auto;
+    padding: 2.2rem 1.3rem 1.6rem;
+    text-align: center;
+}
+
+#signup-screen {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 28px;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.55),
+        0 24px 70px rgba(0, 0, 0, 0.42),
+        0 0 70px rgba(227, 83, 43, 0.28);
+    animation: cardIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+h1 {
+    margin: 0 0 1.5rem;
+    font-size: 3.4rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    background: linear-gradient(105deg, #1a1a1a 15%, #e3532b 42%, #ffc56a 50%, #1a1a1a 78%);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shine 3.2s ease-in-out infinite;
+}
+
+form {
+    display: grid;
+    gap: 1rem;
+}
+
+form > label,
+form > button {
+    animation: rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+form > label:nth-child(1) {
+    animation-delay: 0.12s;
+}
+
+form > label:nth-child(2) {
+    animation-delay: 0.22s;
+}
+
+form > button {
+    animation:
+        rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both,
+        glow 2.2s ease-in-out 0.8s infinite;
+}
+
+label {
+    display: grid;
+    gap: 0.4rem;
+    font-size: 1rem;
+    text-align: center;
+}
+
+input {
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0.75rem 0.9rem;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 1.125rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    transition:
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+input::placeholder {
+    color: #7d97a1;
+}
+
+input:focus {
+    outline: 3px solid var(--ember);
+    outline-offset: 2px;
+    border-color: var(--ember);
+    transform: scale(1.025);
+    box-shadow: 0 10px 28px rgba(227, 83, 43, 0.18);
+}
+
+button {
+    margin-top: 0.35rem;
+    min-height: 3.4rem;
+    border: 0;
+    border-radius: 8px;
+    background: var(--ember);
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    font-size: 1.15rem;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(227, 83, 43, 0.4);
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
+}
+
+button:hover {
+    background: var(--ember-press);
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+button:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+}
+
+button:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.error {
+    margin: 0;
+    color: #8e2a16;
+}
+
+.error:empty {
+    display: none;
+}
+
+.sheet {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+}
+
+.sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.28);
+    animation: fade 0.2s ease;
+}
+
+.sheet-panel {
+    position: relative;
+    width: min(22rem, 100%);
+    max-height: 100dvh;
+    overflow: auto;
+    padding: 1.5rem 1.25rem;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    text-align: center;
+    animation: pop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.7),
+        0 20px 50px rgba(0, 0, 0, 0.35),
+        0 0 48px rgba(227, 83, 43, 0.55);
+}
+
+.sheet-panel p {
+    margin: 0 0 1rem;
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.sheet-panel button {
+    width: 100%;
+}
+
+a {
+    color: var(--ink);
+}
+
+.hp {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+@keyframes cardIn {
+    from {
+        opacity: 0;
+        transform: translateY(28px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes shine {
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes glow {
+    0%,
+    100% {
+        box-shadow: 0 8px 18px rgba(227, 83, 43, 0.35);
+    }
+
+    50% {
+        box-shadow: 0 10px 34px rgba(227, 83, 43, 0.75);
+    }
+}
+
+@keyframes burst {
+    0% {
+        opacity: 0;
+    }
+
+    25% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes fade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes pop {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto;
+    }
+}

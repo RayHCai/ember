@@ -28,6 +28,8 @@ apps/responder/android/
 .DS_Store
 .env
 .env.local
+.dev.vars
+.wrangler/
 
 .idea/
 .vscode/*
