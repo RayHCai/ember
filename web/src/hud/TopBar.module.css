@@ -1,0 +1,160 @@
+.bar {
+  grid-area: top;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  min-height: 46px;
+  padding: 6px 12px;
+}
+
+.left,
+.right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.right {
+  justify-content: flex-end;
+}
+
+.product {
+  font-family: var(--font-hud);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  color: var(--signal);
+}
+
+.rule {
+  width: 1px;
+  height: 22px;
+  background: var(--panel-border);
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.zoneName {
+  overflow: hidden;
+  font-family: var(--font-hud);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.zoneStatus {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.quiet {
+  color: var(--muted);
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.heat {
+  color: var(--heat);
+}
+
+.clock {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.clockTime {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.speed {
+  min-width: 44px;
+  color: var(--signal);
+}
+
+.connection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.dot_open {
+  background: var(--signal);
+  box-shadow: 0 0 8px var(--signal);
+}
+
+.dot_mock {
+  border: 1px solid var(--signal);
+  background: transparent;
+}
+
+.dot_connecting,
+.dot_reconnecting {
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+.filters {
+  display: flex;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.filter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  border: 0;
+  border-right: 1px solid var(--panel-border);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-hud);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.filter:last-child {
+  border-right: 0;
+}
+
+.filter:hover {
+  color: var(--text);
+}
+
+.filterOn {
+  background: var(--signal-dim);
+  color: var(--signal);
+}
+
+.key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  opacity: 0.7;
+}

@@ -1,0 +1,19 @@
+.badge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
+  row-gap: 2px;
+  max-width: 320px;
+  padding: 6px 10px;
+  font-family: var(--font-hud);
+  font-size: 12px;
+}
+
+.reason {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.35;
+}

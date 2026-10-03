@@ -1,0 +1,34 @@
+/* Panels float over the globe. The HUD layer ignores the pointer except on panels. */
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr) 340px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top top top"
+    "left . right"
+    "bottomLeft bottomCenter right";
+  gap: var(--gap);
+  padding: var(--gap);
+  pointer-events: none;
+}
+
+.bottomLeft {
+  grid-area: bottomLeft;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  align-self: end;
+  min-width: 0;
+}
+
+.bottomCenter {
+  grid-area: bottomCenter;
+  display: flex;
+  justify-content: center;
+  align-self: end;
+  min-width: 0;
+}

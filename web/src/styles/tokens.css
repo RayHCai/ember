@@ -2,10 +2,19 @@
 :root {
   --void: #03070a;
   --panel: rgba(6, 18, 22, 0.78);
+  --panel-solid: rgba(6, 18, 22, 0.92);
   --panel-border: #123540;
   --signal: #3fe0ff;
+  --signal-dim: rgba(63, 224, 255, 0.16);
   --text: #e3f6fb;
   --muted: #6e8d96;
   --warn: #ffb020;
   --heat: #ff3b2f;
+
+  --font-hud: "Chakra Petch", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --gap: 12px;
+  --radius: 4px;
 }

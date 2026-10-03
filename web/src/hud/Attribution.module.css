@@ -1,0 +1,50 @@
+/* Cesium renders its CreditDisplay into this box. Restyle its classes to match the HUD. */
+.credits {
+  pointer-events: auto;
+  max-width: 420px;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  background: rgba(3, 7, 10, 0.72);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.credits:empty {
+  display: none;
+}
+
+/* Cesium positions its credit block absolutely; keep it inside this box. */
+.credits :global(.cesium-widget-credits) {
+  position: static;
+  display: inline;
+  padding: 0;
+  color: var(--muted);
+  text-shadow: none;
+}
+
+.credits :global(.cesium-credit-logoContainer) {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.credits :global(.cesium-credit-logoContainer img) {
+  max-height: 16px;
+  vertical-align: middle;
+}
+
+.credits :global(.cesium-credit-textContainer) {
+  display: inline;
+}
+
+.credits :global(.cesium-credit-expand-link) {
+  margin-left: 6px;
+  color: var(--signal);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.credits a {
+  color: var(--text);
+}

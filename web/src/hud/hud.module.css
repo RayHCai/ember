@@ -1,0 +1,161 @@
+/* Shared HUD building blocks. Components compose these with their own modules. */
+
+.panel {
+  position: relative;
+  pointer-events: auto;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(12px) saturate(1.15);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  color: var(--text);
+}
+
+/* Corner ticks: instrument chrome in signal color. */
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  border-radius: var(--radius);
+  opacity: 0.75;
+  background:
+    linear-gradient(var(--signal), var(--signal)) top left / 9px 1px no-repeat,
+    linear-gradient(var(--signal), var(--signal)) top left / 1px 9px no-repeat,
+    linear-gradient(var(--signal), var(--signal)) bottom right / 9px 1px no-repeat,
+    linear-gradient(var(--signal), var(--signal)) bottom right / 1px 9px no-repeat;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-hud);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.label {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.simTag {
+  display: inline-block;
+  padding: 0 4px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 14px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: rgba(63, 224, 255, 0.04);
+  color: var(--text);
+  font-family: var(--font-hud);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 120ms, background 120ms;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--signal);
+  background: var(--signal-dim);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.primary {
+  border-color: var(--signal);
+  background: var(--signal-dim);
+  color: var(--signal);
+}
+
+.danger {
+  border-color: var(--heat);
+  background: rgba(255, 59, 47, 0.14);
+  color: #ffd9d6;
+}
+
+.danger:hover:not(:disabled) {
+  border-color: var(--heat);
+  background: rgba(255, 59, 47, 0.26);
+}
+
+.input {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: rgba(3, 7, 10, 0.6);
+  color: var(--text);
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--signal);
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+.empty {
+  padding: 18px 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.empty strong {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-hud);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-border) transparent;
+}
