@@ -1,0 +1,11 @@
+/* Design tokens from CLAUDE.md. Warn and heat mean danger only. */
+:root {
+  --void: #03070a;
+  --panel: rgba(6, 18, 22, 0.78);
+  --panel-border: #123540;
+  --signal: #3fe0ff;
+  --text: #e3f6fb;
+  --muted: #6e8d96;
+  --warn: #ffb020;
+  --heat: #ff3b2f;
+}
