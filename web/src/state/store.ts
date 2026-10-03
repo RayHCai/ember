@@ -419,7 +419,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
         }));
         return;
       case "incident":
-        set((s) => ({ incidents: { ...s.incidents, [event.payload.id]: zoned(event) } }));
+        set((s) => {
+          const isNew = !s.incidents[event.payload.id];
+          const here = event.zone_id === s.activeZoneId;
+          return {
+            incidents: { ...s.incidents, [event.payload.id]: zoned(event) },
+            // A new fire outranks the report: bring the agent panel (alerts,
+            // approvals) forward and end the site tour.
+            ...(isNew && here ? { rightPanel: "agent" as const, selectedSiteId: null } : {}),
+          };
+        });
         return;
       case "notification":
         set((s) => ({

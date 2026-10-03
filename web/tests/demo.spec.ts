@@ -40,7 +40,8 @@ test("the demo plays the whole story", async ({ page }) => {
   await stepTo(page, "Hotspot found");
   const card = page.getByTestId("incident-card");
   await expect(card).toContainText("Possible fire");
-  await page.getByRole("button", { name: "Back to agent" }).click();
+  // A new fire brings the agent panel forward on its own.
+  await expect(page.getByRole("region", { name: "Agent" })).toBeVisible();
   await page.getByRole("tab", { name: /Approvals/ }).click();
   const approval = page.getByTestId("approval-card");
   await expect(approval).toContainText("not yet confirmed by a drone");

@@ -82,6 +82,7 @@ export function CursorReadout() {
       <span ref={mgrsRef} className={hud.mono}>--</span>
       <span className={hud.label}>Camera</span>
       <span ref={altRef} className={hud.mono}>--</span>
+      <span className={styles.hint}>Press ? for shortcuts</span>
     </div>
   );
 }

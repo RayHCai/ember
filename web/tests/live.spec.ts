@@ -12,6 +12,10 @@ test("connects to the server, ticks sim time, and reconnects after a restart", a
     const connection = (label: string) => page.getByText(label, { exact: true });
     await expect(connection("Live")).toBeVisible({ timeout: 15_000 });
 
+    await expect(page.getByText("No watch zone yet").first()).toBeVisible();
+    await page.waitForTimeout(3000);
+    await page.screenshot({ path: "../out/qa-empty.png" });
+
     const simTime = page.getByTestId("sim-time");
     const first = await simTime.textContent();
     await expect(simTime).not.toHaveText(first ?? "", { timeout: 5000 });

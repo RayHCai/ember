@@ -14,6 +14,7 @@ import { DroneInspector } from "./hud/DroneInspector";
 import { IncidentCard } from "./hud/IncidentCard";
 import { LayersPanel } from "./hud/LayersPanel";
 import { ReportPanel } from "./hud/ReportPanel";
+import { ShortcutsOverlay } from "./hud/ShortcutsOverlay";
 import { SuppressionBanner } from "./hud/SuppressionBanner";
 import { MapBadge } from "./hud/MapBadge";
 import { PanelBoundary } from "./hud/PanelBoundary";
@@ -76,6 +77,7 @@ export function App() {
           </PanelBoundary>
         </div>
       </div>
+      <ShortcutsOverlay />
     </main>
   );
 }

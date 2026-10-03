@@ -1,0 +1,57 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 7, 10, 0.45);
+  pointer-events: auto;
+}
+
+.panel {
+  width: min(460px, calc(100vw - 32px));
+  background: var(--panel-solid);
+}
+
+.close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.list {
+  margin: 0;
+  padding: 8px 12px 14px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(18, 53, 64, 0.5);
+}
+
+.row dt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.row dd {
+  margin: 0;
+  line-height: 1.4;
+}
+
+kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--panel-border);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: rgba(3, 7, 10, 0.6);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
