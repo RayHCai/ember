@@ -1,0 +1,19 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Civilian {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// E.164, e.g. +15551234567.
+  phone     String   @unique
+  zipCode   String   @map("zip_code")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("civilians")
+}

@@ -4,13 +4,23 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "dev": "node --watch --experimental-strip-types src/main.ts",
-        "build": "tsc -p tsconfig.json",
-        "typecheck": "tsc -p tsconfig.json --noEmit",
-        "test": "vitest run --passWithNoTests"
+        "dev": "tsx watch src/main.ts",
+        "build": "prisma generate && tsc -p tsconfig.json",
+        "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
+        "test": "prisma generate && vitest run",
+        "db:migrate": "prisma migrate dev",
+        "db:deploy": "prisma migrate deploy",
+        "db:generate": "prisma generate"
     },
     "dependencies": {
         "@ember/contracts": "workspace:*",
+        "@prisma/adapter-pg": "^7.10.0",
+        "@prisma/client": "^7.10.0",
+        "dotenv": "^18.0.5",
         "fastify": "^5.6.0"
+    },
+    "devDependencies": {
+        "prisma": "^7.10.0",
+        "tsx": "^4.23.15"
     }
 }

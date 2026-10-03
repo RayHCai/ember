@@ -36,12 +36,13 @@ world and sensor frames from Demo Data.
       need a rule for which footprints take a model and which stay extruded.
 - [ ] `services/drone-info`: serve `/v1/stream` per droneInfo.ts from edge-manager's aggregated
       telemetry; then set its URL in the sim and delete `dummy.ts` and `dummyTracks.ts`
-- [ ] Drone path to drone-info (drone-runtime -> edge-connector -> edge-manager -> drone-info): a
-      publisher in drone-runtime that speaks the edge-connector protocol
+- [ ] Drone path to drone-info (drone-runtime -> edge-connector -> edge-manager -> drone-info). The
+      drone side speaks the edge link (`droneLink.ts`, 0004); edge-connector and edge-manager do not
+      serve it yet
 - [ ] Run the desktop window (`pnpm --filter @ember/sim app`) on the demo laptop. It compiles and
       the UI was checked in Chrome, not yet as a Tauri window.
-- [ ] YOLO detector in drone-runtime behind the same `Detector` protocol; the `truth` detector and
-      Demo Data labels are the training and scoring data
+- [ ] YOLO weights for drone-runtime's `YoloDetector` (0004); Demo Data's `truth=true` labels are
+      training and scoring data
 - [ ] Terrain: Demo Data and the sim both assume flat ground; a DEM (e.g. USGS 3DEP) would add the
       West Maui hills, and the camera model would need it too
 

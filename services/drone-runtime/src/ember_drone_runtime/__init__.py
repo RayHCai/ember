@@ -1,1 +1,1 @@
-"""Drone runtime: pathing, swarm goals, YOLO risk classification, edge-connector WS client."""
+"""Drone runtime: swarm mapping flight, camera capture, risk detection, edge link."""

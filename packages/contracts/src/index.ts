@@ -1,5 +1,7 @@
 export type { LatLng, RiskLevel } from './common.js';
 export * from './droneInfo.js';
+export * from './droneLink.js';
+export type { Civilian, CreateCivilianRequest } from './civilian.js';
 
 /** Every service answers this path for liveness. */
 export const SERVICE_HEALTH_PATH = '/healthz';

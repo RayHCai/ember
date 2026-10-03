@@ -20,7 +20,7 @@ Read only what the task touches. Do not preload the whole `docs/` tree.
 
 ```
 apps/        dashboard (Tauri), responder (Expo), civilian-map (web), drone-sim (Tauri)
-services/    api, drone-info, messenger, civilian-agent, voice-agent, operator-agent  (Fastify, TS)
+services/    api, drone-info, messenger, voice-agent, operator-agent  (Fastify, TS)
              edge-manager, edge-connector                                            (Go, one root module)
              planner, drone-runtime                                                  (Python, uv workspace)
 packages/    contracts (shared TS types)

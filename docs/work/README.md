@@ -18,3 +18,4 @@ decisions and status live, so design docs can stay present-tense.
 | 0001 | Repository foundation | done        |
 | 0002 | Drone view sim        | in-progress |
 | 0003 | Sim drone sight       | in-progress |
+| 0004 | Drone runtime core    | in-progress |

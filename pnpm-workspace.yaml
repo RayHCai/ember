@@ -12,3 +12,5 @@ verifyDepsBeforeRun: false
 allowBuilds:
     lefthook: true
     esbuild: true
+    '@prisma/engines': true
+    prisma: true

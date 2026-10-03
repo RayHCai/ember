@@ -47,7 +47,6 @@ Operator Agent:
 - Chat/voice copilot inside the operator dashboard. Takes natural-language commands and calls the same API actions the UI does: “run a scan on Zone 3 now”, “show coverage gaps”, “run the civilian + responder planners”, “text everyone within 2 mi of the north fire to evacuate via Route 9”
 - Summarizes state: active incidents, drone/server health, civilian check-in status, unread civilian reports
 - Drafts event blasts and responder messages; operator approves before anything is sent to civilians (human-in-the-loop for outbound alerts)
-- Coordinates with the Civilian Agent (shared incident context), so operator updates are reflected immediately in civilian conversations
 
 The Responder viewer and the civilian map page should look as similar to the operator map as possible.
 
@@ -55,10 +54,10 @@ The Responder viewer and the civilian map page should look as similar to the ope
 
 | Track | How Ember uses it |
 | --- | --- |
-| Photon – Agents in iMessage | Civilian Agent runs on iMessage through Photon's Spectrum framework: persistent per-civilian context, proactive alerts, two-way Q&A, photo-based fire reports |
-| Relay – Interactive Agents | Civilian Agent also available in the Relay app (text, call, video chat): text for alerts, call for the voice agent, video to show the fire/smoke to the agent |
+| Photon – Agents in iMessage | Operator Agent runs on iMessage through Photon's Spectrum framework: persistent per-civilian context, proactive alerts, two-way Q&A, photo-based fire reports |
+| Relay – Interactive Agents | Operator Agent also available in the Relay app (text, call, video chat): text for alerts, call for the voice agent, video to show the fire/smoke to the agent |
 | ElevenLabs | Voice for the outbound emergency calls and inbound hotline (Conversational AI + TTS), plus the Operator Agent's voice mode |
-| FetchAI – ASI:One Agent Challenge | Civilian and Operator agents registered as uAgents, discoverable through ASI:One (“is there a wildfire risk near me?”). Agents coordinate with each other and take real actions (subscribe, report, trigger planners, send blasts) |
+| FetchAI – ASI:One Agent Challenge | Operator agent registered as a uAgent, discoverable through ASI:One (“is there a wildfire risk near me?”). It takes real actions (subscribe, report, trigger planners, send blasts) |
 | MHacks – Actually Intelligent (AI) / Sustainability | Agents act on live drone + planner data instead of being a chatbot wrapper; wildfire prevention and evacuation |
 
 ---
@@ -130,21 +129,14 @@ The Responder viewer and the civilian map page should look as similar to the ope
 - Messenger
     - Fastify (TS)
     - Operator → responder 1-N messaging + event blasts
-    - Routes civilian-facing blasts to the Civilian Agent
-- Civilian Agent (SMS / iMessage)
-    - Fastify (TS)
-    - Channels: iMessage via Photon Spectrum, Relay app (text/call/video), SMS fallback
-    - LLM with tool calls into the API: lookup nearest watch site, get risk at a location, get evacuation route, submit sighting report, record check-in
-    - Per-civilian memory (location, household notes, conversation history) stored in the DB
-    - Also exposed as a FetchAI uAgent so it is discoverable on ASI:One
+    - Routes civilian-facing blasts to the Voice Agent
 - Voice Agent
     - Fastify (TS)
     - ElevenLabs Conversational AI for outbound emergency calls + inbound hotline
-    - Shares tools + memory with the Civilian Agent; escalates to voice when severity is high or texts go unanswered
+    - Escalates to voice when severity is high or texts go unanswered
 - Operator Agent
     - Fastify (TS) service, chat + voice panel in the Tauri dashboard
     - Tool calls: start/stop scans, run planners, query coverage/health, draft + send event blasts (needs operator approval), summarize incidents and civilian check-ins
-    - Talks to the Civilian Agent through shared incident context (and agent-to-agent messages on Fetch.ai)
 - Civilian Map Page
     - Lightweight read-only web page linked from texts (risk zones, predicted spread, evacuation path). Not an app
 - Demo Data

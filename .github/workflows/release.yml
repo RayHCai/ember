@@ -34,7 +34,6 @@ jobs:
                     - api
                     - drone-info
                     - messenger
-                    - civilian-agent
                     - voice-agent
                     - operator-agent
                     - edge-manager
