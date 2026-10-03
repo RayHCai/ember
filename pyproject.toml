@@ -1,0 +1,32 @@
+[project]
+name = "ember-workspace"
+version = "0.0.0"
+requires-python = ">=3.12"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+  "services/planner",
+  "services/drone-runtime",
+  "tools/asset-builder",
+  "tools/demo-data",
+]
+
+[dependency-groups]
+dev = ["ruff>=0.13", "mypy>=1.18", "pytest>=8.4"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "-q"

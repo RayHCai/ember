@@ -1,0 +1,10 @@
+[project]
+name = "ember-planner"
+version = "0.0.0"
+description = "Celery planner: orchestrator watches the Redis queue, workers run civilian and incident path planning."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,17 @@
+[package]
+name = "ember-drone-sim"
+version = "0.0.0"
+description = "Ember Drone Sim desktop shell: hosts the 3D drone view"
+edition = "2021"
+publish = false
+
+[lib]
+name = "ember_drone_sim_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde_json = "1"
+tauri = { version = "2.12", features = [] }

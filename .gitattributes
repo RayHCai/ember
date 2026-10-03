@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.sh text eol=lf
+compose.yaml text eol=lf
+Dockerfile text eol=lf
+*.png binary
+*.glb binary
+*.jpg binary
+*.pt binary
+*.onnx binary

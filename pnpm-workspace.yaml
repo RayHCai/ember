@@ -1,0 +1,14 @@
+packages:
+    - apps/*
+    - services/*
+    - packages/*
+    - tools/*
+
+# Three days, so a compromised publish is never taken the day it lands.
+minimumReleaseAge: 4320
+autoInstallPeers: true
+verifyDepsBeforeRun: false
+
+allowBuilds:
+    lefthook: true
+    esbuild: true

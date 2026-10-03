@@ -1,0 +1,47 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "ui": "stream",
+    "globalDependencies": ["tsconfig.base.json", "scripts/*.mjs", "go.mod", "pyproject.toml"],
+    // Hashed: a cached pass produced by a toolchain skip must not replay where the toolchain is required.
+    "globalEnv": ["EMBER_REQUIRE_TOOLCHAIN"],
+    "globalPassThroughEnv": [
+        "HOME",
+        "USERPROFILE",
+        "LOCALAPPDATA",
+        "APPDATA",
+        "XDG_CACHE_HOME",
+        "GOCACHE",
+        "GOMODCACHE",
+        "GOPATH",
+        "GOFLAGS",
+        "GOPROXY",
+        "GOTOOLCHAIN",
+        "CARGO_HOME",
+        "RUSTUP_HOME",
+        "UV_CACHE_DIR",
+        "UV_PYTHON"
+    ],
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build"],
+            "inputs": ["src/**", "tsconfig*.json", "package.json"],
+            "outputs": ["dist/**"]
+        },
+        "typecheck": {
+            "dependsOn": ["^build"],
+            "outputs": []
+        },
+        "lint": {
+            "outputs": []
+        },
+        "format:check": {
+            "outputs": []
+        },
+        "test": {
+            "dependsOn": ["^build"],
+            "outputs": []
+        },
+        "clean": { "cache": false },
+        "dev": { "cache": false, "persistent": true }
+    }
+}

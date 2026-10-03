@@ -1,0 +1,11 @@
+{
+    "name": "@ember/planner",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "lint": "node ../../scripts/uv.mjs run --package ember-planner ruff check .",
+        "format:check": "node ../../scripts/uv.mjs run --package ember-planner ruff format --check .",
+        "typecheck": "node ../../scripts/uv.mjs run --package ember-planner mypy src",
+        "test": "node ../../scripts/uv.mjs run --package ember-planner pytest"
+    }
+}

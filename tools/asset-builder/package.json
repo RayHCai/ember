@@ -1,0 +1,11 @@
+{
+    "name": "@ember/asset-builder",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "lint": "node ../../scripts/uv.mjs run --package ember-asset-builder ruff check .",
+        "format:check": "node ../../scripts/uv.mjs run --package ember-asset-builder ruff format --check .",
+        "typecheck": "node ../../scripts/uv.mjs run --package ember-asset-builder mypy src",
+        "test": "node ../../scripts/uv.mjs run --package ember-asset-builder pytest"
+    }
+}

@@ -1,0 +1,113 @@
+html,
+body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #fff;
+}
+
+canvas#view {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    touch-action: none;
+}
+
+/* Only shown while something blocks the view: loading, connecting, waiting, errors. */
+#status {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    max-width: calc(100vw - 32px);
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: rgb(20 22 26 / 0.82);
+    color: #f2f2f2;
+    font:
+        12px/1.5 ui-monospace,
+        Consolas,
+        monospace;
+    white-space: pre-wrap;
+    pointer-events: none;
+}
+
+#status:empty,
+#status[hidden] {
+    display: none;
+}
+
+/* Start screen: one field for the drone to connect to. */
+form#connect {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #fff;
+    color: #000;
+    font:
+        14px/1.4 ui-sans-serif,
+        system-ui,
+        sans-serif;
+}
+
+form#connect[hidden] {
+    display: none;
+}
+
+form#connect img {
+    margin-bottom: 8px;
+}
+
+form#connect label {
+    font-weight: 600;
+}
+
+form#connect input {
+    width: min(320px, calc(100vw - 32px));
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1.5px solid #000;
+    border-radius: 6px;
+    font:
+        14px/1.4 ui-monospace,
+        Consolas,
+        monospace;
+    color: #000;
+    background: #fff;
+    outline: none;
+}
+
+form#connect input:focus {
+    box-shadow: 0 0 0 3px rgb(0 0 0 / 0.15);
+}
+
+form#connect button {
+    padding: 8px 20px;
+    border: 0;
+    border-radius: 6px;
+    background: #000;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+form#connect button.secondary {
+    background: #fff;
+    color: #000;
+    border: 1.5px solid #000;
+}
+
+form#connect button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+form#connect button:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+}

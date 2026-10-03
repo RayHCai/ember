@@ -1,0 +1,745 @@
+{
+    "generator": "ember-asset-builder",
+    "assets": {
+        "drone/quadcopter": {
+            "file": "drone/quadcopter.glb",
+            "triangles": 1420,
+            "min": [
+                -0.442,
+                -0.173,
+                -0.442
+            ],
+            "max": [
+                0.442,
+                0.098,
+                0.422
+            ],
+            "materials": [
+                "accent",
+                "carbon",
+                "glass",
+                "housing",
+                "led_front",
+                "led_rear",
+                "motor",
+                "rotor_blur",
+                "shell"
+            ],
+            "nodes": [
+                "quadcopter",
+                "propeller_front_left",
+                "rotor_blur_front_left",
+                "propeller_front_right",
+                "rotor_blur_front_right",
+                "propeller_rear_left",
+                "rotor_blur_rear_left",
+                "propeller_rear_right",
+                "rotor_blur_rear_right",
+                "gimbal"
+            ],
+            "spanM": 0.884,
+            "propRadiusM": 0.192
+        },
+        "trees/broadleaf_a": {
+            "file": "trees/broadleaf_a.glb",
+            "triangles": 498,
+            "min": [
+                -4.042,
+                -0.038,
+                -3.809
+            ],
+            "max": [
+                4.307,
+                8.82,
+                3.849
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "broadleaf"
+            ],
+            "heightM": 8.82,
+            "crownRadiusM": 4.33
+        },
+        "trees/broadleaf_a_lod1": {
+            "file": "trees/broadleaf_a_lod1.glb",
+            "triangles": 140,
+            "min": [
+                -3.329,
+                -0.045,
+                -3.632
+            ],
+            "max": [
+                3.974,
+                8.691,
+                3.518
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "broadleaf"
+            ],
+            "heightM": 8.69,
+            "crownRadiusM": 4.17
+        },
+        "trees/broadleaf_b": {
+            "file": "trees/broadleaf_b.glb",
+            "triangles": 498,
+            "min": [
+                -4.326,
+                -0.056,
+                -4.549
+            ],
+            "max": [
+                3.979,
+                9.877,
+                3.441
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "broadleaf"
+            ],
+            "heightM": 9.88,
+            "crownRadiusM": 4.66
+        },
+        "trees/broadleaf_b_lod1": {
+            "file": "trees/broadleaf_b_lod1.glb",
+            "triangles": 140,
+            "min": [
+                -3.78,
+                -0.075,
+                -3.998
+            ],
+            "max": [
+                2.935,
+                9.701,
+                3.223
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "broadleaf"
+            ],
+            "heightM": 9.7,
+            "crownRadiusM": 4.27
+        },
+        "trees/conifer_a": {
+            "file": "trees/conifer_a.glb",
+            "triangles": 304,
+            "min": [
+                -2.582,
+                0.0,
+                -2.64
+            ],
+            "max": [
+                2.465,
+                11.269,
+                2.503
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "conifer"
+            ],
+            "heightM": 11.27,
+            "crownRadiusM": 2.71
+        },
+        "trees/conifer_a_lod1": {
+            "file": "trees/conifer_a_lod1.glb",
+            "triangles": 80,
+            "min": [
+                -2.582,
+                0.0,
+                -2.537
+            ],
+            "max": [
+                2.234,
+                11.269,
+                2.48
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "conifer"
+            ],
+            "heightM": 11.27,
+            "crownRadiusM": 2.71
+        },
+        "trees/conifer_b": {
+            "file": "trees/conifer_b.glb",
+            "triangles": 304,
+            "min": [
+                -2.644,
+                0.0,
+                -2.596
+            ],
+            "max": [
+                2.559,
+                12.912,
+                2.58
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "conifer"
+            ],
+            "heightM": 12.91,
+            "crownRadiusM": 2.8
+        },
+        "trees/conifer_b_lod1": {
+            "file": "trees/conifer_b_lod1.glb",
+            "triangles": 80,
+            "min": [
+                -2.557,
+                0.0,
+                -2.391
+            ],
+            "max": [
+                2.518,
+                12.912,
+                2.579
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "conifer"
+            ],
+            "heightM": 12.91,
+            "crownRadiusM": 2.81
+        },
+        "trees/palm_a": {
+            "file": "trees/palm_a.glb",
+            "triangles": 600,
+            "min": [
+                -3.181,
+                -0.008,
+                -4.662
+            ],
+            "max": [
+                3.534,
+                10.659,
+                2.953
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "palm"
+            ],
+            "heightM": 10.66,
+            "crownRadiusM": 4.67
+        },
+        "trees/palm_a_lod1": {
+            "file": "trees/palm_a_lod1.glb",
+            "triangles": 110,
+            "min": [
+                -2.934,
+                -0.007,
+                -4.32
+            ],
+            "max": [
+                3.21,
+                10.662,
+                2.128
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "palm"
+            ],
+            "heightM": 10.66,
+            "crownRadiusM": 4.38
+        },
+        "trees/palm_b": {
+            "file": "trees/palm_b.glb",
+            "triangles": 600,
+            "min": [
+                -2.538,
+                -0.006,
+                -3.256
+            ],
+            "max": [
+                3.751,
+                12.414,
+                3.753
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "palm"
+            ],
+            "heightM": 12.41,
+            "crownRadiusM": 4.28
+        },
+        "trees/palm_b_lod1": {
+            "file": "trees/palm_b_lod1.glb",
+            "triangles": 110,
+            "min": [
+                -2.511,
+                -0.004,
+                -3.118
+            ],
+            "max": [
+                3.407,
+                12.346,
+                3.289
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "palm"
+            ],
+            "heightM": 12.35,
+            "crownRadiusM": 4.32
+        },
+        "trees/umbrella_a": {
+            "file": "trees/umbrella_a.glb",
+            "triangles": 608,
+            "min": [
+                -7.107,
+                -0.065,
+                -7.455
+            ],
+            "max": [
+                8.134,
+                9.263,
+                7.391
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "umbrella"
+            ],
+            "heightM": 9.26,
+            "crownRadiusM": 8.27
+        },
+        "trees/umbrella_a_lod1": {
+            "file": "trees/umbrella_a_lod1.glb",
+            "triangles": 124,
+            "min": [
+                -8.034,
+                -0.058,
+                -7.738
+            ],
+            "max": [
+                8.473,
+                9.194,
+                7.848
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "umbrella"
+            ],
+            "heightM": 9.19,
+            "crownRadiusM": 8.75
+        },
+        "trees/umbrella_b": {
+            "file": "trees/umbrella_b.glb",
+            "triangles": 608,
+            "min": [
+                -7.847,
+                -0.09,
+                -8.163
+            ],
+            "max": [
+                7.97,
+                10.784,
+                7.161
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "umbrella"
+            ],
+            "heightM": 10.78,
+            "crownRadiusM": 8.53
+        },
+        "trees/umbrella_b_lod1": {
+            "file": "trees/umbrella_b_lod1.glb",
+            "triangles": 124,
+            "min": [
+                -7.181,
+                -0.093,
+                -8.274
+            ],
+            "max": [
+                7.527,
+                10.687,
+                8.126
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "umbrella"
+            ],
+            "heightM": 10.69,
+            "crownRadiusM": 8.9
+        },
+        "trees/shrub_a": {
+            "file": "trees/shrub_a.glb",
+            "triangles": 256,
+            "min": [
+                -1.328,
+                0.0,
+                -1.144
+            ],
+            "max": [
+                1.45,
+                1.466,
+                1.517
+            ],
+            "materials": [
+                "foliage"
+            ],
+            "nodes": [
+                "shrub"
+            ],
+            "heightM": 1.47,
+            "crownRadiusM": 1.54
+        },
+        "trees/shrub_a_lod1": {
+            "file": "trees/shrub_a_lod1.glb",
+            "triangles": 88,
+            "min": [
+                -0.948,
+                0.0,
+                -1.144
+            ],
+            "max": [
+                1.272,
+                1.466,
+                1.042
+            ],
+            "materials": [
+                "foliage"
+            ],
+            "nodes": [
+                "shrub"
+            ],
+            "heightM": 1.47,
+            "crownRadiusM": 1.48
+        },
+        "trees/shrub_b": {
+            "file": "trees/shrub_b.glb",
+            "triangles": 257,
+            "min": [
+                -1.385,
+                0.0,
+                -1.459
+            ],
+            "max": [
+                1.215,
+                1.846,
+                1.233
+            ],
+            "materials": [
+                "foliage"
+            ],
+            "nodes": [
+                "shrub"
+            ],
+            "heightM": 1.85,
+            "crownRadiusM": 1.51
+        },
+        "trees/shrub_b_lod1": {
+            "file": "trees/shrub_b_lod1.glb",
+            "triangles": 86,
+            "min": [
+                -0.975,
+                0.0,
+                -1.493
+            ],
+            "max": [
+                1.207,
+                1.846,
+                1.112
+            ],
+            "materials": [
+                "foliage"
+            ],
+            "nodes": [
+                "shrub"
+            ],
+            "heightM": 1.85,
+            "crownRadiusM": 1.5
+        },
+        "buildings/house_gable": {
+            "file": "buildings/house_gable.glb",
+            "triangles": 702,
+            "min": [
+                -5.93,
+                0.0,
+                -4.35
+            ],
+            "max": [
+                5.93,
+                5.263,
+                6.345
+            ],
+            "materials": [
+                "door",
+                "foundation",
+                "glass",
+                "metal",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house_gable"
+            ],
+            "lengthM": 11.0,
+            "widthM": 7.6,
+            "eaveHeightM": 3.2,
+            "ridgeHeightM": 5.19
+        },
+        "buildings/house_hip": {
+            "file": "buildings/house_hip.glb",
+            "triangles": 556,
+            "min": [
+                -5.4,
+                0.0,
+                -4.6
+            ],
+            "max": [
+                8.2,
+                5.311,
+                5.7
+            ],
+            "materials": [
+                "door",
+                "foundation",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house_hip"
+            ],
+            "lengthM": 9.6,
+            "widthM": 8.0,
+            "eaveHeightM": 3.2,
+            "ridgeHeightM": 5.31
+        },
+        "buildings/shop": {
+            "file": "buildings/shop.glb",
+            "triangles": 1120,
+            "min": [
+                -6.15,
+                0.0,
+                -4.65
+            ],
+            "max": [
+                6.15,
+                8.6,
+                7.1
+            ],
+            "materials": [
+                "door",
+                "foundation",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "shop"
+            ],
+            "lengthM": 12.0,
+            "widthM": 9.0,
+            "heightM": 6.6
+        },
+        "buildings/ruin": {
+            "file": "buildings/ruin.glb",
+            "triangles": 520,
+            "min": [
+                -5.62,
+                0.0,
+                -3.81
+            ],
+            "max": [
+                5.594,
+                2.454,
+                3.81
+            ],
+            "materials": [
+                "ash",
+                "char",
+                "rust"
+            ],
+            "nodes": [
+                "ruin"
+            ],
+            "lengthM": 11.0,
+            "widthM": 7.6
+        },
+        "fx/flame_a": {
+            "file": "fx/flame_a.glb",
+            "triangles": 272,
+            "min": [
+                -0.314,
+                0.0,
+                -0.239
+            ],
+            "max": [
+                0.302,
+                1.0,
+                0.324
+            ],
+            "materials": [
+                "flame"
+            ],
+            "nodes": [
+                "flame"
+            ],
+            "heightM": 1.0,
+            "widthM": 0.66
+        },
+        "fx/flame_b": {
+            "file": "fx/flame_b.glb",
+            "triangles": 388,
+            "min": [
+                -0.473,
+                0.0,
+                -0.513
+            ],
+            "max": [
+                0.463,
+                1.0,
+                0.493
+            ],
+            "materials": [
+                "flame"
+            ],
+            "nodes": [
+                "flame"
+            ],
+            "heightM": 1.0,
+            "widthM": 1.2
+        },
+        "fx/flame_c": {
+            "file": "fx/flame_c.glb",
+            "triangles": 446,
+            "min": [
+                -1.01,
+                0.0,
+                -1.109
+            ],
+            "max": [
+                1.043,
+                1.0,
+                1.113
+            ],
+            "materials": [
+                "flame"
+            ],
+            "nodes": [
+                "flame"
+            ],
+            "heightM": 1.0,
+            "widthM": 2.27
+        },
+        "fx/smoke_a": {
+            "file": "fx/smoke_a.glb",
+            "triangles": 480,
+            "min": [
+                -0.961,
+                -0.71,
+                -0.824
+            ],
+            "max": [
+                0.764,
+                0.625,
+                0.69
+            ],
+            "materials": [
+                "smoke"
+            ],
+            "nodes": [
+                "smoke"
+            ],
+            "radiusM": 1.0
+        },
+        "fx/smoke_b": {
+            "file": "fx/smoke_b.glb",
+            "triangles": 480,
+            "min": [
+                -0.9,
+                -0.955,
+                -0.948
+            ],
+            "max": [
+                0.83,
+                0.59,
+                0.868
+            ],
+            "materials": [
+                "smoke"
+            ],
+            "nodes": [
+                "smoke"
+            ],
+            "radiusM": 1.0
+        },
+        "fx/smoke_c": {
+            "file": "fx/smoke_c.glb",
+            "triangles": 480,
+            "min": [
+                -0.849,
+                -0.744,
+                -0.986
+            ],
+            "max": [
+                0.685,
+                0.526,
+                0.923
+            ],
+            "materials": [
+                "smoke"
+            ],
+            "nodes": [
+                "smoke"
+            ],
+            "radiusM": 1.0
+        }
+    }
+}

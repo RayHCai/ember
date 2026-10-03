@@ -1,0 +1,10 @@
+[project]
+name = "ember-drone-runtime"
+version = "0.0.0"
+description = "Drone runtime: flight, camera capture, risk detection and upstream reporting."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

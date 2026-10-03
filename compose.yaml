@@ -1,0 +1,21 @@
+# Local stores. `docker compose up -d` before running services with `pnpm dev`.
+services:
+    postgres:
+        image: postgis/postgis:17-3.5
+        environment:
+            POSTGRES_USER: ember
+            POSTGRES_PASSWORD: ember
+            POSTGRES_DB: ember
+        ports: ['5432:5432']
+        volumes: [pgdata:/var/lib/postgresql/data]
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U ember']
+            interval: 5s
+    redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 5s
+volumes:
+    pgdata:

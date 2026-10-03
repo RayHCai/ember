@@ -1,0 +1,37 @@
+node_modules/
+.pnpm-store/
+dist/
+build/
+target/
+.turbo/
+*.tsbuildinfo
+coverage/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Expo
+.expo/
+apps/responder/ios/
+apps/responder/android/
+
+# Model weights are fetched, never committed.
+*.pt
+*.onnx
+
+*.log
+.DS_Store
+.env
+.env.local
+
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+.claude/settings.local.json
+docs/work/scratch/

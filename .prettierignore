@@ -1,0 +1,9 @@
+pnpm-lock.yaml
+uv.lock
+**/dist/**
+**/target/**
+**/.venv/**
+readme.md
+data/
+**/src-tauri/gen/**
+assets/manifest.json

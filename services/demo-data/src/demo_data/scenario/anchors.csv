@@ -1,0 +1,51 @@
+id,time_hst,lat,lon,precision_m,method,fsri_source,quote
+A00,2023-08-08 14:55,20.883945,-156.664106,30,OSM road 'Kuialua Street' dead end,Event Chronology Report,Numerous callers. At the end of the cul de sac of Kuʻialua. Caller said fire spreading fast.
+A01,2023-08-08 15:05,20.883931,-156.664738,53,OSM road 'Hookahua Place' midpoint (105 m long),PD Dispatch Audio D4,we got a residence on fire over here [7XX Hoʻokahua]
+A02,2023-08-08 15:22,20.883458,-156.666658,25,OSM intersection Lahaina Bypass x Lahainaluna Road,MPD Event Chronology,E11: Fire jumped the road / Over the Bypass headed west
+A03,2023-08-08 15:24,20.883469,-156.669418,182,OSM road 'Kaakolu Street' midpoint (363 m long),PD Dispatch Audio D4,"We're on Kaʻakolu making checks of the residence, the back of the house is burning."
+A04,2023-08-08 15:39,20.879546,-156.671777,50,OSM road 'Pauu Place' midpoint (66 m long),MPD Event Chronology,Shed on fire. Twenty feet from house. [4XX Pauu Pl]
+A05,2023-08-08 15:48,20.892134,-156.683271,63,OSM road 'Komohana Place' midpoint (125 m long),Dispatch Unredacted 1,14XX Komohana structure fire next block up ainakea
+A06,2023-08-08 15:49,20.883156,-156.671385,40,OSM landmark 'Kelawea',Dispatch Unredacted 1,Kelawea has multiple structures on fire
+A07,2023-08-08 15:50,20.869120,-156.668130,30,FSRI-provided coordinates,Dispatch Unredacted 1,Fire behind homeless shelter
+A08,2023-08-08 15:57,20.882873,-156.671124,141,OSM road 'Kalena Street' midpoint (282 m long),Dispatch Unredacted 1,House on fire next door at Kalena
+A09,2023-08-08 15:58,20.882992,-156.672373,115,OSM road 'Lui Street' midpoint (231 m long),MPD Event Chronology,8XX Lui Street fully engulfed
+A10,2023-08-08 16:03,20.885218,-156.668010,57,OSM road 'Hakau Place' midpoint (114 m long),MPD Event Chronology,Fire jumped to Hakau Pl
+A11,2023-08-08 16:03,20.885779,-156.669902,282,OSM road 'Kanakea Loop' midpoint (564 m long),MPD Event Chronology,Kanakea loop structure fire ... black smoke
+A12,2023-08-08 16:16,20.877477,-156.677005,25,OSM intersection Honoapiilani Highway x Lahainaluna Road,PD Dispatch Audio D4,"The fire jumped the road, uh, jumped Honoapi'ilani"
+A13,2023-08-08 16:21,20.882191,-156.681936,25,OSM intersection Kenui Street x Wainee Street,MPD Event Chronology,Hale Ohana Apartments [1XX Kenui St]: grass in the backyard on fire
+A14,2023-08-08 16:22,20.879011,-156.677998,30,FSRI-provided coordinates,Dispatch Unredacted 1,Fire right behind Subway sandwiches on Lahainaluna and 256 Papalaua Street
+A15,2023-08-08 16:23,20.880269,-156.679283,40,OSM landmark 'Sugar Cane Train Lahaina Station',MPD Event Chronology,Another caller--train station on fire
+A16,2023-08-08 16:24,20.871764,-156.677660,40,OSM landmark 'Lahaina Banyan Court',MPD Event Chronology,But the big banyan tree is on fire
+A17,2023-08-08 16:27,20.876804,-156.675937,73,OSM road 'David Malo Circle' midpoint (146 m long),MPD Event Chronology,Caller from David Malo ... building on fire
+A18,2023-08-08 16:36,20.874694,-156.676583,25,OSM intersection Wainee Street x Dickenson Street,PD Dispatch Audio D4,"2XX Waine'e on fire, engulfed next to Lanakila Church ... Dickinson and Waine'e"
+A19,2023-08-08 16:43,20.879645,-156.681822,138,OSM road 'Baker Street' midpoint (277 m long),MPD Event Chronology,Hale Mahaolu [145 Baker St] fully engulfed
+A20,2023-08-08 16:58,20.881574,-156.676256,59,OSM road 'Puiki Place' midpoint (118 m long),Dispatch Unredacted 1,9XX Puiki Pl: House on fire
+A21,2023-08-08 16:59,20.877063,-156.681293,25,OSM intersection Front Street x Papalaua Street,MPD Event Chronology,Another caller..saying fire on Front St/Papalaua
+A22,2023-08-08 17:08,20.899457,-156.682212,262,OSM road 'Kaniau Road' midpoint (523 m long),Dispatch Unredacted 1,Fire on other side of my property XX Kaniau Road
+A23,2023-08-08 17:12,20.883062,-156.686289,114,OSM road 'Ala Moana Street' midpoint (228 m long),PD Dispatch Audio D4,Palm trees on fire in the area [XX Ala Moana]
+A24,2023-08-08 17:15,20.885322,-156.687146,40,OSM landmark 'Mala Historic Wharf',PD Dispatch Audio D4,Mala Wharf's on fire
+A25,2023-08-08 17:21,20.885424,-156.678599,25,OSM intersection Kupuohi Street x Keawe Street,PD Dispatch Audio D4,"Island Grocery Depot [Kupuohi St], the very rear of it is starting to catch on fire"
+A26,2023-08-08 17:34,20.881050,-156.684446,25,OSM intersection Front Street x Kenui Street,PD Dispatch Audio D4,the Front Street Apartments starting to catch on fire
+A27,2023-08-08 17:42,20.883266,-156.685216,25,OSM intersection Front Street x Ala Moana Street,PD Dispatch Audio D4,We have a home on Front and Ala Moana fully engulfed.
+A28,2023-08-08 17:44,20.873344,-156.678212,25,OSM intersection Front Street x Dickenson Street,PD Dispatch Audio D4,[Front/Dickenson] its on fire all the way down
+A29,2023-08-08 17:44,20.873157,-156.677819,40,OSM landmark 'Baldwin Home Museum',MPD Event Chronology,418: Baldwin house is on fire
+A30,2023-08-08 17:44,20.891947,-156.682715,40,OSM landmark 'United States Postal Service',MPD Event Chronology,"Post Office on fire, Outlets of Maui on fire, cars too"
+A31,2023-08-08 17:47,20.869833,-156.671478,40,OSM landmark 'Lahaina Aquatic Center',PD Dispatch Audio D4,Lahaina Pool and ... Lahaina Aquatics are catching fire
+A32,2023-08-08 17:58,20.881050,-156.684446,25,OSM intersection Front Street x Kai Pali Place,PD Dispatch Audio D4,"there's also a structure on fire, uh .. Kai Pali and Front Street"
+A33,2023-08-08 19:00,20.867970,-156.675084,25,OSM intersection Front Street x Shaw Street,PD Dispatch Audio D4,from Shaw and Front to Mala and Front is all engulfed in flames
+A34,2023-08-08 19:20,20.884866,-156.682285,25,OSM intersection Honoapiilani Highway x Keawe Street,PD Dispatch Audio D4,the highway between Keawe and at least Hinau is unpassable. There's flames
+A35,2023-08-08 19:37,20.868989,-156.671772,25,OSM intersection Honoapiilani Highway x Shaw Street,PD Dispatch Audio D4,the fire went jump over from Shaw Street into the neighborhood across the highway
+A36,2023-08-08 20:00,20.884822,-156.678933,40,OSM landmark 'Minit Stop',PD Dispatch Audio D4,brush fire started right at the bottom by the Bypass right by Minit Stop
+A37,2023-08-08 20:44,20.865852,-156.669233,25,OSM intersection Aulike Street x Leoleo Street,MPD Event Chronology,4A40: Aulike/Leoleo fully engulfed
+A38,2023-08-08 21:33,20.891464,-156.681812,260,OSM road 'Kahoma Street' midpoint (519 m long),PD Dispatch Audio D4,The flames are in the backyard of a lot of topside houses on Kahoma Street.
+A39,2023-08-08 21:34,20.893990,-156.681664,336,OSM road 'Fleming Road' midpoint (673 m long),PD Dispatch Audio D4,getting reports of flames behind 1XX Fleming
+A40,2023-08-08 21:46,20.892659,-156.681541,25,OSM intersection Akeke Place x Kahoma Street,PD Dispatch Audio D4,its right at Akeke and Kahoma
+A41,2023-08-08 21:47,20.897333,-156.684613,257,OSM road 'Malo Street' midpoint (514 m long),PD Dispatch Audio D4,"just need to confirm that location, 1XX Malo."
+A42,2023-08-08 22:24,20.893575,-156.684865,25,OSM intersection Honoapiilani Highway x Fleming Road,PD Dispatch Audio D4,Fire jumped the highway from just south of Fleming. There's multiple spots.
+A43,2023-08-08 22:27,20.893575,-156.684865,25,OSM intersection Front Street x Fleming Road,PD Dispatch Audio D4,"The church, uh, on the north end of Front Street and Fleming Road is on fire"
+A44,2023-08-08 22:28,20.860486,-156.661266,25,OSM intersection Hokiokio Place x Lahaina Bypass,MPD Event Chronology,W2: Fire jumped Hokiokio
+A45,2023-08-08 22:49,20.901573,-156.681428,339,OSM road 'Leialii Parkway' midpoint (677 m long),MPD Event Chronology,415: Fire coming up Leialiʻi
+A46,2023-08-09 04:49,20.900911,-156.680084,81,OSM road 'Hanohano Street' midpoint (161 m long),MPD Event Chronology,res on Hanohano deck is on fire
+A47,2023-08-09 05:02,20.843647,-156.651624,25,OSM intersection Waianukole Place x Kai Hele Ku Street,Event Chronology,"16XX Waianukole St (cross street Kai Hele Ku): Trailer on fire, Propane in trailer"
+A48,2023-08-09 05:49,20.842960,-156.648760,25,OSM intersection Kai Hele Ku Street x Lahaina Bypass,MPD Event Chronology,416: Got fire on Mauka side of byp...100-150 yds from Kai Hele Ku
+A49,2023-08-08 18:01,20.881985,-156.685878,100,OSM road 'Pu'unoa Place' midpoint (200 m long),MPD Event Chronology,"Text 911- Puunoa, house on fire, not sure what address."

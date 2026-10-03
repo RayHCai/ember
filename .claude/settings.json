@@ -1,0 +1,21 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(pnpm *)",
+            "Bash(uv *)",
+            "Bash(go *)",
+            "Bash(cargo *)",
+            "Bash(node scripts/*)",
+            "Bash(git status*)",
+            "Bash(git diff*)",
+            "Bash(git log*)",
+            "Bash(docker compose *)",
+            "PowerShell(pnpm *)",
+            "PowerShell(uv *)",
+            "PowerShell(git status*)",
+            "PowerShell(git diff*)",
+            "PowerShell(git log*)"
+        ],
+        "deny": ["Read(./.env)", "Read(./.env.*)", "Bash(git push --force*)"]
+    }
+}

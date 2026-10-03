@@ -1,0 +1,4 @@
+# Regenerable: run `demo-data download && demo-data build` in services/demo-data
+*
+!.gitignore
+!README.md

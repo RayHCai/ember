@@ -1,0 +1,11 @@
+{
+    "name": "@ember/drone-runtime",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "lint": "node ../../scripts/uv.mjs run --package ember-drone-runtime ruff check .",
+        "format:check": "node ../../scripts/uv.mjs run --package ember-drone-runtime ruff format --check .",
+        "typecheck": "node ../../scripts/uv.mjs run --package ember-drone-runtime mypy src",
+        "test": "node ../../scripts/uv.mjs run --package ember-drone-runtime pytest"
+    }
+}

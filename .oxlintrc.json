@@ -1,0 +1,35 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["typescript", "unicorn", "import", "oxc", "react", "vitest"],
+    "categories": {
+        "correctness": "error",
+        "suspicious": "error",
+        "perf": "warn"
+    },
+    "env": { "es2023": true },
+    "rules": {
+        "no-console": "warn",
+        "eqeqeq": ["error", "smart"],
+        "typescript/consistent-type-imports": "error",
+        "typescript/no-explicit-any": "warn",
+        "import/no-cycle": "error",
+        "react/react-in-jsx-scope": "off"
+    },
+    "ignorePatterns": [
+        "**/dist/**",
+        "**/node_modules/**",
+        "**/.turbo/**",
+        "**/target/**",
+        "**/.venv/**"
+    ],
+    "overrides": [
+        {
+            "files": ["**/*.test.ts", "**/tests/**"],
+            "rules": { "no-console": "off", "typescript/no-explicit-any": "off" }
+        },
+        {
+            "files": ["services/*/src/main.ts", "scripts/**"],
+            "rules": { "no-console": "off" }
+        }
+    ]
+}

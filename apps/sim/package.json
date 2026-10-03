@@ -1,0 +1,27 @@
+{
+    "name": "@ember/drone-sim",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "start": "node --disable-warning=ExperimentalWarning scripts/start.mjs",
+        "dev": "vite",
+        "build": "vite build",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "test": "vitest run",
+        "tauri": "tauri",
+        "app": "tauri dev",
+        "app:build": "tauri build",
+        "lint": "node ../../scripts/cargo.mjs clippy --manifest-path src-tauri/Cargo.toml -- -D warnings",
+        "format:check": "node ../../scripts/cargo.mjs fmt --manifest-path src-tauri/Cargo.toml --check"
+    },
+    "dependencies": {
+        "@ember/contracts": "workspace:*",
+        "three": "^0.186.0"
+    },
+    "devDependencies": {
+        "@tauri-apps/cli": "^2.12.0",
+        "@types/three": "^0.186.0",
+        "vite": "^8.3.0"
+    }
+}

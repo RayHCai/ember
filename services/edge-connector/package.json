@@ -1,0 +1,11 @@
+{
+    "name": "@ember/edge-connector",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "build": "node ../../scripts/go.mjs build ./...",
+        "typecheck": "node ../../scripts/go.mjs vet ./...",
+        "format:check": "node ../../scripts/gofmt-check.mjs .",
+        "test": "node ../../scripts/go.mjs test ./..."
+    }
+}

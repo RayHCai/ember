@@ -1,0 +1,16 @@
+{
+    "name": "@ember/api",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "node --watch --experimental-strip-types src/main.ts",
+        "build": "tsc -p tsconfig.json",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "test": "vitest run --passWithNoTests"
+    },
+    "dependencies": {
+        "@ember/contracts": "workspace:*",
+        "fastify": "^5.6.0"
+    }
+}
