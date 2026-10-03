@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { attempt, request } from "../data/api";
-import { inDemo } from "../data/source";
+import { demoPlayer } from "../data/source";
 import { cx, formatDuration, formatSimTime } from "../lib/format";
 import {
   FILTERS,
@@ -102,13 +102,14 @@ function SpeedControls() {
   const hasClock = useAppStore((s) => s.sim !== null);
 
   const setSpeed = (next: number) => {
-    if (inDemo()) useAppStore.getState().setSimLocal({ speed: next });
+    if (demoPlayer()) useAppStore.getState().setSimLocal({ speed: next });
     else void attempt("Changing sim speed", () => request("/sim/speed", { method: "POST", json: { speed: next } }));
   };
   const togglePause = () => {
-    if (inDemo()) {
+    if (demoPlayer()) {
       useAppStore.getState().setSimLocal({ paused: !paused });
-      useAppStore.getState().setDemo({ status: paused ? "playing" : "paused" });
+      const demo = useAppStore.getState().demo;
+      if (demo.status !== "idle" && demo.status !== "done") useAppStore.getState().setDemo({ status: paused ? "playing" : "paused" });
     }
     else void attempt(paused ? "Resuming" : "Pausing", () => request(paused ? "/sim/resume" : "/sim/pause", { method: "POST" }));
   };

@@ -1,13 +1,11 @@
-import { projector } from "../geo/grid";
+import { alertAt } from "../lib/alerts";
 import { cx, formatClock } from "../lib/format";
 import { selectActiveIncident, useAppStore } from "../state/store";
-import type { Resident, Tier } from "../types/events";
+import type { Tier } from "../types/events";
 import hud from "./hud.module.css";
 import styles from "./PhonePreview.module.css";
 
 const TIER_LABEL: Record<Tier, string> = { evacuate: "Evacuate", prepare: "Prepare", watch: "Watch" };
-const NEAR_M = 2000;
-
 /** What a resident at the clicked spot would receive: the nearest resident's tier and message. */
 export function PhonePreview() {
   const active = useAppStore((s) => s.tool?.kind === "phone-preview");
@@ -15,8 +13,9 @@ export function PhonePreview() {
   const zoneId = useAppStore((s) => s.activeZoneId);
   const recipients = useAppStore((s) => (zoneId ? s.recipients[zoneId] : undefined));
   const incident = useAppStore(selectActiveIncident);
-  const notifications = useAppStore((s) => s.notifications);
-  const routes = useAppStore((s) => (zoneId ? s.routes[zoneId] : undefined));
+  // Re-render when alerts or routes change.
+  useAppStore((s) => s.notifications);
+  useAppStore((s) => (zoneId ? s.routes[zoneId] : undefined));
   if (!active) return null;
 
   let body: React.ReactNode;
@@ -25,26 +24,12 @@ export function PhonePreview() {
   } else if (!recipients || !incident) {
     body = <p className={styles.hint}>No alerts have gone out yet. Phone previews show alerts for an active fire.</p>;
   } else {
-    const project = projector(at);
-    let nearest: Resident | null = null;
-    let best = Infinity;
-    for (const r of recipients.residents) {
-      const [x, y] = project([r.lat, r.lon]);
-      const d = Math.hypot(x, y);
-      if (d < best) {
-        best = d;
-        nearest = r;
-      }
-    }
-    const tier = nearest && best <= NEAR_M ? nearest.tier : null;
-    const note = tier
-      ? [...notifications].reverse().find((n) => n.tier === tier && (!n.incident_id || n.incident_id === incident.id))
-      : undefined;
-    const route = note?.route_id && routes ? routes[note.route_id] : undefined;
+    const found = alertAt(useAppStore.getState(), zoneId, at, incident.id);
+    const { resident: nearest, tier, notification: note, route } = found;
     if (!tier || !note) {
       body = (
         <p className={styles.hint}>
-          No alert for this spot. {nearest && best <= NEAR_M ? "Residents here are outside every alert tier." : "No residents within 2 km."}
+          No alert for this spot. {nearest ? "Residents here are outside every alert tier." : "No residents within 2 km."}
         </p>
       );
     } else {

@@ -1,6 +1,6 @@
 import { Color, ScreenSpaceEventType, Viewer } from "cesium";
 import { useEffect, useRef, type RefObject } from "react";
-import { appLog } from "../shell";
+import { appLog, inDesktopApp } from "../shell";
 import { useAppStore } from "../state/store";
 import { setWholeEarthView } from "./camera";
 import { applyFilter, createFilterStages } from "./filters";
@@ -62,8 +62,24 @@ export function Globe({ creditContainer }: GlobeProps) {
     setViewer(viewer);
     if (import.meta.env.DEV) (window as unknown as { __emberViewer?: Viewer }).__emberViewer = viewer;
 
+    // Development in the desktop app: log the real frame rate every 10 seconds.
+    let frames = 0;
+    const removeFrameCounter = viewer.scene.postRender.addEventListener(() => {
+      frames += 1;
+    });
+    const fpsTimer =
+      import.meta.env.DEV && inDesktopApp
+        ? window.setInterval(() => {
+            const demo = useAppStore.getState().demo;
+            appLog("info", `Render: ${Math.round(frames / 10)} fps (demo ${demo.status}, ${demo.label || "no step"})`);
+            frames = 0;
+          }, 10_000)
+        : 0;
+
     // StrictMode mounts twice in dev, so always tear down the viewer.
     return () => {
+      window.clearInterval(fpsTimer);
+      removeFrameCounter();
       unsubscribeFilter();
       setViewer(null);
       viewer.destroy();

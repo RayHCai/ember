@@ -3,21 +3,22 @@ import { useAppStore } from "../state/store";
 import { DemoPlayer } from "./demo/player";
 import { startLiveStream } from "./liveStream";
 
-// One data source feeds the console at a time: the live service, or the demo
-// player. Running the demo pauses the live connection; leaving it reconnects.
+// The console runs on its built-in dummy data. If a logic service address is
+// configured (VITE_SERVER_URL), it connects there instead.
 
 let player: DemoPlayer | null = null;
 let stopLive: (() => void) | null = null;
 
-function startLive(): void {
-  const { applyEvent, setConnection } = useAppStore.getState();
-  stopLive?.();
-  stopLive = startLiveStream(applyEvent, setConnection);
-}
-
-export function startDataSource(): () => void {
-  if (config.useMock) startDemo({ autoplay: true });
-  else startLive();
+export function startDataSource(opts: { story?: boolean } = {}): () => void {
+  const { applyEvent, setConnection, setDemo } = useAppStore.getState();
+  if (config.serviceUrl) {
+    stopLive = startLiveStream(applyEvent, setConnection);
+  } else {
+    player = new DemoPlayer(applyEvent, setDemo);
+    setConnection("mock");
+    if (opts.story) player.startStory(true);
+    else player.load();
+  }
   return () => {
     stopLive?.();
     stopLive = null;
@@ -26,29 +27,11 @@ export function startDataSource(): () => void {
   };
 }
 
+/** The dummy backend, or null when connected to a logic service. */
 export function demoPlayer(): DemoPlayer | null {
   return player;
 }
 
-/** Demo data drives the console (and its sim clock is local). */
-export function inDemo(): boolean {
-  return player !== null;
-}
-
 export function startDemo(opts: { autoplay?: boolean } = {}): void {
-  const { applyEvent, setConnection, setDemo } = useAppStore.getState();
-  stopLive?.();
-  stopLive = null;
-  player?.dispose();
-  player = new DemoPlayer(applyEvent, setDemo);
-  setConnection("mock");
-  player.reset();
-  if (opts.autoplay) player.play();
-}
-
-export function exitDemo(): void {
-  player?.dispose();
-  player = null;
-  useAppStore.getState().setDemo({ status: "off", step: 0, steps: 0, label: "" });
-  if (!config.useMock) startLive();
+  player?.startStory(Boolean(opts.autoplay));
 }

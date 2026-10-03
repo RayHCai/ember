@@ -3,13 +3,6 @@
 .env.*
 !.env.example
 
-# Python
-.venv/
-__pycache__/
-*.pyc
-.pytest_cache/
-*.egg-info/
-
 # Web
 node_modules/
 web/dist/
@@ -20,6 +13,3 @@ web/playwright-report/
 out/
 
 .DS_Store
-
-# Desktop app
-.ember-server.pid

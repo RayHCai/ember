@@ -17,9 +17,10 @@ export async function openConsole(page: Page, opts: { reducedMotion?: boolean } 
   await expect(page.locator(".cesium-widget canvas")).toBeVisible();
 }
 
-/** Restart the demo, paused on its first step, so a test controls the story. */
+/** Start the demo story, paused on its first step, so a test controls it. */
 export async function resetDemo(page: Page): Promise<void> {
   const controls = page.getByTestId("demo-controls");
+  if (!(await controls.isVisible())) await page.getByRole("button", { name: "Run demo" }).click();
   await controls.getByRole("button", { name: "Reset demo" }).click();
   await expect(controls.getByText("Zone ready", { exact: true })).toBeVisible();
 }

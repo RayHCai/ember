@@ -19,10 +19,6 @@ log = "0.4"
 tauri = { version = "2.12.1", features = [] }
 tauri-plugin-log = "2"
 
-[target.'cfg(unix)'.dependencies]
-libc = "0.2"
-signal-hook = "0.3"
-
 # Keep debug builds small: line tables for our code, no debug info for dependencies.
 [profile.dev]
 debug = "line-tables-only"

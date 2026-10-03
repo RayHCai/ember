@@ -39,3 +39,9 @@ export function formatAltitude(m: number): string {
   if (m >= 10_000) return `${(m / 1000).toFixed(1)} km`;
   return `${Math.round(m).toLocaleString("en-US")} m`;
 }
+
+/**
+ * One shared empty array for store selectors. A selector that returns a fresh
+ * [] each time looks like a change on every render and can loop forever.
+ */
+export const NONE: readonly never[] = Object.freeze([]);

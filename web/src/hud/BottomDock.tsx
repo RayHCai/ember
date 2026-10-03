@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { config } from "../config";
-import { demoPlayer, exitDemo, startDemo } from "../data/source";
+import { demoPlayer, startDemo } from "../data/source";
 import { flyToPoint } from "../globe/camera";
 import { PRESETS } from "../globe/presets";
 import { geocode, geocoderLabel, type GeocodeResult } from "../geo/geocode";
@@ -131,12 +130,14 @@ function DemoControls() {
     </button>
   );
 
-  if (demo.status === "off") {
+  if (demo.status === "idle" || !demoPlayer()) {
     return (
       <div className={styles.demo}>
-        <button type="button" className={cx(hud.button, hud.primary)} onClick={() => startDemo({ autoplay: true })}>
-          Run demo
-        </button>
+        {demoPlayer() && (
+          <button type="button" className={cx(hud.button, hud.primary)} onClick={() => startDemo({ autoplay: true })}>
+            Run demo
+          </button>
+        )}
         {testFire}
       </div>
     );
@@ -150,7 +151,7 @@ export function DemoBar() {
   const demo = useAppStore((s) => s.demo);
   const zoneId = useAppStore((s) => s.activeZoneId);
   const tool = useAppStore((s) => s.tool);
-  if (demo.status === "off") return null;
+  if (demo.status === "idle") return null;
   const firing = tool?.kind === "test-fire";
   const testFire = (
     <button
@@ -167,9 +168,7 @@ export function DemoBar() {
   return (
     <div className={cx(hud.panel, styles.dock, styles.demo)} data-testid="demo-controls">
       <span className={styles.demoStep}>
-        <span className={hud.label}>
-          Step {demo.step + 1} of {demo.steps}
-        </span>
+        <span className={hud.label}>{demo.mode === "story" ? `Step ${demo.step + 1} of ${demo.steps}` : "Running"}</span>
         <span className={styles.demoLabel}>{demo.label}</span>
       </span>
       <button
@@ -183,14 +182,9 @@ export function DemoBar() {
         Next step
       </button>
       <button type="button" className={hud.button} onClick={() => startDemo()}>
-        Reset demo
+        {demo.mode === "story" ? "Reset demo" : "Run full demo"}
       </button>
       {testFire}
-      {!config.useMock && (
-        <button type="button" className={hud.button} onClick={exitDemo}>
-          Exit demo
-        </button>
-      )}
     </div>
   );
 }

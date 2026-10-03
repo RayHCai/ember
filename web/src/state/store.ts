@@ -65,10 +65,13 @@ export type AgentTab = "log" | "approvals" | "chat";
 
 export type RightPanel = "agent" | "report";
 
-export type DemoStatus = "off" | "playing" | "paused" | "done";
+/** "idle": nothing running, the dummy world waits for the operator. */
+export type DemoStatus = "idle" | "playing" | "paused" | "done";
 
 export interface DemoState {
   status: DemoStatus;
+  /** "story": the full demo; "phase": one action (a survey, a test fire) on one zone. */
+  mode: "story" | "phase";
   step: number;
   steps: number;
   label: string;
@@ -284,7 +287,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   sitePhotos: {},
   spreadMinutes: 360,
   phonePreviewAt: null,
-  demo: { status: "off", step: 0, steps: 0, label: "" },
+  demo: { status: "idle", mode: "phase", step: 0, steps: 0, label: "" },
 
   setViewer: (viewer) => set({ viewer }),
   setMapSource: (mapSource) => set({ mapSource }),

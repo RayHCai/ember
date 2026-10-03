@@ -15,7 +15,7 @@ const DEFAULT_WIDGETS = [
   ".cesium-selection-wrapper",
 ].join(", ");
 
-test("loads the console with the mock stream and no console errors", async ({ page }) => {
+test("opens on dummy data with no console errors", async ({ page }) => {
   const errors = collectErrors(page);
   await openConsole(page);
 
@@ -32,11 +32,13 @@ test("loads the console with the mock stream and no console errors", async ({ pa
   await expect(badge).toHaveAttribute("data-map", "osm");
   await expect(badge).toContainText("Fallback map");
 
-  // The mock stream drives the sim clock and the agent log.
+  // Dummy data: the demo zone, its clock, and its last report, ready on launch.
   const simTime = page.getByTestId("sim-time");
   const first = await simTime.textContent();
   await expect(simTime).not.toHaveText(first ?? "", { timeout: 5000 });
-  await expect(page.getByText("Survey started: 8 drones from 4 docks.")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/Dummy data loaded/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open report" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Run demo" })).toBeVisible();
 
   // Layer toggles are wired to the store.
   const drones = page.getByRole("checkbox", { name: /Drones/ });
@@ -58,11 +60,16 @@ test("shows mock drones and opens the drone inspector", async ({ page }) => {
   const controls = page.getByTestId("demo-controls");
   await controls.getByRole("button", { name: "Next step" }).click();
   await controls.getByRole("button", { name: "Play" }).click();
+  // Drones move fast at 360x: pause with one in the air, then click it.
   let spot: { x: number; y: number } | null = null;
   for (let i = 0; i < 60 && !spot; i++) {
     await page.waitForTimeout(250);
     spot = await airborneDroneOnScreen(page);
   }
+  expect(spot).not.toBeNull();
+  await controls.getByRole("button", { name: "Pause" }).click();
+  await page.waitForTimeout(600);
+  spot = await airborneDroneOnScreen(page);
   expect(spot).not.toBeNull();
   await page.mouse.click(spot!.x, spot!.y);
   const inspector = page.getByTestId("drone-inspector");

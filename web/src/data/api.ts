@@ -15,13 +15,14 @@ export async function request<T>(path: string, init: RequestInit & { json?: unkn
   const { json, headers, ...rest } = init;
   let res: Response;
   try {
-    res = await fetch(config.serverUrl + path, {
+    if (!config.serviceUrl) throw new ApiError("No logic service is configured.", 0);
+    res = await fetch(config.serviceUrl + path, {
       ...rest,
       headers: { ...(json !== undefined ? { "Content-Type": "application/json" } : {}), ...headers },
       body: json !== undefined ? JSON.stringify(json) : rest.body,
     });
   } catch {
-    throw new ApiError(`Cannot reach the Ember server at ${config.serverUrl}. Is it running?`, 0);
+    throw new ApiError(`Cannot reach the logic service at ${config.serviceUrl}.`, 0);
   }
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;

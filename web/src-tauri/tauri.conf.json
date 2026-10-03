@@ -23,7 +23,10 @@
         "backgroundColor": "#03070A",
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "trafficLightPosition": { "x": 26, "y": 30 }
+        "trafficLightPosition": {
+          "x": 26,
+          "y": 30
+        }
       }
     ],
     "security": {
@@ -32,7 +35,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg"],
+    "targets": [
+      "app"
+    ],
     "category": "Utility",
     "shortDescription": "Wildfire watch operator console",
     "icon": [
@@ -43,7 +48,8 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "minimumSystemVersion": "12.0"
+      "minimumSystemVersion": "12.0",
+      "signingIdentity": "-"
     }
   }
 }

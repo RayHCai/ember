@@ -1,22 +1,21 @@
 import { useState } from "react";
-import { attempt } from "../data/api";
-import { zonesApi } from "../data/zonesApi";
+import * as actions from "../data/actions";
 import { sampleElevations } from "../geo/elevation";
 import { computeCoverage, polygonAreaKm2 } from "../geo/grid";
 import { flyToPoints } from "../globe/camera";
-import { cx, formatDuration } from "../lib/format";
+import { NONE, cx, formatDuration } from "../lib/format";
 import { selectActiveZone, simNow, useAppStore } from "../state/store";
 import { pushToast } from "../state/toasts";
 import type { Zone } from "../types/events";
 import hud from "./hud.module.css";
 import styles from "./ZonePanel.module.css";
 
-const NEEDS_SERVER = "Not available during the demo. Exit the demo to use the live server.";
-
-/** Zone setup talks to the server, so it is off while the demo drives the console. */
-function useDemoOn(): boolean {
-  return useAppStore((s) => s.demo.status !== "off");
+/** Zone actions wait while the demo story runs; it owns the demo zone then. */
+function useStoryRunning(): boolean {
+  return useAppStore((s) => s.demo.mode === "story" && (s.demo.status === "playing" || s.demo.status === "paused"));
 }
+
+const STORY_RUNNING = "The demo story is running. Pause it and wait for it to finish, or let it play out.";
 
 function flyToZone(zone: Zone) {
   const viewer = useAppStore.getState().viewer;
@@ -41,7 +40,7 @@ function DrawSteps() {
     setSaving("Reading terrain heights");
     const elevation = await sampleElevations(viewer, mapSource?.id, points);
     setSaving("Fetching roads and places from OpenStreetMap");
-    const zone = await attempt("Saving the zone", () => zonesApi.create(name.trim(), points, elevation));
+    const zone = await actions.createZone(name.trim(), points, elevation);
     setSaving(null);
     if (!zone) return;
     cancel();
@@ -144,9 +143,9 @@ function MapSourceNote({ zoneId }: { zoneId: string }) {
   if (!map) return null;
   if (map.source === "synthetic") {
     return (
-      <div className={styles.offline} data-testid="osm-fallback">
+      <div className={styles.offline} data-testid="dummy-map-note">
         <span>
-          Offline: OpenStreetMap unavailable. Using a synthetic road grid. <span className={hud.simTag}>SIM</span>
+          {map.note ?? "Roads, towns and shelters here are dummy data."} <span className={hud.simTag}>SIM</span>
         </span>
       </div>
     );
@@ -161,7 +160,7 @@ function MapSourceNote({ zoneId }: { zoneId: string }) {
 }
 
 function EdgeServersStep({ zone }: { zone: Zone }) {
-  const demoOn = useDemoOn();
+  const demoOn = useStoryRunning();
   const plan = useAppStore((s) => s.edgePlans[zone.id]);
   const draft = useAppStore((s) => (s.edgeDraft?.zoneId === zone.id ? s.edgeDraft : null));
   const grid = useAppStore((s) => s.zoneMaps[zone.id]?.grid);
@@ -170,7 +169,7 @@ function EdgeServersStep({ zone }: { zone: Zone }) {
 
   const suggest = async () => {
     setBusy(true);
-    const res = await attempt("Suggesting edge servers", () => zonesApi.suggestEdgeServers(zone.id));
+    const res = await actions.suggestEdgeServers(zone.id);
     setBusy(false);
     if (res) setTool({ kind: "edit-edge", zoneId: zone.id });
   };
@@ -182,7 +181,7 @@ function EdgeServersStep({ zone }: { zone: Zone }) {
       return;
     }
     setBusy(true);
-    const res = await attempt("Deploying edge servers", () => zonesApi.setEdgeServers(zone.id, draft.servers, true));
+    const res = await actions.setEdgeServers(zone.id, draft.servers, true);
     setBusy(false);
     if (res) {
       setEdgeDraft(null);
@@ -195,7 +194,7 @@ function EdgeServersStep({ zone }: { zone: Zone }) {
     setTool(null);
     setEdgeDraft(null);
     // A suggestion that was never deployed is dropped on the server too.
-    if (!wasDeployed) await attempt("Discarding the suggestion", () => zonesApi.setEdgeServers(zone.id, [], false));
+    if (!wasDeployed) await actions.setEdgeServers(zone.id, [], false);
   };
 
   if (draft && grid) {
@@ -237,7 +236,7 @@ function EdgeServersStep({ zone }: { zone: Zone }) {
             type="button"
             className={hud.button}
             disabled={demoOn}
-            title={demoOn ? NEEDS_SERVER : undefined}
+            title={demoOn ? STORY_RUNNING : undefined}
             onClick={() => {
               setEdgeDraft({ zoneId: zone.id, servers: plan.servers.map((s) => ({ ...s, status: "pending" })) });
               setTool({ kind: "edit-edge", zoneId: zone.id });
@@ -260,7 +259,7 @@ function EdgeServersStep({ zone }: { zone: Zone }) {
           className={cx(hud.button, hud.primary)}
           onClick={() => void suggest()}
           disabled={busy || demoOn}
-          title={demoOn ? NEEDS_SERVER : undefined}
+          title={demoOn ? STORY_RUNNING : undefined}
         >
           {busy ? "Planning" : "Suggest edge servers"}
         </button>
@@ -270,7 +269,7 @@ function EdgeServersStep({ zone }: { zone: Zone }) {
 }
 
 function SurveysStep({ zone }: { zone: Zone }) {
-  const demoOn = useDemoOn();
+  const demoOn = useStoryRunning();
   const deployed = useAppStore((s) => s.edgePlans[zone.id]?.servers.some((srv) => srv.status === "deployed") ?? false);
   const survey = useAppStore((s) => s.surveys[zone.id]);
   const sim = useAppStore((s) => s.sim);
@@ -280,7 +279,7 @@ function SurveysStep({ zone }: { zone: Zone }) {
   const running = survey?.status === "running";
   const run = async () => {
     setBusy(true);
-    await attempt("Starting the survey", () => zonesApi.runSurvey(zone.id));
+    await actions.runSurvey(zone.id);
     setBusy(false);
   };
 
@@ -312,7 +311,7 @@ function SurveysStep({ zone }: { zone: Zone }) {
           className={cx(hud.button, hud.primary)}
           onClick={() => void run()}
           disabled={busy || running || demoOn}
-          title={demoOn ? NEEDS_SERVER : undefined}
+          title={demoOn ? STORY_RUNNING : undefined}
         >
           Run survey
         </button>
@@ -322,8 +321,8 @@ function SurveysStep({ zone }: { zone: Zone }) {
 }
 
 function SheltersStep({ zone }: { zone: Zone }) {
-  const demoOn = useDemoOn();
-  const shelters = useAppStore((s) => s.zoneMaps[zone.id]?.shelters ?? []);
+  const demoOn = useStoryRunning();
+  const shelters = useAppStore((s) => s.zoneMaps[zone.id]?.shelters ?? NONE);
   const draft = useAppStore((s) => (s.shelterDraft?.zoneId === zone.id ? s.shelterDraft : null));
   const [busy, setBusy] = useState(false);
   const { setTool, setShelterDraft } = useAppStore.getState();
@@ -338,7 +337,7 @@ function SheltersStep({ zone }: { zone: Zone }) {
       setShelterDraft({ ...draft, shelters: draft.shelters.map((s) => (s.id === id ? { ...s, name } : s)) });
     const save = async () => {
       setBusy(true);
-      const res = await attempt("Saving shelters", () => zonesApi.setShelters(zone.id, draft.shelters));
+      const res = await actions.setShelters(zone.id, draft.shelters);
       setBusy(false);
       if (res) stop();
     };
@@ -387,9 +386,9 @@ function SheltersStep({ zone }: { zone: Zone }) {
           type="button"
           className={hud.button}
           disabled={demoOn}
-          title={demoOn ? NEEDS_SERVER : undefined}
+          title={demoOn ? STORY_RUNNING : undefined}
           onClick={() => {
-            setShelterDraft({ zoneId: zone.id, shelters });
+            setShelterDraft({ zoneId: zone.id, shelters: [...shelters] });
             setTool({ kind: "edit-shelters", zoneId: zone.id });
           }}
         >
@@ -401,7 +400,7 @@ function SheltersStep({ zone }: { zone: Zone }) {
 }
 
 function RemoveZone({ zone }: { zone: Zone }) {
-  const demoOn = useDemoOn();
+  const demoOn = useStoryRunning();
   const [confirm, setConfirm] = useState(false);
   if (!confirm) {
     return (
@@ -416,7 +415,7 @@ function RemoveZone({ zone }: { zone: Zone }) {
       <button
         type="button"
         className={hud.button}
-        onClick={() => void attempt("Removing the zone", () => zonesApi.remove(zone.id))}
+        onClick={() => void actions.removeZone(zone.id)}
       >
         Remove
       </button>
@@ -428,7 +427,7 @@ function RemoveZone({ zone }: { zone: Zone }) {
 }
 
 export function ZonePanel() {
-  const demoOn = useDemoOn();
+  const demoOn = useStoryRunning();
   const drawing = useAppStore((s) => s.tool?.kind === "draw-zone");
   const zone = useAppStore(selectActiveZone);
 
@@ -450,7 +449,7 @@ export function ZonePanel() {
             className={cx(hud.button, styles.small)}
             onClick={startDrawing}
             disabled={demoOn}
-            title={demoOn ? NEEDS_SERVER : undefined}
+            title={demoOn ? STORY_RUNNING : undefined}
           >
             New zone
           </button>

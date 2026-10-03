@@ -5,6 +5,7 @@ import "@fontsource/ibm-plex-mono/500.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { ResidentApp } from "./resident/ResidentApp";
 import { forwardErrorsToAppLog, markShell } from "./shell";
 import { useObserved } from "./state/observed";
 import { useAppStore } from "./state/store";
@@ -20,8 +21,8 @@ if (import.meta.env.DEV) Object.assign(window, { __ember: { useAppStore, useTele
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root element");
 
-createRoot(root).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// /alert is the resident page for phones; everything else is the operator console.
+const resident = window.location.pathname.startsWith("/alert") || window.location.hash === "#/alert";
+if (resident) document.body.classList.add("resident");
+
+createRoot(root).render(<StrictMode>{resident ? <ResidentApp /> : <App />}</StrictMode>);

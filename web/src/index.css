@@ -46,3 +46,8 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* The resident page scrolls like a normal phone page. */
+body.resident {
+  overflow: auto;
+}
