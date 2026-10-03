@@ -1,0 +1,67 @@
+.panel {
+  width: 340px;
+}
+
+.close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: var(--text);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 14px;
+  row-gap: 6px;
+  margin: 0;
+  padding: 10px 12px 12px;
+}
+
+.grid dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.state {
+  font-family: var(--font-hud);
+  font-size: 12px;
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.heat {
+  color: var(--heat);
+}
+
+.battery {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar {
+  flex: 1;
+  height: 6px;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--signal);
+  transition: width 200ms linear;
+}
+
+.low {
+  background: var(--muted);
+}

@@ -9,6 +9,7 @@ import { AgentPanel } from "./hud/AgentPanel";
 import credits from "./hud/Attribution.module.css";
 import { BottomDock } from "./hud/BottomDock";
 import { CursorReadout } from "./hud/CursorReadout";
+import { DroneInspector } from "./hud/DroneInspector";
 import { LayersPanel } from "./hud/LayersPanel";
 import { MapBadge } from "./hud/MapBadge";
 import { Toasts } from "./hud/Toasts";
@@ -42,6 +43,7 @@ export function App() {
           <div ref={creditRef} className={credits.credits} />
         </div>
         <div className={styles.bottomCenter}>
+          <DroneInspector />
           <BottomDock />
         </div>
       </div>

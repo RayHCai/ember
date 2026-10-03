@@ -5,8 +5,8 @@ import { zonesApi } from "../data/zonesApi";
 import { sampleElevations } from "../geo/elevation";
 import { computeCoverage, polygonAreaKm2 } from "../geo/grid";
 import { flyToPoints } from "../globe/camera";
-import { cx } from "../lib/format";
-import { selectActiveZone, useAppStore } from "../state/store";
+import { cx, formatDuration } from "../lib/format";
+import { selectActiveZone, simNow, useAppStore } from "../state/store";
 import { pushToast } from "../state/toasts";
 import type { Zone } from "../types/events";
 import hud from "./hud.module.css";
@@ -264,6 +264,57 @@ function EdgeServersStep({ zone }: { zone: Zone }) {
   );
 }
 
+function SurveysStep({ zone }: { zone: Zone }) {
+  const deployed = useAppStore((s) => s.edgePlans[zone.id]?.servers.some((srv) => srv.status === "deployed") ?? false);
+  const survey = useAppStore((s) => s.surveys[zone.id]);
+  const sim = useAppStore((s) => s.sim);
+  const [busy, setBusy] = useState(false);
+  if (!deployed) return null;
+
+  const running = survey?.status === "running";
+  const run = async () => {
+    setBusy(true);
+    await attempt("Starting the survey", () => zonesApi.runSurvey(zone.id));
+    setBusy(false);
+  };
+
+  return (
+    <div className={styles.step}>
+      <div className={styles.stepTitle}>
+        Surveys <span className={hud.simTag}>SIM</span>
+      </div>
+      {running ? (
+        <p className={styles.done}>
+          Survey running: <span className={hud.mono}>{Math.round(survey.progress_pct)}%</span> imaged.
+        </p>
+      ) : survey?.last_completed ? (
+        <p className={styles.done}>
+          Last survey observed <span className={hud.mono}>{survey.observed_pct?.toFixed(1)}%</span> of the zone
+          {survey.missed_count ? `, ${survey.missed_count} cells missed` : ""}.
+        </p>
+      ) : (
+        <p className={styles.help}>Drones survey the zone every 12 hours and charge on their docks in between.</p>
+      )}
+      {!running && survey?.next_at && sim && (
+        <p className={styles.help}>
+          Next survey in <span className={hud.mono}>{formatDuration(Date.parse(survey.next_at) - simNow(sim))}</span>.
+        </p>
+      )}
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={cx(hud.button, hud.primary)}
+          onClick={() => void run()}
+          disabled={busy || running || config.useMock}
+          title={config.useMock ? NEEDS_SERVER : undefined}
+        >
+          Run survey
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SheltersStep({ zone }: { zone: Zone }) {
   const shelters = useAppStore((s) => s.zoneMaps[zone.id]?.shelters ?? []);
   const draft = useAppStore((s) => (s.shelterDraft?.zoneId === zone.id ? s.shelterDraft : null));
@@ -406,6 +457,7 @@ export function ZonePanel() {
               <div className={styles.section}>
                 <MapSourceNote zoneId={zone.id} />
                 <EdgeServersStep zone={zone} />
+                <SurveysStep zone={zone} />
                 <SheltersStep zone={zone} />
                 <RemoveZone zone={zone} />
               </div>

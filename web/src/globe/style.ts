@@ -63,3 +63,12 @@ export const SHELTER_ICON = svgUrl(
     <rect x="9.5" y="13" width="5" height="7" fill="#3FE0FF"/>
   </svg>`,
 );
+
+// Drone: a white arrowhead with rotor dots, tinted by state. Points north at 0.
+export const DRONE_ICON = svgUrl(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+    <circle cx="5" cy="7" r="2.2" fill="#FFFFFF"/><circle cx="19" cy="7" r="2.2" fill="#FFFFFF"/>
+    <circle cx="5" cy="18" r="2.2" fill="#FFFFFF"/><circle cx="19" cy="18" r="2.2" fill="#FFFFFF"/>
+    <path d="M12 2 L17 17 L12 14 L7 17 Z" fill="#FFFFFF" stroke="#03070A" stroke-width="1"/>
+  </svg>`,
+);

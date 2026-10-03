@@ -4,6 +4,8 @@
 
 Ember is a wildfire watch system for forest and city land managers, built in 24 hours at MHacks 2026. It ships as a desktop application (Tauri), not a website.
 
+**This repo is the operator console UI only.** The drone, survey, report, fire and alert logic runs as a separate service on another device. Do not build that logic here. The console displays it from events in the format under "Events" below; that format is the contract the service must send. Until the service exists, the built-in demo data (`web/src/data/mockStream.ts`, `VITE_USE_MOCK=1`) drives the UI. The existing `server/` (zones, OpenStreetMap, edge-server placement, sim clock) stays for now.
+
 1. The operator draws a watch zone on a 3D globe.
 2. Ember suggests where to put edge servers (drone docks with local networking). The operator adjusts and deploys them.
 3. Drones survey the zone on a schedule (every 12 hours by default), then return to their docks to charge.

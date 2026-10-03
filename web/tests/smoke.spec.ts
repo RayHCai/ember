@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { collectErrors, openConsole, waitForTiles } from "./helpers";
+import { airborneDroneOnScreen, collectErrors, openConsole, waitForTiles } from "./helpers";
 
 // Default Cesium widgets that must stay off.
 const DEFAULT_WIDGETS = [
@@ -47,6 +47,27 @@ test("loads the console with the mock stream and no console errors", async ({ pa
   await waitForTiles(page);
   await page.screenshot({ path: "../out/smoke-console.png" });
 
+  expect(errors).toEqual([]);
+});
+
+test("shows mock drones and opens the drone inspector", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openConsole(page, { reducedMotion: true });
+  await waitForTiles(page);
+  let spot: { x: number; y: number } | null = null;
+  for (let i = 0; i < 60 && !spot; i++) {
+    await page.waitForTimeout(250);
+    spot = await airborneDroneOnScreen(page);
+  }
+  expect(spot).not.toBeNull();
+  await page.mouse.click(spot!.x, spot!.y);
+  const inspector = page.getByTestId("drone-inspector");
+  await expect(inspector).toBeVisible();
+  await expect(inspector).toContainText("SIM");
+  await expect(inspector).toContainText("Surveying");
+  await page.screenshot({ path: "../out/mock-drones.png" });
+  await inspector.getByRole("button", { name: "Close" }).click();
+  await expect(inspector).toBeHidden();
   expect(errors).toEqual([]);
 });
 

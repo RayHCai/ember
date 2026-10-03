@@ -36,7 +36,9 @@
 .bottomCenter {
   grid-area: bottomCenter;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap);
   align-self: end;
   min-width: 0;
 }

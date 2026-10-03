@@ -1,4 +1,4 @@
-import { makeGrid } from "../geo/grid";
+import { makeGrid, zoneCellIndexes } from "../geo/grid";
 import type {
   Drone,
   EdgePlan,
@@ -156,6 +156,7 @@ export function startMockStream(emit: (event: KnownEvent) => void): () => void {
     sim: { sim_time: simTime(startedAt), speed: SIM_SPEED, paused: false },
     zones: [ZONE],
     zone_maps: { [ZONE_ID]: ZONE_MAP },
+    survey_cells: {},
     edge_plans: { [ZONE_ID]: EDGE_PLAN },
     drones: DOCKS.flatMap((_, i) => [drone(i, 0, false), drone(i + DOCKS.length, 0, false)]),
     surveys: {
@@ -193,10 +194,13 @@ export function startMockStream(emit: (event: KnownEvent) => void): () => void {
       emit(ev("survey", { id: surveyId, status: "running", progress_pct: 0, next_at: null }));
       emit(ev("log", { message: "Survey started: 8 drones from 4 docks." }));
     });
+    const cells = zoneCellIndexes(ZONE_MAP.grid);
     for (let p = 1; p <= 10; p++) {
-      at(500 + p * 1800, () =>
-        emit(ev("survey", { id: surveyId, status: "running", progress_pct: p * 10, next_at: null })),
-      );
+      at(500 + p * 1800, () => {
+        emit(ev("survey", { id: surveyId, status: "running", progress_pct: p * 10, next_at: null }));
+        const chunk = cells.slice(Math.floor(((p - 1) * cells.length) / 10), Math.floor((p * cells.length) / 10));
+        emit(ev("survey_cells", { survey_id: surveyId, cells: chunk, reset: p === 1 }));
+      });
     }
     at(4000, () =>
       emit(ev("capture", {

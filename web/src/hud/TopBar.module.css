@@ -55,6 +55,37 @@
   text-overflow: ellipsis;
 }
 
+.statusLine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.survey {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.progress {
+  width: 90px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--panel-border);
+  overflow: hidden;
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+  background: var(--signal);
+  transition: width 400ms linear;
+}
+
 .zoneStatus {
   font-family: var(--font-hud);
   font-size: 11px;

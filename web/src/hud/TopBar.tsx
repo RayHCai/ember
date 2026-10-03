@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { config } from "../config";
 import { attempt, request } from "../data/api";
-import { cx, formatSimTime } from "../lib/format";
+import { cx, formatDuration, formatSimTime } from "../lib/format";
 import {
   FILTERS,
   selectActiveZone,
@@ -27,6 +27,37 @@ function zoneStatus(s: AppState): { text: string; tone: ZoneTone } {
   return { text: "Setting up", tone: "quiet" };
 }
 
+function SurveyStatus({ zoneId }: { zoneId: string }) {
+  const survey = useAppStore((s) => s.surveys[zoneId]);
+  const sim = useAppStore((s) => s.sim);
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => tick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  if (!survey) return null;
+  if (survey.status === "running") {
+    const pct = Math.round(survey.progress_pct);
+    return (
+      <span className={styles.survey} data-testid="survey-progress">
+        <span className={styles.progress}>
+          <span className={styles.progressFill} style={{ width: `${pct}%` }} />
+        </span>
+        <span className={hud.mono}>{pct}%</span>
+      </span>
+    );
+  }
+  if (survey.next_at && sim) {
+    const left = Date.parse(survey.next_at) - simNow(sim);
+    return (
+      <span className={styles.survey} data-testid="survey-next">
+        Next survey in <span className={hud.mono}>{formatDuration(left)}</span>
+      </span>
+    );
+  }
+  return null;
+}
+
 function ZoneStatus() {
   const zone = useAppStore(selectActiveZone);
   const text = useAppStore((s) => zoneStatus(s).text);
@@ -34,7 +65,10 @@ function ZoneStatus() {
   return (
     <div className={styles.zone}>
       <span className={styles.zoneName}>{zone?.name ?? "No zone"}</span>
-      <span className={cx(styles.zoneStatus, styles[tone])}>{text}</span>
+      <span className={styles.statusLine}>
+        <span className={cx(styles.zoneStatus, styles[tone])}>{text}</span>
+        {zone && <SurveyStatus zoneId={zone.id} />}
+      </span>
     </div>
   );
 }

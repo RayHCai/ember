@@ -19,6 +19,7 @@ import type {
   ZoneMap,
   Zoned,
 } from "../types/events";
+import { useObserved } from "./observed";
 import { useTelemetry } from "./telemetry";
 
 export type FilterId = "normal" | "thermal" | "night" | "crt";
@@ -257,6 +258,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
       case "snapshot": {
         const next = snapshotState(event.payload);
         useTelemetry.getState().replaceAll(event.payload.drones);
+        for (const [zoneId, sc] of Object.entries(event.payload.survey_cells ?? {})) {
+          useObserved.getState().add(zoneId, sc.survey_id, sc.cells, true);
+        }
         const zoneIds = Object.keys(next.zones ?? {});
         const active = get().activeZoneId;
         set({
@@ -278,6 +282,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
         set((s) => ({ zoneMaps: { ...s.zoneMaps, [event.zone_id]: event.payload } }));
         return;
       case "zone_removed":
+        useTelemetry.getState().removeZone(event.zone_id);
+        useObserved.getState().removeZone(event.zone_id);
         set((s) => {
           const id = event.zone_id;
           const without = <T,>(table: Record<string, T>) => {
@@ -314,7 +320,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
         return;
       }
       case "drone":
-        useTelemetry.getState().upsert(event.payload);
+        useTelemetry.getState().upsert({ ...event.payload, zone_id: event.zone_id });
+        return;
+      case "fleet":
+        useTelemetry.getState().replaceZone(event.zone_id, event.payload.drones);
+        return;
+      case "survey_cells":
+        useObserved.getState().add(event.zone_id, event.payload.survey_id, event.payload.cells, event.payload.reset);
         return;
       case "survey":
         set((s) => ({ surveys: { ...s.surveys, [event.zone_id]: event.payload } }));

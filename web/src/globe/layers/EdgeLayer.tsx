@@ -1,16 +1,19 @@
 import {
   CallbackProperty,
+  Cartesian2,
   ClassificationType,
   ColorMaterialProperty,
   HeightReference,
   JulianDate,
+  LabelStyle,
   VerticalOrigin,
   type Entity,
 } from "cesium";
 import { useEffect, useMemo } from "react";
 import { selectZoneServers, useAppStore } from "../../state/store";
+import { useTelemetry } from "../../state/telemetry";
 import { prefersReducedMotion } from "../camera";
-import { ALWAYS_ON_TOP, C, EDGE_ICON, EDGE_ICON_PENDING, circleRing, toCartesian } from "../style";
+import { ALWAYS_ON_TOP, C, EDGE_ICON, EDGE_ICON_PENDING, MONO_FONT, circleRing, toCartesian } from "../style";
 import { useDataSource } from "../useDataSource";
 
 /** Pending rings breathe so it is clear they are not deployed yet. */
@@ -88,6 +91,46 @@ export function EdgeLayer() {
       if (!keep.has(entity.id)) ds.entities.remove(entity);
     }
   }, [ds, servers, pulse]);
+
+  // Deployed docks say how many drones are home and whether they are charging.
+  useEffect(() => {
+    if (!ds) return;
+    const label = () => {
+      const drones = Object.values(useTelemetry.getState().drones);
+      for (const server of servers) {
+        const icon = ds.entities.getById(`edge:${server.id}`);
+        if (!icon) continue;
+        if (server.status !== "deployed") {
+          icon.label = undefined;
+          continue;
+        }
+        const mine = drones.filter((d) => d.dock_id === server.id);
+        const home = mine.filter((d) => d.state === "docked" || d.state === "charging");
+        const status =
+          mine.length === 0 ? "" : home.length === 0 ? "all out" : home.some((d) => d.state === "charging") ? "charging" : "ready";
+        const text = mine.length ? `${home.length}/${mine.length} home · ${status}` : server.id;
+        if (icon.label) {
+          icon.label.text = text as never;
+        } else {
+          icon.label = {
+            text,
+            font: MONO_FONT,
+            fillColor: C.text,
+            outlineColor: C.void,
+            outlineWidth: 3,
+            style: LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: VerticalOrigin.TOP,
+            pixelOffset: new Cartesian2(0, 18),
+            heightReference: HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: ALWAYS_ON_TOP,
+          } as never;
+        }
+      }
+    };
+    label();
+    const timer = window.setInterval(label, 1000);
+    return () => window.clearInterval(timer);
+  }, [ds, servers]);
 
   return null;
 }

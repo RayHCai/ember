@@ -1,4 +1,4 @@
-import type { EdgePlan, EdgeServer, LatLon, Shelter, Zone } from "../types/events";
+import type { EdgePlan, EdgeServer, LatLon, Shelter, Survey, Zone } from "../types/events";
 import { request } from "./api";
 
 export const zonesApi = {
@@ -14,6 +14,11 @@ export const zonesApi = {
       method: "POST",
       json: { servers: servers.map(({ id, lat, lon, radius_m }) => ({ id, lat, lon, radius_m })), deploy },
     }),
+
+  runSurvey: (zoneId: string) => request<Survey>(`/zones/${zoneId}/surveys`, { method: "POST" }),
+
+  plantAnomaly: (zoneId: string, lat: number, lon: number) =>
+    request<{ cell: number }>(`/zones/${zoneId}/debug/anomaly`, { method: "POST", json: { lat, lon } }),
 
   setShelters: (zoneId: string, shelters: Shelter[]) =>
     request<{ shelters: Shelter[] }>(`/zones/${zoneId}/shelters`, { method: "PUT", json: { shelters } }),

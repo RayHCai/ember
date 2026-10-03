@@ -95,24 +95,49 @@ export type DroneState =
   | "returning"
   | "suppressing";
 
+export interface DroneSortie {
+  id: string;
+  /** This drone's sortie number in the current survey, from 1. */
+  number: number;
+  total: number;
+  progress_pct: number;
+}
+
 export interface Drone {
   id: string;
   lat: number;
   lon: number;
+  /** Height above ground. */
   alt_m: number;
   heading_deg: number;
   battery_pct: number;
   state: DroneState;
   dock_id: string;
+  sortie?: DroneSortie | null;
+  simulated?: boolean;
+  zone_id?: string;
 }
 
 export type SurveyStatus = "scheduled" | "running" | "complete";
 
 export interface Survey {
-  id: string;
+  id: string | null;
   status: SurveyStatus;
   progress_pct: number;
   next_at: string | null;
+  started_at?: string;
+  /** Share of all zone cells observed so far. */
+  observed_pct?: number;
+  missed_count?: number;
+  eta_at?: string | null;
+  /** True when this describes the last finished survey. */
+  last_completed?: boolean;
+}
+
+export interface SurveyCells {
+  survey_id: string;
+  cells: number[];
+  reset?: boolean;
 }
 
 export interface Capture {
@@ -207,6 +232,7 @@ export interface Snapshot {
   sim: SimClockState;
   zones: Zone[];
   zone_maps: Record<string, ZoneMap>;
+  survey_cells: Record<string, { survey_id: string; cells: number[] }>;
   edge_plans: Record<string, EdgePlan>;
   drones: Drone[];
   surveys: Record<string, Survey>;
@@ -227,6 +253,8 @@ export type KnownEvent =
   | EmberEvent<"zone_removed", { id: string }>
   | EmberEvent<"edge_plan", EdgePlan>
   | EmberEvent<"drone", Drone>
+  | EmberEvent<"fleet", { drones: Drone[] }>
+  | EmberEvent<"survey_cells", SurveyCells>
   | EmberEvent<"survey", Survey>
   | EmberEvent<"capture", Capture>
   | EmberEvent<"report", Report>
