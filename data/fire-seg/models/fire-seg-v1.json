@@ -1,0 +1,64 @@
+{
+  "file": "fire-seg-v1.onnx",
+  "sha256": "c0a62358e0c263221b5d1cc4a9604039229ec2e725cfac73ebfa946470225906",
+  "created": "2026-10-04T07:10:54+00:00",
+  "classes": [
+    "flame",
+    "smoke",
+    "burned"
+  ],
+  "imgsz": 416,
+  "opset": 17,
+  "weights": "data/fire-seg/runs/fire-seg-v1/weights/best.pt",
+  "git": {
+    "commit": "fed083e6721d8d5eeee60e10f817b99d4ce4ac82",
+    "dirty": false
+  },
+  "dataset": {
+    "version": "be52457312d7",
+    "images": {
+      "train": {
+        "dfire": 19370,
+        "rf-fire": 2438
+      },
+      "val": {
+        "dfire": 2157,
+        "rf-fire": 278
+      },
+      "test": {
+        "dfire": 0,
+        "rf-fire": 949
+      }
+    },
+    "path": "/Users/rayflanagan/Desktop/code/ember/data/fire-seg/dataset"
+  },
+  "val_metrics": {},
+  "ultralytics": "8.4.172",
+  "test_metrics": {
+    "flame": {
+      "mask_iou": 0.688,
+      "pixel_precision": 0.7816,
+      "pixel_recall": 0.8518,
+      "image_precision": 0.9987,
+      "image_recall": 0.8074,
+      "frames_with_class": 919
+    },
+    "smoke": {
+      "mask_iou": 0.7814,
+      "pixel_precision": 0.901,
+      "pixel_recall": 0.8548,
+      "image_precision": 0.9705,
+      "image_recall": 0.9178,
+      "frames_with_class": 718
+    },
+    "burned": {
+      "mask_iou": null,
+      "pixel_precision": null,
+      "pixel_recall": null,
+      "image_precision": null,
+      "image_recall": null,
+      "frames_with_class": 0
+    }
+  },
+  "notes": "stopped early after 5 of 50 epochs for a quick usable model"
+}

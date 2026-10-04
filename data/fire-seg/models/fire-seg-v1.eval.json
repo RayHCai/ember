@@ -1,0 +1,45 @@
+{
+  "detector": "yolo:fire-seg-v1",
+  "split": "/Users/rayflanagan/Desktop/code/ember/data/fire-seg/dataset/images/test",
+  "images": 949,
+  "classes": {
+    "flame": {
+      "mask_iou": 0.688,
+      "pixel_precision": 0.7816,
+      "pixel_recall": 0.8518,
+      "image_precision": 0.9987,
+      "image_recall": 0.8074,
+      "frames_with_class": 919
+    },
+    "smoke": {
+      "mask_iou": 0.7814,
+      "pixel_precision": 0.901,
+      "pixel_recall": 0.8548,
+      "image_precision": 0.9705,
+      "image_recall": 0.9178,
+      "frames_with_class": 718
+    },
+    "burned": {
+      "mask_iou": null,
+      "pixel_precision": null,
+      "pixel_recall": null,
+      "image_precision": null,
+      "image_recall": null,
+      "frames_with_class": 0
+    }
+  },
+  "baseline_flame": {
+    "detector": "heuristic",
+    "mask_iou": 0.5085,
+    "pixel_precision": 0.7907,
+    "pixel_recall": 0.5876,
+    "image_precision": 0.9937,
+    "image_recall": 0.6823,
+    "frames_with_class": 919
+  },
+  "latency_ms": {
+    "mean": 18.7,
+    "p95": 29.0
+  },
+  "machine": "Darwin arm64"
+}
