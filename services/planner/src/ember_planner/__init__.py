@@ -1,1 +1,1 @@
-"""Celery planner: a Redis-queue orchestrator and civilian/incident path-planning workers."""
+"""Planner: a Redis-queue orchestrator and Celery workers for spread, response and evacuation."""
