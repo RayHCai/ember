@@ -15,12 +15,13 @@ import shapely
 
 from .grid import FloatArray, Grid
 from .landscape import Landscape
-from .network import Network, mpm, node_fire_times
+from .network import Network, distinct_roads, mpm, node_fire_times
 from .spread import Spread
 from .wire import (
     CivilianArea,
     CivilianImpact,
     Destination,
+    EvacuationPath,
     EvacuationRoute,
     ImpactSeverity,
     LatLng,
@@ -136,15 +137,35 @@ def _route(
     t0: float,
     margin: float,
 ) -> EvacuationRoute:
-    none = EvacuationRoute(
-        civilian_area_id=area_id,
+    primary = _search(net, g, fire, targets, start, t0, margin, frozenset())
+    alternate = None
+    if primary.road_ids:
+        alternate = _search(net, g, fire, targets, start, t0, margin, frozenset(primary.road_ids))
+        if alternate.status == "no_safe_route":
+            alternate = None
+    return EvacuationRoute(
+        civilian_area_id=area_id, network=net.kind, alternate=alternate, **dict(primary)
+    )
+
+
+def _search(
+    net: Network,
+    g: Grid,
+    fire: FloatArray,
+    targets: dict[int, Destination],
+    start: int,
+    t0: float,
+    margin: float,
+    banned: frozenset[str],
+) -> EvacuationPath:
+    none = EvacuationPath(
         status="no_safe_route",
         path=[],
         destination=None,
         distance_m=0.0,
         eta_min=0.0,
         clearance_min=None,
-        network=net.kind,
+        road_ids=[],
     )
     if not targets or fire[start] - t0 < margin:
         return none
@@ -152,6 +173,7 @@ def _route(
     time = {start: t0}
     dist = {start: 0.0}
     prev: dict[int, int] = {}
+    via: dict[int, str | None] = {}
     heap = [(0.0, start)]
     goal = -1
     while heap:
@@ -162,6 +184,8 @@ def _route(
             goal = n
             break
         for e in net.adj[n]:
+            if e.road in banned:
+                continue
             t = time[n] + e.minutes
             slack = fire[e.to] - t
             if slack < margin:
@@ -169,6 +193,7 @@ def _route(
             nc = c + e.minutes * (1.0 + 2.0 * max(0.0, (COMFORT_MIN - slack) / COMFORT_MIN))
             if nc < cost.get(e.to, math.inf):
                 cost[e.to], time[e.to], dist[e.to], prev[e.to] = nc, t, dist[n] + e.length_m, n
+                via[e.to] = e.road
                 heapq.heappush(heap, (nc, e.to))
     if goal < 0:
         return none
@@ -179,15 +204,14 @@ def _route(
     nodes.reverse()
     leads = [fire[n] - time[n] for n in nodes if math.isfinite(fire[n])]
     clearance = min(leads) if leads else None
-    return EvacuationRoute(
-        civilian_area_id=area_id,
+    return EvacuationPath(
         status="clear" if clearance is None or clearance >= 2 * margin else "tight",
         path=_path(net, g, nodes),
         destination=targets[goal],
         distance_m=round(dist[goal], 1),
         eta_min=round(time[goal], 1),
         clearance_min=None if clearance is None else round(float(clearance), 1),
-        network=net.kind,
+        road_ids=distinct_roads(via[n] for n in nodes[1:]),
     )
 
 

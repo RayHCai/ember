@@ -40,6 +40,7 @@ class Wind:
 class Landscape:
     grid: Grid
     base_ros: FloatArray
+    fuel: np.ndarray
     elevation: FloatArray
     zone: BoolArray
     at_risk: BoolArray
@@ -95,6 +96,7 @@ def build_landscape(
     return Landscape(
         grid=grid,
         base_ros=base_ros,
+        fuel=fuel,
         elevation=elevation,
         zone=zone,
         at_risk=at_risk,

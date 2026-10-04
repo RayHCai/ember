@@ -112,6 +112,7 @@ describe('geo', () => {
 const msg = (id: string, sentAt: string): ResponderMessage => ({
     id,
     zoneId: 'z' as WatchZoneId,
+    responderId: null,
     kind: 'update',
     priority: 'routine',
     title: id,
