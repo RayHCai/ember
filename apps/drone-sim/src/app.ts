@@ -16,6 +16,7 @@ import type { Launch } from './launch';
 import { warn } from './log';
 import { applyDronePose } from './view/droneCamera';
 import { DroneMarker } from './view/marker';
+import { DronePath } from './view/path';
 import { loadWorld } from './world/assets';
 import { loadModels } from './world/models';
 import { toLocal, toScene } from './world/frame';
@@ -29,7 +30,7 @@ const FOCUS_RANGE_M: [number, number] = [12, 150];
 
 /**
  * The sim: one drone, fixed for the life of the process, shown as a model in the Demo Data scenario. What its camera
- * sees is rebuilt in 3D; everything else is white. Dragging orbits the view around the drone.
+ * sees is drawn in full; the rest of the map is darkened. Dragging orbits the view around the drone.
  * It moves nothing and detects nothing itself.
  */
 export class App {
@@ -42,6 +43,7 @@ export class App {
     private readonly source: DroneInfoSource;
     private world: World | null = null;
     private marker: DroneMarker | null = null;
+    private path: DronePath | null = null;
     private dronePosition: Vector3 | null = null;
     private droneId: string | null = null;
     private loading: string | null = 'Loading world…';
@@ -71,6 +73,8 @@ export class App {
         this.controls.minDistance = 4;
         this.controls.maxDistance = 3000;
         this.controls.maxPolarAngle = Math.PI * 0.495;
+        this.controls.addEventListener('start', () => (canvas.style.cursor = 'grabbing'));
+        this.controls.addEventListener('end', () => (canvas.style.cursor = ''));
         window.addEventListener('keydown', (ev) => {
             if (ev.key === 'f' || ev.key === 'F') this.focus();
         });
@@ -107,6 +111,7 @@ export class App {
             await new Promise((r) => setTimeout(r, 0));
             this.world = new World(this.scene, assets, models);
             this.marker = new DroneMarker(this.scene, models.drone);
+            this.path = new DronePath(this.scene);
             this.loading = null;
         } catch (err) {
             warn('world unavailable', err);
@@ -201,7 +206,13 @@ export class App {
         this.controls.update();
 
         const scenarioMs = this.track.scenarioTimeAt(wall) ?? world.assets.rekindleMs;
-        world.update(scenarioMs, dt, now / 1000, this.camera.position);
+        world.update(
+            scenarioMs,
+            dt,
+            now / 1000,
+            this.camera.position,
+            pose ? this.dronePosition : null,
+        );
         if (pose && spec) {
             this.sight.render(r, this.scene);
             this.marker?.update(
@@ -211,8 +222,15 @@ export class App {
                 this.track.detections,
                 wall - this.track.detectionsAt,
             );
+            this.path?.update(
+                frame,
+                pose,
+                this.track.trailAt(wall),
+                this.track.telemetry?.velocity ?? null,
+            );
         } else {
             this.sight.blind();
+            this.path?.hide();
         }
         r.render(this.scene, this.camera);
     };

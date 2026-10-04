@@ -1,12 +1,17 @@
 import {
     BufferGeometry,
+    DoubleSide,
     Float32BufferAttribute,
     Group,
     LineBasicMaterial,
     LineLoop,
     LineSegments,
+    Mesh,
+    MeshBasicMaterial,
+    ShapeUtils,
+    Vector2,
 } from 'three';
-import type { Object3D, Scene } from 'three';
+import type { Material, Object3D, Scene } from 'three';
 import type {
     CameraSpec,
     DroneDetections,
@@ -24,6 +29,8 @@ export const RISK_COLOUR: Record<RiskDetection['risk'], string> = {
     on_fire: '#ff3b30',
     at_risk: '#ffcc00',
 };
+
+const ZONE_OPACITY = 0.3;
 
 /** Detections disappear once their frame is this old. */
 export const DETECTION_TTL_MS = 6000;
@@ -63,7 +70,7 @@ function onDroneLayer(o: Object3D): void {
 
 /**
  * The followed drone in the scene: its model, its camera's frustum and ground footprint, and the
- * ground outline of each risk it reported. None of it is ever whitened or seen by the drone itself.
+ * ground outline of each risk it reported. None of it is ever darkened or seen by the drone itself.
  */
 export class DroneMarker {
     readonly group = new Group();
@@ -136,33 +143,58 @@ export class DroneMarker {
         this.detections.visible = report !== null && reportAgeMs < DETECTION_TTL_MS;
         if (report && report.frameId !== this.shownFrameId) {
             this.shownFrameId = report.frameId;
-            for (const child of this.detections.children) {
-                const line = child as LineLoop<BufferGeometry, LineBasicMaterial>;
-                line.geometry.dispose();
-                line.material.dispose();
-            }
+            this.detections.traverse((o) => {
+                if (o instanceof Mesh || o instanceof LineLoop) {
+                    (o.geometry as BufferGeometry).dispose();
+                    (o.material as Material).dispose();
+                }
+            });
             this.detections.clear();
-            // Fire last, so red outlines sit on top of the larger yellow exposure zones.
+            // Fire last, so red zones sit on top of the larger yellow exposure zones.
             const ordered = report.detections.toSorted((a, b) =>
                 a.risk === b.risk ? 0 : a.risk === 'at_risk' ? -1 : 1,
             );
             ordered.forEach((det, i) =>
-                this.detections.add(this.outline(frame, det.ground, RISK_COLOUR[det.risk], i)),
+                this.detections.add(this.zone(frame, det.ground, RISK_COLOUR[det.risk], i)),
             );
             onDroneLayer(this.detections);
         }
     }
 
-    private outline(frame: WorldFrame, ground: LatLng[], colour: string, order: number): LineLoop {
-        const pts = ground.flatMap((p) => {
+    /** The readme's coloured overlay zone: a translucent fill with a solid edge. */
+    private zone(frame: WorldFrame, ground: LatLng[], colour: string, order: number): Group {
+        const flat = ground.map((p) => {
             const { x, y } = toLocal(frame, p.lat, p.lng);
-            return [x, 1.0, -y];
+            return new Vector2(x, y);
         });
-        const g = new BufferGeometry();
-        g.setAttribute('position', new Float32BufferAttribute(pts, 3));
-        const line = new LineLoop(g, new LineBasicMaterial({ color: colour, depthTest: false }));
-        line.renderOrder = 5 + order;
-        line.frustumCulled = false;
-        return line;
+        const pts = flat.flatMap((v) => [v.x, 1.0, -v.y]);
+
+        const fill = new BufferGeometry();
+        fill.setAttribute('position', new Float32BufferAttribute(pts, 3));
+        fill.setIndex(ShapeUtils.triangulateShape(flat, []).flat());
+        const area = new Mesh(
+            fill,
+            new MeshBasicMaterial({
+                color: colour,
+                transparent: true,
+                opacity: ZONE_OPACITY,
+                side: DoubleSide,
+                depthTest: false,
+                depthWrite: false,
+            }),
+        );
+
+        const edge = new BufferGeometry();
+        edge.setAttribute('position', new Float32BufferAttribute(pts, 3));
+        const line = new LineLoop(edge, new LineBasicMaterial({ color: colour, depthTest: false }));
+
+        const zone = new Group();
+        area.renderOrder = 5 + 2 * order;
+        line.renderOrder = 6 + 2 * order;
+        for (const o of [area, line]) {
+            o.frustumCulled = false;
+            zone.add(o);
+        }
+        return zone;
     }
 }

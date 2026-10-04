@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import type { Group } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { bake } from './models';
+import { bake, buildingModel, buildingNames } from './models';
 
 const ASSETS = fileURLToPath(new URL('../../../../assets/', import.meta.url));
 const MANIFEST = JSON.parse(readFileSync(`${ASSETS}manifest.json`, 'utf8')).assets as Record<
@@ -27,7 +27,7 @@ describe('bake', () => {
             expect(geometry.index).toBeNull();
             expect(geometry.getAttribute('position').count).toBe(entry.triangles * 3);
             const sizes = Object.fromEntries(
-                ['heightM', 'crownRadiusM', 'lengthM', 'widthM', 'radiusM']
+                ['heightM', 'crownRadiusM', 'lengthM', 'widthM', 'wallHeightM', 'radiusM']
                     .filter((key) => typeof entry[key] === 'number')
                     .map((key) => [key, entry[key]]),
             );
@@ -39,6 +39,7 @@ describe('bake', () => {
         const root = await scene('trees/palm_a');
         const plain = bake(root);
         const tinted = bake(root, ['foliage']);
+        expect(tinted.colours.foliage!.g).toBeGreaterThan(tinted.colours.foliage!.r);
         const part = tinted.geometry.getAttribute('part');
         const a = plain.geometry.getAttribute('color');
         const b = tinted.geometry.getAttribute('color');
@@ -49,6 +50,34 @@ describe('bake', () => {
         expect(bark.length).toBeGreaterThan(0);
         expect(foliage.every((i) => b.getY(i) > a.getY(i))).toBe(true);
         expect(bark.every((i) => b.getY(i) === a.getY(i))).toBe(true);
+    });
+});
+
+describe('building kit', () => {
+    const names = buildingNames(Object.keys(MANIFEST).map((k) => `../../../../assets/${k}.glb`));
+
+    it('lists every building once, without its far model', () => {
+        expect(names).toContain('house_17x12');
+        expect(names.some((n) => n.endsWith('_lod1'))).toBe(false);
+        expect(names).toHaveLength(
+            Object.keys(MANIFEST).filter((k) => k.startsWith('buildings/')).length / 2,
+        );
+    });
+
+    it.each(names)('%s says what it is and what footprint it was made for', async (name) => {
+        const model = buildingModel(
+            name,
+            await scene(`buildings/${name}`),
+            await scene(`buildings/${name}_lod1`),
+        );
+        const entry = MANIFEST[`buildings/${name}`]!;
+        expect(model.kind).toBe(entry.kind);
+        expect(model.lengthM).toBe(entry.lengthM);
+        expect(model.widthM).toBe(entry.widthM);
+        const parts = new Set(model.lod.geometry.getAttribute('part').array);
+        // Roof and wall are recoloured per building; a ruin is drawn as modelled.
+        expect([...parts].toSorted()).toEqual(model.kind === 'ruin' ? [0] : [0, 1, 2]);
+        expect(model.wallHeightM > 2).toBe(model.kind !== 'ruin');
     });
 });
 

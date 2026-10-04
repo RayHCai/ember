@@ -28,9 +28,9 @@ export class World {
     ) {
         this.fire = new FireField(assets.fire);
         this.sky = new Sky(scene, assets.frame);
-        this.ground = new Ground(scene, assets, this.fire);
+        this.ground = new Ground(scene, assets, this.fire, models.ground);
         this.vegetation = new Vegetation(scene, assets, models.trees);
-        this.buildings = new Buildings(scene, assets.buildings, models.buildings);
+        this.buildings = new Buildings(scene, assets.buildings, assets.roads, models.buildings);
         this.flames = new Flames(scene, this.fire, models.flames);
         this.smoke = new Smoke(scene, this.fire, assets.windFromDeg, models.smoke);
     }
@@ -39,8 +39,14 @@ export class World {
         return (timeMs - this.assets.rekindleMs) / 60_000;
     }
 
-    /** `timeMs`: scenario time (epoch ms). */
-    update(timeMs: number, dt: number, wallS: number, camera: Vector3): void {
+    /** `timeMs`: scenario time (epoch ms). `drone`: the followed drone, kept clear of smoke. */
+    update(
+        timeMs: number,
+        dt: number,
+        wallS: number,
+        camera: Vector3,
+        drone: Vector3 | null,
+    ): void {
         const minute = this.minuteAt(timeMs);
         let fireChanged = false;
         if (
@@ -58,8 +64,8 @@ export class World {
         const L = this.sky.lighting;
         this.ground.update(L, wallS, fireChanged);
         this.vegetation.update(minute, wallS, camera);
-        this.buildings.update(minute, wallS);
+        this.buildings.update(minute, wallS, camera);
         this.flames.update(wallS);
-        this.smoke.update(dt, wallS, L.dark);
+        this.smoke.update(dt, wallS, L.dark, drone);
     }
 }

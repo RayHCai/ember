@@ -19,8 +19,10 @@ const F = Object.fromEntries(TREE_FIELDS.map((k, i) => [k, i])) as Record<
     number
 >;
 const CHUNK_M = 400;
-const LOD_NEAR_M = 350;
-const DRAW_RANGE_M = 4500;
+/** A chunk nearer than each range is drawn with that level of detail; beyond the last, with the coarsest. */
+const LOD_RANGE_M = [170, 700];
+/** How far a crown's colour moves from its model's green towards the hue seen in the imagery. */
+const IMAGERY_HUE = 0.4;
 const MIN_FLAME_MIN = 15;
 
 /** A model scaled to unit height and crown radius, so instances scale by the tree's own size. */
@@ -83,24 +85,24 @@ function treeMaterial(uniforms: {
     return withVisibility(material);
 }
 
+const luminance = (c: Color): number => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+
 /**
  * Every reconstructed tree as one of the two `assets/` variants of its growth form, instanced per
- * form, variant and 400 m chunk. Each chunk has a full and a `_lod1` mesh sharing its instances;
- * distance from the camera picks one, and chunks out of range are not drawn.
+ * form, variant and 400 m chunk. Each chunk has one mesh per level of detail sharing its
+ * instances; distance from the camera picks one, so the whole map is always drawn.
  */
 export class Vegetation {
     readonly uniforms = { uMinute: { value: 0 }, uTime: { value: 0 } };
     readonly count: number;
-    private readonly chunks: { full: InstancedMesh; lod: InstancedMesh }[] = [];
+    private readonly chunks: InstancedMesh[][] = [];
 
     constructor(scene: Scene, assets: WorldAssets, models: TreeModels) {
         const { trees, treeStride: S } = assets;
         this.count = trees.length / S;
         const material = treeMaterial(this.uniforms);
-        const geometries = FORMS.map((form) => ({
-            full: models[form].full.map(unitTree),
-            lod: models[form].lod.map(unitTree),
-        }));
+        const geometries = FORMS.map((form) => models[form].map((lods) => lods.map(unitTree)));
+        const greens = FORMS.map((form) => models[form].map((lods) => lods[0]!.colours.foliage));
         const buckets = new Map<string, number[]>();
         for (let i = 0; i < this.count; i++) {
             const o = i * S;
@@ -118,10 +120,12 @@ export class Vegetation {
         const pos = new Vector3();
         const scale = new Vector3();
         const colour = new Color();
+        const seen = new Color();
         for (const [key, ids] of buckets) {
             const [form, variant] = key.split(':').map(Number) as [number, number];
-            const g = geometries[form]!;
-            const full = new InstancedMesh(g.full[variant]!.clone(), material, ids.length);
+            const levels = geometries[form]![variant]!;
+            const green = greens[form]![variant] ?? new Color(0.2, 0.4, 0.1);
+            const full = new InstancedMesh(levels[0]!.clone(), material, ids.length);
             const fire = new Float32Array(ids.length * 4);
             ids.forEach((i, k) => {
                 const o = i * S;
@@ -131,14 +135,12 @@ export class Vegetation {
                 pos.set(trees[o + F.x]!, 0, -trees[o + F.y]!);
                 scale.set(r, trees[o + F.height_m]!, r * (0.85 + 0.3 * ((seed * 7.31) % 1)));
                 full.setMatrixAt(k, m.compose(pos, q, scale));
-                // Seen from above, crowns in imagery include their own shadow; lift them a little.
-                colour.setRGB(
-                    Math.min(1, trees[o + F.r]! * 1.35),
-                    Math.min(1, trees[o + F.g]! * 1.35),
-                    Math.min(1, trees[o + F.b]! * 1.25),
-                    'srgb',
-                );
-                full.setColorAt(k, colour);
+                // Crowns in imagery are darkened by their own shadow, so only their hue is used:
+                // the model's green, shifted towards it, at the model's brightness.
+                seen.setRGB(trees[o + F.r]!, trees[o + F.g]!, trees[o + F.b]!, 'srgb');
+                seen.multiplyScalar(luminance(green) / Math.max(luminance(seen), 1e-3));
+                colour.copy(green).lerp(seen, IMAGERY_HUE);
+                full.setColorAt(k, colour.multiplyScalar(0.86 + 0.24 * ((seed * 5.77) % 1)));
                 fire.set(
                     [
                         trees[o + F.arrival_min]!,
@@ -151,25 +153,31 @@ export class Vegetation {
             });
             const aFire = new InstancedBufferAttribute(fire, 4);
             full.geometry.setAttribute('aFire', aFire);
-            const lod = new InstancedMesh(g.lod[variant]!.clone(), material, ids.length);
-            lod.geometry.setAttribute('aFire', aFire);
-            lod.instanceMatrix = full.instanceMatrix;
-            lod.instanceColor = full.instanceColor;
             full.computeBoundingSphere();
-            lod.boundingSphere = full.boundingSphere;
-            this.chunks.push({ full, lod });
-            scene.add(full, lod);
+            const far = levels.slice(1).map((geometry) => {
+                const lod = new InstancedMesh(geometry.clone(), material, ids.length);
+                lod.geometry.setAttribute('aFire', aFire);
+                lod.instanceMatrix = full.instanceMatrix;
+                lod.instanceColor = full.instanceColor;
+                lod.boundingSphere = full.boundingSphere;
+                return lod;
+            });
+            this.chunks.push([full, ...far]);
+            scene.add(full, ...far);
         }
     }
 
     update(minute: number, timeS: number, camera: Vector3): void {
         this.uniforms.uMinute.value = minute;
         this.uniforms.uTime.value = timeS;
-        for (const { full, lod } of this.chunks) {
-            const s = full.boundingSphere;
+        for (const levels of this.chunks) {
+            const s = levels[0]!.boundingSphere;
             const d = s ? s.center.distanceTo(camera) - s.radius : 0;
-            full.visible = d < LOD_NEAR_M;
-            lod.visible = !full.visible && d < DRAW_RANGE_M;
+            const near = LOD_RANGE_M.findIndex((range) => d < range);
+            const level = Math.min(near < 0 ? LOD_RANGE_M.length : near, levels.length - 1);
+            levels.forEach((mesh, k) => {
+                mesh.visible = k === level;
+            });
         }
     }
 }

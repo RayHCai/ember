@@ -6,12 +6,9 @@ import {
     LinearMipmapLinearFilter,
     Mesh,
     NearestFilter,
-    PlaneGeometry,
     RedFormat,
     RGBAFormat,
     ShaderMaterial,
-    Shape,
-    ShapeGeometry,
     Vector2,
     Vector3,
     Vector4,
@@ -20,6 +17,7 @@ import type { Scene } from 'three';
 import type { Road, WorldAssets } from './assets';
 import type { FireField } from './fireField';
 import type { Extent } from './frame';
+import type { BakedModel } from './models';
 import type { Lighting } from './sky';
 import { VIS_PARS, VIS_UNIFORMS } from './visibility';
 
@@ -34,8 +32,8 @@ void main() {
     gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
 
-// Ground rebuilt from Demo Data's fuel classes (see FUELS in model/build.py) and roads; no
-// imagery. Fire compositing follows render/compositor.py: char behind the front, flames on it.
+// Ground rebuilt from Demo Data's fuel classes (see FUELS in model/build.py) and roads, as flat
+// facets; no imagery. Fire compositing follows render/compositor.py: char behind the front, flames on it.
 const FRAG = /* glsl */ `
 uniform sampler2D uFuel;
 uniform sampler2D uFire;
@@ -66,52 +64,47 @@ vec3 lin(vec3 c) { return pow(c, vec3(2.2)); }
 
 // none, grass, shrub, tree, urban, structure, bare, water
 vec3 cover(float k) {
-    if (k < 0.5) return lin(vec3(0.46, 0.43, 0.37));
-    if (k < 1.5) return lin(vec3(0.50, 0.49, 0.30));
-    if (k < 2.5) return lin(vec3(0.38, 0.43, 0.26));
-    if (k < 3.5) return lin(vec3(0.26, 0.36, 0.20));
-    if (k < 4.5) return lin(vec3(0.44, 0.43, 0.40));
-    if (k < 5.5) return lin(vec3(0.40, 0.39, 0.37));
-    if (k < 6.5) return lin(vec3(0.54, 0.48, 0.38));
-    return lin(vec3(0.16, 0.33, 0.45));
+    if (k < 0.5) return lin(vec3(0.72, 0.69, 0.60));
+    if (k < 1.5) return lin(vec3(0.60, 0.67, 0.35));
+    if (k < 2.5) return lin(vec3(0.47, 0.59, 0.31));
+    if (k < 3.5) return lin(vec3(0.35, 0.51, 0.27));
+    if (k < 4.5) return lin(vec3(0.71, 0.69, 0.64));
+    if (k < 5.5) return lin(vec3(0.67, 0.65, 0.61));
+    if (k < 6.5) return lin(vec3(0.79, 0.71, 0.53));
+    return lin(vec3(0.17, 0.45, 0.62));
 }
 float fuelAt(vec2 cell) {
     vec2 c = clamp(cell, vec2(0.0), uGrid - 1.0);
     return floor(texture2D(uFuel, (c + 0.5) / uGrid).r * 255.0 + 0.5);
 }
+// The ground is drawn as flat facets like the models standing on it: a mosaic of triangles
+// size metres across. Returns the centre of the triangle under xy and its own random tone.
+vec3 facet(vec2 xy, float size) {
+    vec2 s = vec2(xy.x - xy.y * 0.57735, xy.y * 1.1547) / size;
+    vec2 i = floor(s);
+    vec2 f = fract(s);
+    float upper = step(1.0, f.x + f.y);
+    vec2 c = i + mix(vec2(1.0 / 3.0), vec2(2.0 / 3.0), upper);
+    return vec3(vec2(c.x + c.y * 0.5, c.y * 0.8660254) * size, hash12(i + upper * 17.0));
+}
 
 void main() {
-    float vis = emberVisible(vWorld);
-    if (vis < 0.5) {
-        gl_FragColor = vec4(1.0);
-        return;
-    }
     vec2 xy = vec2(vWorld.x, -vWorld.z);
-    vec2 fuv = (xy - uFireExtent.xy) / (uFireExtent.zw - uFireExtent.xy);
+    vec3 tile = facet(xy, 7.0);
+    vec2 fuv = (tile.xy - uFireExtent.xy) / (uFireExtent.zw - uFireExtent.xy);
     bool onGrid = all(greaterThanEqual(fuv, vec2(0.0))) && all(lessThanEqual(fuv, vec2(1.0)));
 
-    // Blend the four nearest 10 m cells, with a noisy, sharpened weight so class edges wander.
-    vec2 g = fuv * uGrid - 0.5 + (vec2(vnoise(xy / 6.0), vnoise(xy / 6.0 + 17.0)) - 0.5) * 0.9;
-    vec2 c0 = floor(g);
-    vec2 w = smoothstep(0.25, 0.75, fract(g));
-    float k00 = fuelAt(c0);
-    float k10 = fuelAt(c0 + vec2(1.0, 0.0));
-    float k01 = fuelAt(c0 + vec2(0.0, 1.0));
-    float k11 = fuelAt(c0 + vec2(1.0, 1.0));
-    vec3 base = mix(mix(cover(k00), cover(k10), w.x), mix(cover(k01), cover(k11), w.x), w.y);
-    float water = mix(mix(float(k00 > 6.5), float(k10 > 6.5), w.x), mix(float(k01 > 6.5), float(k11 > 6.5), w.x), w.y);
-    float debris = mix(mix(float(k00 > 3.5 && k00 < 5.5), float(k10 > 3.5 && k10 < 5.5), w.x),
-                       mix(float(k01 > 3.5 && k01 < 5.5), float(k11 > 3.5 && k11 < 5.5), w.x), w.y);
-    if (!onGrid) {
-        // Beyond the grid: the sea to the west, open ground elsewhere.
-        water = fuv.x < 0.0 ? 1.0 : 0.0;
-        debris = 0.0;
-        base = cover(water > 0.5 ? 7.0 : 0.0);
-    }
-    base *= 0.88 + 0.24 * vnoise(xy / 9.0) + 0.08 * (vnoise(xy / 1.7) - 0.5);
+    // Beyond the grid: the sea to the west, open ground elsewhere.
+    float k = onGrid ? fuelAt(floor(fuv * uGrid)) : (fuv.x < 0.0 ? 7.0 : 0.0);
+    float water = float(k > 6.5);
+    float debris = float(k > 3.5 && k < 5.5);
+    if (water > 0.5) tile = facet(xy + 3.0 * sin(uTime * 0.2 + xy.yx * 0.02), 16.0);
+    vec3 base = cover(k) * (0.9 + 0.2 * tile.z);
 
     vec2 ruv = (xy - uRoadExtent.xy) / (uRoadExtent.zw - uRoadExtent.xy);
-    float road = texture2D(uRoads, ruv).r * (1.0 - water);
+    float paved = texture2D(uRoads, ruv).r * (1.0 - water);
+    float road = smoothstep(0.4, 0.6, paved);
+    float kerb = smoothstep(0.12, 0.3, paved) - road;
 
     vec4 f = onGrid ? texture2D(uFire, fuv) : vec4(0.0);
     float inten = f.r;
@@ -119,10 +112,11 @@ void main() {
     float burnt = f.b;
     float glow = f.a;
 
-    vec3 charCol = lin(vec3(0.11, 0.10, 0.09)) * (0.7 + 0.6 * vnoise(xy / 4.0));
+    vec3 charCol = lin(vec3(0.11, 0.10, 0.09)) * (0.7 + 0.6 * tile.z);
     vec3 ash = lin(vec3(0.42, 0.40, 0.37));
     base = mix(base, mix(charCol, ash, 0.45 * debris), burnt);
-    base = mix(base, lin(vec3(0.20, 0.20, 0.21)) * (0.9 + 0.2 * vnoise(xy / 3.0)), road * (1.0 - 0.4 * burnt));
+    base = mix(base, lin(vec3(0.80, 0.78, 0.73)), kerb * (1.0 - 0.6 * burnt));
+    base = mix(base, lin(vec3(0.30, 0.31, 0.33)), road * (1.0 - 0.4 * burnt));
 
     float ndl = max(uSunDir.y, 0.0);
     vec3 col = base * (uSunColor * ndl + uAmbient);
@@ -153,6 +147,7 @@ void main() {
     gl_FragColor = vec4(col, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
+    gl_FragColor.rgb = emberShade(gl_FragColor.rgb, vWorld);
 }`;
 
 const vec4Of = (e: Extent): Vector4 => new Vector4(e.minX, e.minY, e.maxX, e.maxY);
@@ -191,12 +186,17 @@ function roadTexture(roads: Road[], e: Extent): CanvasTexture {
     return texture;
 }
 
-/** Flat ground coloured by land cover, with roads, char and flames composited per frame. */
+const HORIZON_M = 60000;
+
+/**
+ * Flat ground coloured by land cover, with roads, char and flames composited per frame: the
+ * `assets/` ground square, stretched over the world and painted by this shader.
+ */
 export class Ground {
     readonly fireTexture: DataTexture;
     private readonly material: ShaderMaterial;
 
-    constructor(scene: Scene, assets: WorldAssets, fire: FireField) {
+    constructor(scene: Scene, assets: WorldAssets, fire: FireField, model: BakedModel) {
         const { width, height } = assets.fire;
         this.fireTexture = new DataTexture(fire.texture, width, height, RGBAFormat);
         this.fireTexture.magFilter = LinearFilter;
@@ -227,22 +227,17 @@ export class Ground {
             },
         });
 
+        const { sizeM } = model.size;
+        if (!sizeM) throw new Error('ground model without sizeM');
         const e = assets.extent;
-        const inner = new Mesh(new PlaneGeometry(e.maxX - e.minX, e.maxY - e.minY), this.material);
-        inner.rotation.x = -Math.PI / 2;
+        const inner = new Mesh(model.geometry, this.material);
+        inner.scale.set((e.maxX - e.minX) / sizeM, 1, (e.maxY - e.minY) / sizeM);
         inner.position.set((e.minX + e.maxX) / 2, 0, -(e.minY + e.maxY) / 2);
-        // Ground to the horizon around the data, so oblique views never end in a void.
-        const skirt = new Shape();
-        const R = 30000;
-        skirt.moveTo(-R, -R).lineTo(R, -R).lineTo(R, R).lineTo(-R, R).lineTo(-R, -R);
-        const hole = new Shape();
-        hole.moveTo(e.minX, e.minY)
-            .lineTo(e.minX, e.maxY)
-            .lineTo(e.maxX, e.maxY)
-            .lineTo(e.maxX, e.minY);
-        skirt.holes.push(hole);
-        const outer = new Mesh(new ShapeGeometry(skirt), this.material);
-        outer.rotation.x = -Math.PI / 2;
+        // Ground to the horizon around the data, so oblique views never end in a void. It lies
+        // just under the first square, which covers it where the two overlap.
+        const outer = new Mesh(model.geometry, this.material);
+        outer.scale.set(HORIZON_M / sizeM, 1, HORIZON_M / sizeM);
+        outer.position.y = -0.4;
         scene.add(inner, outer);
     }
 

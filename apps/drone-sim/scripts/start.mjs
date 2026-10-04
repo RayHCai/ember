@@ -1,6 +1,9 @@
 // Starts the sim with its launch settings: the desktop window, or a browser tab with --browser.
 // The drone is chosen in the window; --drone skips that screen.
 import { spawn } from 'node:child_process';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { DEFAULT_DEMO_DATA_URL } from '../src/launch.ts';
 
@@ -41,7 +44,37 @@ const env = {
     EMBER_DEMO_DATA_URL: demoDataUrl,
 };
 
-let command = ['tauri', 'dev'];
+/** CSP sources for a service on another host; the window's CSP already allows loopback. */
+function remoteSources(raw, schemes) {
+    if (!raw) return [];
+    const u = new URL(/^[a-z]+:\/\//i.test(raw) ? raw : `http://${raw}`);
+    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return [];
+    const secure = u.protocol === 'https:' || u.protocol === 'wss:';
+    return schemes.map((scheme) => `${scheme}${secure ? 's' : ''}://${u.host}`);
+}
+
+/** Tauri config args that widen the window's CSP to the remote services this launch names. */
+function cspOverride() {
+    const extra = [
+        ...remoteSources(droneInfoUrl, ['http', 'ws']),
+        ...remoteSources(demoDataUrl, ['http']),
+    ];
+    if (extra.length === 0) return [];
+    const conf = JSON.parse(
+        readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8'),
+    );
+    const csp = conf.app.security.csp
+        .split(';')
+        .map((d) => d.trim())
+        .map((d) => (/^(connect|img)-src /.test(d) ? `${d} ${extra.join(' ')}` : d))
+        .join('; ');
+    // A file rather than inline JSON, which the Windows shell would strip the quotes from.
+    const file = join(mkdtempSync(join(tmpdir(), 'ember-drone-sim-')), 'csp.json');
+    writeFileSync(file, JSON.stringify({ app: { security: { csp } } }));
+    return ['--config', file];
+}
+
+let command = opts.browser ? [] : ['tauri', 'dev', ...cspOverride()];
 if (opts.browser) {
     const q = new URLSearchParams();
     if (drone) q.set('drone', drone);

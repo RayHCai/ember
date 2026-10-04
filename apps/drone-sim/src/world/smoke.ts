@@ -6,6 +6,7 @@ import {
     MeshLambertMaterial,
     Quaternion,
     Vector3,
+    Vector4,
 } from 'three';
 import type { Scene } from 'three';
 import type { FireField } from './fireField';
@@ -24,6 +25,8 @@ type Particle = {
 };
 
 const MAX_PARTICLES = 4000;
+/** Smoke thins out within this many metres of the drone, so a plume never hides it. */
+const BUBBLE_RADIUS_M = 30;
 
 const PARS = /* glsl */ `
 attribute vec2 aLook; // alpha, firelight (1 fresh off the flames, 0 drifted away)
@@ -40,6 +43,11 @@ vHeight = sCentre.y;
 if (sNear < 0.01) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 `;
 
+const BUBBLE = /* glsl */ `
+diffuseColor.a *= vLook.x;
+if (uBubble.w > 0.0) diffuseColor.a *= smoothstep(0.5 * uBubble.w, uBubble.w, distance(vVisWorld, uBubble.xyz));
+`;
+
 /**
  * Smoke columns rising from burning and smouldering cells, drifting downwind: instanced `assets/`
  * smoke puffs, lit by the sun, that grow and fade as they age.
@@ -49,6 +57,8 @@ export class Smoke {
     private readonly meshes: InstancedMesh[];
     private readonly looks: InstancedBufferAttribute[];
     private readonly glow = { value: new Color(0, 0, 0) };
+    /** xyz: the drone; w: bubble radius, 0 for none. */
+    private readonly bubble = { value: new Vector4() };
     private readonly downwind: { e: number; n: number };
     private carry = 0;
 
@@ -69,25 +79,24 @@ export class Smoke {
         });
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uGlow = this.glow;
+            shader.uniforms.uBubble = this.bubble;
             shader.vertexShader = shader.vertexShader
                 .replace('#include <common>', `#include <common>\n${PARS}`)
                 .replace('#include <project_vertex>', `#include <project_vertex>\n${PROJECT}`);
             shader.fragmentShader = shader.fragmentShader
                 .replace(
                     '#include <common>',
-                    '#include <common>\nuniform vec3 uGlow;\nvarying vec2 vLook;\nvarying float vHeight;',
+                    '#include <common>\nuniform vec3 uGlow;\nuniform vec4 uBubble;\nvarying vec2 vLook;\nvarying float vHeight;',
                 )
-                .replace(
-                    '#include <color_fragment>',
-                    '#include <color_fragment>\ndiffuseColor.a *= vLook.x;',
-                )
+                // vVisWorld comes from withVisibility.
+                .replace('#include <color_fragment>', `#include <color_fragment>\n${BUBBLE}`)
                 // Firelight on the underside of the plume, as in compositor.py.
                 .replace(
                     '#include <emissivemap_fragment>',
                     '#include <emissivemap_fragment>\ntotalEmissiveRadiance += uGlow * vLook.y * exp(-vHeight / 150.0);',
                 );
         };
-        withVisibility(material, 'hide');
+        withVisibility(material);
         this.looks = [];
         this.meshes = models.map((model) => {
             const mesh = new InstancedMesh(model.geometry.clone(), material, MAX_PARTICLES);
@@ -128,7 +137,9 @@ export class Smoke {
     }
 
     /** `dark` 0..1 makes the fire's glow on the smoke stronger at night. */
-    update(dt: number, timeS: number, dark: number): void {
+    update(dt: number, timeS: number, dark: number, drone: Vector3 | null): void {
+        if (drone) this.bubble.value.set(drone.x, drone.y, drone.z, BUBBLE_RADIUS_M);
+        else this.bubble.value.setW(0);
         const f = this.fire;
         const rate = Math.min(200, 8 + f.totalIntensity * 0.8 + f.smoulderingCount * 0.004);
         this.carry += f.burningCount + f.smoulderingCount > 0 ? rate * dt : 0;

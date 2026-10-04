@@ -11,6 +11,9 @@ type Sample = { at: number; telemetry: DroneTelemetry };
 
 /** Rendering a little in the past lets poses interpolate between 10 Hz telemetry messages. */
 const RENDER_DELAY_MS = 150;
+/** Past-path points: one per metre or so, about 10 minutes of flight at survey speed. */
+const TRAIL_MAX = 6000;
+const TRAIL_STEP_M = 1;
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
@@ -40,6 +43,7 @@ export class DroneTrack {
     detectionsAt = 0;
     lastMessageAt = 0;
     private samples: Sample[] = [];
+    private trail: { at: number; pose: DronePose }[] = [];
     private clock: { timeMs: number; speed: number; at: number } | null = null;
 
     follow(droneId: string | null): void {
@@ -47,6 +51,7 @@ export class DroneTrack {
         this.detections = null;
         this.detectionsAt = 0;
         this.samples = [];
+        this.trail = [];
         this.clock = null;
     }
 
@@ -60,6 +65,7 @@ export class DroneTrack {
         if (msg.type === 'telemetry') {
             this.samples.push({ at: now, telemetry: msg });
             if (this.samples.length > 30) this.samples.shift();
+            this.record(now, msg.pose);
             if (msg.scenarioTime) {
                 const t = Date.parse(msg.scenarioTime);
                 if (Number.isFinite(t))
@@ -96,6 +102,28 @@ export class DroneTrack {
             }
         }
         return s[0]!.telemetry.pose;
+    }
+
+    /** Where the followed drone has been, oldest first, up to the pose shown at `now`. */
+    trailAt(now: number): DronePose[] {
+        const t = now - RENDER_DELAY_MS;
+        const out: DronePose[] = [];
+        for (const p of this.trail) {
+            if (p.at > t) break;
+            out.push(p.pose);
+        }
+        return out;
+    }
+
+    private record(at: number, pose: DronePose): void {
+        const last = this.trail.at(-1)?.pose;
+        if (last) {
+            const north = (pose.lat - last.lat) * 110_740;
+            const east = (pose.lng - last.lng) * 111_320 * Math.cos((pose.lat * Math.PI) / 180);
+            if (Math.hypot(north, east, pose.altM - last.altM) < TRAIL_STEP_M) return;
+        }
+        this.trail.push({ at, pose });
+        if (this.trail.length > TRAIL_MAX) this.trail.shift();
     }
 
     /** Scenario time (epoch ms) the drone's sensors follow, extrapolated to `now`. */

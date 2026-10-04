@@ -1,0 +1,8 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        // Clippy compiles the Tauri shell, whose generate_context! embeds ../dist and fails without it.
+        "lint": { "dependsOn": ["build"] }
+    }
+}

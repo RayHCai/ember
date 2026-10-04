@@ -14,6 +14,8 @@ import type { Material, Scene, Texture, WebGLRenderer } from 'three';
 export const LAYER = { WORLD: 0, EFFECTS: 1, DRONE: 2 } as const;
 
 const DEPTH_SIZE = 1024;
+/** Brightness left on what the drone cannot see (display colour, after tone mapping). */
+const UNSEEN_SHADE = 0.38;
 
 // The depth texture may not be bound while it is being rendered into.
 const placeholder = new DataTexture(new Uint8Array(4), 1, 1, RGBAFormat);
@@ -49,20 +51,17 @@ float emberVisible(vec3 p) {
     float seen = n * f / (f - d * (f - n));
     return c.w <= seen + 1.0 + 0.02 * c.w ? 1.0 : 0.0;
 }
+vec3 emberShade(vec3 rgb, vec3 p) {
+    return rgb * mix(${UNSEEN_SHADE.toFixed(2)}, 1.0, emberVisible(p));
+}
 `;
 
 /**
- * Patches a built-in material so what the drone cannot see is white (`hide`: transparent, for
- * smoke). Chains any `onBeforeCompile` the material already has.
+ * Patches a built-in material so what the drone cannot see is darkened. Chains any
+ * `onBeforeCompile` the material already has.
  */
-export function withVisibility<T extends Material>(
-    material: T,
-    mode: 'white' | 'hide' = 'white',
-): T {
-    const apply =
-        mode === 'hide'
-            ? 'gl_FragColor.a *= emberVisible(vVisWorld);'
-            : 'gl_FragColor.rgb = mix(vec3(1.0), gl_FragColor.rgb, emberVisible(vVisWorld));';
+export function withVisibility<T extends Material>(material: T): T {
+    const apply = 'gl_FragColor.rgb = emberShade(gl_FragColor.rgb, vVisWorld);';
     const previous = material.onBeforeCompile.bind(material);
     const key = material.onBeforeCompile.toString();
     material.onBeforeCompile = (shader, renderer) => {
@@ -84,7 +83,7 @@ vVisWorld = (modelMatrix * visWorld).xyz;`,
             .replace('#include <dithering_fragment>', `#include <dithering_fragment>\n${apply}`);
     };
     // Patched materials must not share a compiled program with unpatched ones.
-    material.customProgramCacheKey = () => `${key}:visibility:${mode}`;
+    material.customProgramCacheKey = () => `${key}:visibility`;
     return material;
 }
 
@@ -120,7 +119,7 @@ export class DroneSight {
         u.uVisOn.value = 1;
     }
 
-    /** Before the drone's first pose: nothing is seen, so the whole world is white. */
+    /** Before the drone's first pose: nothing is seen, so the whole world is dark. */
     blind(): void {
         VIS_UNIFORMS.uVisOn.value = 1;
         // All zeros puts every point at w = 0, which emberVisible treats as unseen.

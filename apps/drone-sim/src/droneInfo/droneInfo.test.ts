@@ -8,6 +8,7 @@ import { parseDroneInfoMessage } from './messages';
 import { DroneTrack, interpolatePose } from './track';
 
 const pose = { lat: 20.87, lng: -156.67, altM: 150, headingDeg: 350, pitchDeg: -50 };
+const northOf = (northM: number) => ({ ...pose, lat: pose.lat + northM / 110_740 });
 const camera = { widthPx: 480, heightPx: 360, hfovDeg: 84 };
 const telemetry: DroneTelemetry = {
     type: 'telemetry',
@@ -94,6 +95,20 @@ describe('DroneTrack', () => {
         track.ingest(telemetry, 1000);
         expect(track.camera).toEqual(camera);
         expect(track.scenarioTimeAt(2000)).toBe(Date.parse('2023-08-08T16:31:00-10:00'));
+    });
+
+    it('keeps a trail of moves, behind the rendered pose', () => {
+        const track = new DroneTrack();
+        track.follow('d1');
+        [0, 0.2, 5, 10].forEach((m, i) =>
+            track.ingest({ ...telemetry, pose: northOf(m) }, 1000 + i * 100),
+        );
+        expect(track.trailAt(1300 + 150).map((p) => p.lat)).toEqual(
+            [0, 5, 10].map((m) => northOf(m).lat),
+        );
+        expect(track.trailAt(1200 + 150)).toHaveLength(2);
+        track.follow('d1');
+        expect(track.trailAt(5000)).toEqual([]);
     });
 
     it('interpolates headings the short way round', () => {
