@@ -37,12 +37,12 @@ Everything is on one planning grid: the extent of the zone, risk zones, detectio
 areas, shelters and stations plus 1.5 km, at 30 m cells or coarser so it stays under 40,000 cells.
 A run takes well under a second on a laptop.
 
-| Output             | How                                                                                                                                                                                                                                                                                                                                                       |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Output             | How                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `fireSpread`       | Minimum travel time (Dijkstra) over a 16-neighbour grid from every `on_fire` zone and confident detection, each started at its age. Spread rate = fuel base rate × dryness (temperature, humidity) × elliptical wind factor × slope factor. Output: arrival minutes per cell, perimeter isochrones every `bandMin`, the centroid track and the heading. |
-| `attackZones`      | The forecast is a tree (each cell burns from one parent). A cell's value is everything downstream of it, people weighted above forest. Candidates must be reachable from a station (roads, then on foot) 15 min before the fire, and slow fronts beat fast ones. Top-N with a 400 m minimum separation; drop site is the nearest road point.              |
-| `civilianImpacts`  | Earliest arrival over each area's cells. `gradient` is 1 for burning now, 0 for not reached in the horizon. Severity: `immediate` ≤ 60 min, `warning` ≤ 120, `watch` later, `clear` never.                                                                                                                                                               |
-| `evacuationRoutes` | For every impacted area, a time-aware search over the road network to the nearest safe zone: a node is passable only if the evacuee reaches it `safetyMarginMin` before the fire, and nodes the fire reaches soon after cost more. No safe zones: road exits at the planning edge. No roads: cross-country over the grid.                                  |
+| `attackZones`      | The forecast is a tree (each cell burns from one parent). A cell's value is everything downstream of it, people weighted above forest. Candidates must be reachable from a station (roads, then on foot) 15 min before the fire, and slow fronts beat fast ones. Top-N with a 400 m minimum separation; drop site is the nearest road point.            |
+| `civilianImpacts`  | Earliest arrival over each area's cells. `gradient` is 1 for burning now, 0 for not reached in the horizon. Severity: `immediate` ≤ 60 min, `warning` ≤ 120, `watch` later, `clear` never.                                                                                                                                                              |
+| `evacuationRoutes` | For every impacted area, a time-aware search over the road network to the nearest safe zone: a node is passable only if the evacuee reaches it `safetyMarginMin` before the fire, and nodes the fire reaches soon after cost more. No safe zones: road exits at the planning edge. No roads: cross-country over the grid.                               |
 
 Missing context degrades rather than fails, and each fallback is listed in `assumptions`: no
 terrain means flat ground, and no fuel map means timber inside the zone, shrub outside and urban in
@@ -62,6 +62,10 @@ spotting, no fuel moisture by time of day, no suppression). Constants are at the
 | `attackZoneCount`    | 5       |
 | `evacuationDelayMin` | 10      |
 | `safetyMarginMin`    | 15      |
+| `avoidPaths`         | none    |
+
+`avoidPaths` lists paths (e.g. a route reported blocked) that evacuation routes keep off wherever
+another way out exists: roads on them cost 20x their travel time.
 
 ## Run
 
@@ -75,12 +79,12 @@ uv run --package ember-planner ember-planner plan context.json --out result.json
 Both expose `GET /healthz`: the orchestrator `{ service, ok, inFlight }`, the worker `{ service, ok }`
 once Celery is ready.
 
-| Variable                          | Default                    | Meaning                          |
-| --------------------------------- | -------------------------- | -------------------------------- |
-| `EMBER_REDIS_URL`                 | `redis://localhost:6379/0` | Job queue, Celery broker/results |
-| `EMBER_API_URL`                   | `http://localhost:4001`    | api base URL                     |
+| Variable                          | Default                     | Meaning                          |
+| --------------------------------- | --------------------------- | -------------------------------- |
+| `EMBER_REDIS_URL`                 | `redis://localhost:6379/0`  | Job queue, Celery broker/results |
+| `EMBER_API_URL`                   | `http://localhost:4001`     | api base URL                     |
 | `EMBER_PLANNER_KEY`               | none; orchestrator needs it | Bearer token for the api         |
-| `EMBER_PLANNER_MAX_IN_FLIGHT`     | `4`                        | Jobs dispatched at once          |
-| `EMBER_PLANNER_JOB_TIMEOUT_S`     | `600`                      | Worker deadline per job          |
-| `EMBER_PLANNER_ORCHESTRATOR_PORT` | `4007`                     | Orchestrator health port         |
-| `EMBER_PLANNER_WORKER_PORT`       | `4008`                     | Worker health port               |
+| `EMBER_PLANNER_MAX_IN_FLIGHT`     | `4`                         | Jobs dispatched at once          |
+| `EMBER_PLANNER_JOB_TIMEOUT_S`     | `600`                       | Worker deadline per job          |
+| `EMBER_PLANNER_ORCHESTRATOR_PORT` | `4007`                      | Orchestrator health port         |
+| `EMBER_PLANNER_WORKER_PORT`       | `4008`                      | Worker health port               |

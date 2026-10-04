@@ -95,6 +95,11 @@ export const plannerOptions = {
         attackZoneCount: { type: 'integer', minimum: 0 },
         evacuationDelayMin: { type: 'number', minimum: 0 },
         safetyMarginMin: { type: 'number', minimum: 0 },
+        avoidPaths: {
+            type: 'array',
+            maxItems: 20,
+            items: { type: 'array', minItems: 2, maxItems: 10_000, items: latLng },
+        },
     },
 } as const;
 

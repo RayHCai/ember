@@ -51,6 +51,7 @@ class PlannerOptions(Wire):
     attack_zone_count: int = Field(default=5, ge=0, le=50)
     evacuation_delay_min: float = Field(default=10, ge=0)
     safety_margin_min: float = Field(default=15, ge=0)
+    avoid_paths: list[list[LatLng]] = Field(default_factory=list, max_length=20)
 
 
 class PlannerJobRequest(Wire):

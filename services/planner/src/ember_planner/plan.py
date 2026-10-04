@@ -41,6 +41,7 @@ def plan(job: PlannerJobRequest, ctx: PlannerContext, now: datetime | None = Non
             ctx.safe_zones,
             opts.evacuation_delay_min,
             opts.safety_margin_min,
+            opts.avoid_paths,
         )
     if not ctx.stations:
         land.assumptions.append("stations: none known, so attack zones ignore travel time")

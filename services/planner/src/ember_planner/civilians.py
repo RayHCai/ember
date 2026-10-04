@@ -2,7 +2,8 @@
 
 Evacuation is a time-aware search: a node is passable only if the evacuee gets there at least the
 safety margin before the fire does, so a route never threads between two fires closing on it.
-Nodes the fire reaches soon after the evacuee passes cost more, so routes keep their distance.
+Nodes the fire reaches soon after the evacuee passes cost more, so routes keep their distance,
+and roads on a path to avoid cost far more, so a route leaves them wherever another way exists.
 """
 
 from __future__ import annotations
@@ -32,6 +33,9 @@ WARNING_MIN = 120.0
 # Lead over the fire below which a route starts paying for proximity, up to 3x its travel time.
 COMFORT_MIN = 60.0
 DRIVEWAY_KMH = 25.0
+# Roads within this of a path to avoid cost this many times their travel time.
+AVOID_M = 15.0
+AVOID_FACTOR = 20.0
 EXIT_EDGE_CELLS = 2
 
 
@@ -81,10 +85,12 @@ def evacuation_routes(
     safe_zones: list[SafeZone],
     delay_min: float,
     margin_min: float,
+    avoid_paths: list[list[LatLng]] | None = None,
 ) -> list[EvacuationRoute]:
     g = land.grid
     by_id = {a.id: a for a in areas}
     fire = node_fire_times(net, g, spread.arrival)
+    weight = _avoid_weights(net, g, avoid_paths or [])
     targets = _targets(net, g, fire, safe_zones)
     routes = []
     for impact in impacts:
@@ -94,8 +100,18 @@ def evacuation_routes(
         x, y = g.frame.point(area.center)
         start, d = net.nearest(x, y)
         t0 = delay_min + d / mpm(DRIVEWAY_KMH)
-        routes.append(_route(area.id, net, g, fire, targets, start, t0, margin_min))
+        routes.append(_route(area.id, net, g, fire, targets, weight, start, t0, margin_min))
     return routes
+
+
+def _avoid_weights(net: Network, g: Grid, avoid_paths: list[list[LatLng]]) -> FloatArray:
+    """Each node's cost factor: `AVOID_FACTOR` near a path to avoid, else 1."""
+    weight = np.ones(net.size)
+    lines = [shapely.LineString(g.frame.ring(p)) for p in avoid_paths if len(p) >= 2]
+    if lines:
+        near = shapely.dwithin(shapely.points(net.xy), shapely.MultiLineString(lines), AVOID_M)
+        weight[near] = AVOID_FACTOR
+    return weight
 
 
 def _targets(
@@ -132,6 +148,7 @@ def _route(
     g: Grid,
     fire: FloatArray,
     targets: dict[int, Destination],
+    weight: FloatArray,
     start: int,
     t0: float,
     margin: float,
@@ -166,7 +183,8 @@ def _route(
             slack = fire[e.to] - t
             if slack < margin:
                 continue
-            nc = c + e.minutes * (1.0 + 2.0 * max(0.0, (COMFORT_MIN - slack) / COMFORT_MIN))
+            proximity = 1.0 + 2.0 * max(0.0, (COMFORT_MIN - slack) / COMFORT_MIN)
+            nc = c + e.minutes * proximity * weight[e.to]
             if nc < cost.get(e.to, math.inf):
                 cost[e.to], time[e.to], dist[e.to], prev[e.to] = nc, t, dist[n] + e.length_m, n
                 heapq.heappush(heap, (nc, e.to))

@@ -34,6 +34,11 @@ export type PlannerOptions = {
     evacuationDelayMin?: number;
     /** Minimum lead an evacuation route keeps over the fire at every point. Default 15. */
     safetyMarginMin?: number;
+    /**
+     * Paths evacuation routes keep off wherever another way out exists, such as a route reported
+     * blocked. Default none.
+     */
+    avoidPaths?: LatLng[][];
 };
 
 /** api -> Redis -> orchestrator. */

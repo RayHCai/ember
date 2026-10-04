@@ -111,6 +111,24 @@ def test_route_never_runs_into_the_fire(scenario: Scenario) -> None:
     assert route.clearance_min is None or route.clearance_min >= 15
 
 
+def test_avoided_path_gives_a_different_way_out(scenario: Scenario) -> None:
+    east_loop = {
+        "id": "loop",
+        "name": "Mauka Rd",
+        "kind": "residential",
+        "path": [ll(2000, 0), ll(2600, 0), ll(2600, 2800), ll(2000, 2800)],
+    }
+    roads = [*scenario()["roads"], east_loop]
+    (first,) = make(scenario, roads=roads).evacuation_routes
+    assert all(abs(xy(p)[0] - 2000) < 2 for p in first.path)
+
+    avoid = {"avoidPaths": [[p.to_json() for p in first.path]]}
+    (other,) = make(scenario, avoid, roads=roads).evacuation_routes
+    assert other.status != "no_safe_route"
+    assert other.destination is not None and other.destination.safe_zone_id == "north"
+    assert any(abs(xy(p)[0] - 2600) < 2 for p in other.path)
+
+
 def test_without_safe_zones_routes_leave_the_planning_area(scenario: Scenario) -> None:
     result = make(scenario, safeZones=[])
     (route,) = result.evacuation_routes
