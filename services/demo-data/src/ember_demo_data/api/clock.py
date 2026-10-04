@@ -58,8 +58,8 @@ class ScenarioClock:
 
 def from_env() -> ScenarioClock:
     start = os.environ.get("EMBER_CLOCK_START")
-    speed = float(os.environ.get("EMBER_CLOCK_SPEED", "1"))
     t = datetime.fromisoformat(start) if start else DEFAULT_CLOCK_START
     if t.tzinfo is None:
         t = t.replace(tzinfo=HST)
-    return ScenarioClock(t, speed)
+    # Paused so a demo opens on a fixed moment; /control or PUT /v1/clock sets it going.
+    return ScenarioClock(t, paused=True)

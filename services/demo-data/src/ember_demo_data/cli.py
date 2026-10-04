@@ -48,13 +48,6 @@ def _verify(args: argparse.Namespace) -> None:
     sys.exit(0 if ok else 1)
 
 
-def _speed(text: str) -> float:
-    value = float(text)
-    if not 0 < value <= 3600:
-        raise argparse.ArgumentTypeError(f"{text}: scenario seconds per wall second, in (0, 3600]")
-    return value
-
-
 def _start(text: str) -> str:
     from datetime import datetime
 
@@ -71,14 +64,12 @@ def _serve(args: argparse.Namespace) -> None:
     import uvicorn
 
     # The app builds its scenario clock from these when uvicorn imports it.
-    if args.speed is not None:
-        os.environ["EMBER_CLOCK_SPEED"] = str(args.speed)
     if args.start is not None:
         os.environ["EMBER_CLOCK_START"] = args.start
     from .api.clock import from_env
 
     clock = from_env().state()
-    logging.info("scenario clock: %s, %gx real time", clock["scenario_time"], clock["speed"])
+    logging.info("scenario clock: paused at %s", clock["scenario_time"])
     uvicorn.run("ember_demo_data.api.app:app", host=args.host, port=args.port, log_level="info")
 
 
@@ -186,13 +177,6 @@ def main(argv: list[str] | None = None) -> None:
         help="interface to listen on; 0.0.0.0 to serve drones or viewers on other machines",
     )
     s.add_argument("--port", type=int, default=8090)
-    s.add_argument(
-        "--speed",
-        type=_speed,
-        default=None,
-        help="scenario seconds per wall-clock second (env EMBER_CLOCK_SPEED, default 1); "
-        "e.g. 30 burns the town from 14:52 to 17:00 in about 4 minutes",
-    )
     s.add_argument(
         "--start",
         type=_start,

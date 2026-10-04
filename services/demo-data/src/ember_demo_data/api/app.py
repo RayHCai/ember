@@ -15,12 +15,13 @@ import logging
 import os
 from datetime import datetime, timedelta
 from functools import lru_cache
+from pathlib import Path
 from typing import Annotated, Any
 
 import numpy as np
 from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from PIL import Image
 from pydantic import BaseModel, Field
 
@@ -177,6 +178,15 @@ def put_clock(update: ClockUpdate) -> dict[str, Any]:
     t = resolve_time(update.scenario_time) if update.scenario_time else None
     clock.set(t, update.speed, update.paused)
     return clock.state()
+
+
+@app.get("/control", response_class=HTMLResponse, include_in_schema=False)
+def control() -> str:
+    """Demo helper: scrub, jump to key events and change the clock speed."""
+    return _CONTROL_PAGE
+
+
+_CONTROL_PAGE = (Path(__file__).with_name("control.html")).read_text(encoding="utf-8")
 
 
 # --- Observations ----------------------------------------------------------------------------

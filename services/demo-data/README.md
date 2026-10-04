@@ -19,9 +19,9 @@ uv sync
 uv run demo-data download   # ~270 MB into ../../data, a few minutes
 uv run demo-data build      # fire model, imagery co-registration and the 3D world, ~3 min
 uv run demo-data verify     # georeferencing and model checks -> data/verify/report.json
-uv run demo-data serve      # http://localhost:8090, interactive docs at /docs
+uv run demo-data serve      # http://localhost:8090, interactive docs at /docs, clock control at /control
 uv run demo-data serve --host 0.0.0.0   # reachable from other machines (drones, a LAN viewer)
-uv run demo-data serve --speed 30 --start 2023-08-08T15:00   # the town burns in minutes
+uv run demo-data serve --start 2023-08-08T15:00   # clock starts paused here; play it from /control
 ```
 
 Look at one spot across the whole fire (RGB | thermal | labels):
@@ -36,8 +36,7 @@ Environment variables:
 | Variable | Default | Meaning |
 |---|---|---|
 | `EMBER_DATA_DIR` | `<repo>/data` | Where downloaded and derived data lives |
-| `EMBER_CLOCK_START` | `2023-08-08T14:30-10:00` | Scenario time the clock starts at (`serve --start`) |
-| `EMBER_CLOCK_SPEED` | `1` | Scenario seconds per wall-clock second, up to 3600 (`serve --speed`) |
+| `EMBER_CLOCK_START` | `2023-08-08T14:30-10:00` | Scenario time the clock starts paused at (`serve --start`) |
 | `EMBER_DEMO_DATA_ORIGINS` | none | Browser origins allowed besides localhost and the Tauri webview, comma-separated |
 
 ## What the drone sees, by time (HST)
@@ -118,6 +117,11 @@ How well it matches the record:
 | GET | `/v1/world/imagery/{pre,post}.jpg`, `.../{pre,post}/patch.jpg?x=&y=&size_m=&res_m=` | Ground imagery in the world frame: whole area at 2 m, or a sharper patch (extent in `X-Ember-Extent`) |
 
 Omit `t` to use the scenario clock.
+
+`/control` is a page for driving that clock during a demo: play/pause, ±1 min to ±1 h steps, a
+scrubber over Aug 8 00:00 to Aug 9 12:00, speed presets up to 1 h per second, and one-click jumps to
+the key events. Space toggles play, ←/→ step 10 min, and Shift steps 1 h. Every drone and viewer shares
+the one clock, so a jump moves them all.
 
 ### WebSocket `/v1/stream`
 
