@@ -10,6 +10,12 @@ minimumReleaseAge: 4320
 autoInstallPeers: true
 verifyDepsBeforeRun: false
 
+# Advisory fixes the parent packages have not picked up yet; drop each once its parent ships it.
+overrides:
+    'prisma>mysql2': ^3.24.4
+    '@prisma/config>deepmerge-ts': ^8.0.2
+    '@opentelemetry/core': ^2.11.0
+
 allowBuilds:
     lefthook: true
     esbuild: true
