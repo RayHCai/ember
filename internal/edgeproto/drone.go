@@ -55,7 +55,7 @@ type MappingMission struct {
 	Boundary            []LatLng     `json:"boundary"`
 	CellSizeM           float64      `json:"cellSizeM"`
 	Altitude            AltitudeBand `json:"altitude"`
-	Swarm               []string     `json:"swarm"`
+	Swarm               []string     `json:"swarm,omitempty"`
 }
 
 // StartMapping sends a drone on a run.
@@ -113,4 +113,19 @@ func LinkType(raw []byte) (string, error) {
 		return "", fmt.Errorf("edge link message: missing type")
 	}
 	return head.Type, nil
+}
+
+// DroneInfoIngestPath mirrors DRONE_INFO_INGEST_PATH: edge-manager posts DroneInfoIngest there.
+const DroneInfoIngestPath = "/v1/ingest"
+
+// DroneInfoIngest mirrors DroneInfoIngest: hello, telemetry and detections messages, unchanged.
+type DroneInfoIngest struct {
+	Messages []json.RawMessage `json:"messages"`
+}
+
+// DroneInfoIngestResult mirrors DroneInfoIngestResult.
+type DroneInfoIngestResult struct {
+	Accepted int      `json:"accepted"`
+	Rejected int      `json:"rejected"`
+	Errors   []string `json:"errors"`
 }

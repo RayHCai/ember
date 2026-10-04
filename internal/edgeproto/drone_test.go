@@ -46,3 +46,13 @@ func TestLinkType(t *testing.T) {
 		t.Fatal("want error for missing type")
 	}
 }
+
+func TestDroneInfoIngestWireNames(t *testing.T) {
+	b, err := json.Marshal(DroneInfoIngest{Messages: []json.RawMessage{json.RawMessage(`{"type":"hello"}`)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := `{"messages":[{"type":"hello"}]}`; string(b) != want {
+		t.Fatalf("got %s want %s", b, want)
+	}
+}
