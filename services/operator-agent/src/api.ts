@@ -6,6 +6,7 @@ import {
     type Civilian,
     type CreateBlastRequest,
     type PlannerJob,
+    type PlannerOptions,
     type RiskZonesView,
     type WatchZone,
     type ZoneSurroundings,
@@ -27,7 +28,7 @@ export interface Api {
     surroundings(zoneId: string): Promise<ZoneSurroundings>;
     plannerJobs(zoneId: string): Promise<PlannerJob[]>;
     plannerJob(jobId: string): Promise<PlannerJob>;
-    requestPlan(zoneId: string, requestedBy: string): Promise<PlannerJob>;
+    requestPlan(zoneId: string, requestedBy: string, options?: PlannerOptions): Promise<PlannerJob>;
     blasts(zoneId: string): Promise<Blast[]>;
     createBlast(zoneId: string, blast: CreateBlastRequest): Promise<Blast>;
     civiliansIn(zipCode: string): Promise<Civilian[]>;
@@ -76,8 +77,11 @@ export class HttpApi implements Api {
     plannerJob(jobId: string) {
         return this.call<PlannerJob>('GET', `${PLANNER_JOBS_PATH}/${encodeURIComponent(jobId)}`);
     }
-    requestPlan(zoneId: string, requestedBy: string) {
-        return this.call<PlannerJob>('POST', this.zone(zoneId, '/planner-jobs'), { requestedBy });
+    requestPlan(zoneId: string, requestedBy: string, options?: PlannerOptions) {
+        return this.call<PlannerJob>('POST', this.zone(zoneId, '/planner-jobs'), {
+            requestedBy,
+            ...(options && { options }),
+        });
     }
     blasts(zoneId: string) {
         return this.call<Blast[]>('GET', this.zone(zoneId, '/blasts?limit=200'));

@@ -93,8 +93,21 @@ export function clock(at: Date, timeZone: string) {
     return `${part('hour')}:${part('minute')} ${part('dayPeriod').toLowerCase()} ${part('timeZoneName')}`;
 }
 
-const usable = (r: EvacuationRoute | null) =>
+export const usable = (r: EvacuationRoute | null) =>
     r && r.status !== 'no_safe_route' && r.path.length > 1 ? r : null;
+
+/** The area the fire reaches first and its route out; undefined when none is in its path. */
+export function leadEvacuation(result: PlannerResult): AreaEvacuation | undefined {
+    return result.civilianImpacts
+        .filter((i) => i.severity !== 'clear')
+        .toSorted((a, b) => (a.impactMin ?? Infinity) - (b.impactMin ?? Infinity))
+        .map((impact) => ({
+            impact,
+            route:
+                result.evacuationRoutes.find((r) => r.civilianAreaId === impact.civilianAreaId) ??
+                null,
+        }))[0];
+}
 
 /**
  * When fire reaches the area, and the latest time to leave: before the fire reaches the area or
@@ -140,15 +153,19 @@ function evacuate(
     return way ? `Evacuate ${when} ${way}.` : `Evacuate ${when}. ${NO_ROUTE}`;
 }
 
-/** The alert for someone in one area: "Ember Alert: Evacuate by 3:40 pm HST via ... to ...". */
+/**
+ * The alert for someone in one area: "Ember Alert: Evacuate by 3:40 pm HST via ... to ...", or
+ * "Ember Alert: Another way out. Evacuate ..." for a route planned around one reported blocked.
+ */
 export function areaAlert(
     a: AreaEvacuation,
     s: ZoneSurroundings,
     generatedAt: string,
     now: Date,
     tz: string,
+    alternate = false,
 ) {
-    return `Ember Alert: ${evacuate(a, s, generatedAt, now, tz)}`;
+    return `Ember Alert: ${alternate ? 'Another way out. ' : ''}${evacuate(a, s, generatedAt, now, tz)}`;
 }
 
 /** Joins lines in order, dropping optional ones that would push past the limit. */

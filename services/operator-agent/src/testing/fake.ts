@@ -3,6 +3,7 @@ import type {
     Civilian,
     CreateBlastRequest,
     PlannerJob,
+    PlannerOptions,
     PlannerResult,
     RiskZone,
     RiskZonesView,
@@ -244,14 +245,14 @@ export class FakeApi implements Api {
     async surroundings() {
         return surroundings;
     }
-    async plannerJobs() {
-        return [...this.jobs].toReversed();
+    async plannerJobs(zoneId: string) {
+        return this.jobs.filter((j) => j.zoneId === zoneId).toReversed();
     }
     async plannerJob(jobId: string) {
         const job = this.jobs.find((j) => j.jobId === jobId)!;
         return { ...job, result: job.state === 'succeeded' ? this.planResult : null };
     }
-    async requestPlan(zoneId: string, requestedBy: string) {
+    async requestPlan(zoneId: string, requestedBy: string, options?: PlannerOptions) {
         const at = this.clock().toISOString();
         const job: PlannerJob = {
             jobId: `job-${++this.seq}`,
@@ -259,7 +260,7 @@ export class FakeApi implements Api {
             state: 'queued',
             requestedBy,
             requestedAt: at,
-            options: null,
+            options: options ?? null,
             message: null,
             updatedAt: at,
         };

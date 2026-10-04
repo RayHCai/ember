@@ -2,17 +2,19 @@ import { beforeEach, expect, test } from 'vitest';
 import { LogTransport } from './channels.js';
 import { Notices } from './notices.js';
 import { REROUTE_BY, Reroute } from './reroute.js';
-import { FakeApi, fire, T0 } from './testing/fake.js';
+import { FakeApi, fire, result, T0, zone, ZONE_ID } from './testing/fake.js';
 
 const PHONE = '+16025550100';
 const silent = { info: () => {}, warn: () => {} };
+let now: number;
 let api: FakeApi;
 let transport: LogTransport;
 let asked: string[];
 let reroute: Reroute;
 
 beforeEach(() => {
-    api = new FakeApi(() => new Date(T0));
+    now = Date.parse(T0);
+    api = new FakeApi(() => new Date(now));
     transport = new LogTransport();
     asked = [];
     reroute = new Reroute({
@@ -45,7 +47,38 @@ test('a new-route text plans the burning zone again, and its plan goes out as us
     api.finishPlan();
     await notices.watch();
     expect(transport.sent).toHaveLength(1);
+    expect(transport.sent[0]!.body).toMatch(/^Ember Alert: Another way out\. Evacuate /);
     expect(transport.images).toHaveLength(1);
+});
+
+const kahanaPath = result.evacuationRoutes.find((r) => r.civilianAreaId === 'a-kahana')!.path;
+
+test('only the zone whose route was texted last is planned again, kept off that route', async () => {
+    api.zoneList = [zone, { ...zone, id: 'zone-2' as typeof ZONE_ID, name: 'Old drill' }];
+    api.riskZoneList = [fire()];
+    await api.requestPlan(ZONE_ID, 'operator-1');
+    api.finishPlan();
+    now += 60_000;
+    await api.requestPlan('zone-2', 'operator-1');
+    api.finishPlan();
+    now += 60_000;
+    await reroute.handle(PHONE, 'that road is blocked, new route?');
+    const asks = api.jobs.filter((j) => j.requestedBy === REROUTE_BY);
+    expect(asks).toHaveLength(1);
+    expect(asks[0]!.zoneId).toBe('zone-2');
+    expect(asks[0]!.options).toEqual({ avoidPaths: [kahanaPath] });
+});
+
+test('asking again keeps off every route sent before', async () => {
+    api.riskZoneList = [fire()];
+    await api.requestPlan(ZONE_ID, 'operator-1');
+    api.finishPlan();
+    now += 60_000;
+    await reroute.handle(PHONE, 'new route');
+    api.finishPlan();
+    now += 60_000;
+    await reroute.handle(PHONE, 'still blocked, another route');
+    expect(api.jobs.at(-1)!.options).toEqual({ avoidPaths: [kahanaPath, kahanaPath] });
 });
 
 test('texts from other numbers are not read', async () => {

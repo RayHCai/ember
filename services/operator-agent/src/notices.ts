@@ -1,9 +1,10 @@
 import type { WatchZone } from '@ember/contracts';
-import { areaAlert, duration, wayOut, type AreaEvacuation } from './alerts.js';
+import { areaAlert, duration, leadEvacuation, wayOut } from './alerts.js';
 import type { Api } from './api.js';
 import type { CivilianTransport } from './channels.js';
 import type { Log } from './incidents.js';
 import { renderMapPng, type TileSource } from './map.js';
+import { REROUTE_BY } from './reroute.js';
 
 export type NoticeDeps = {
     api: Api;
@@ -86,35 +87,35 @@ export class Notices {
         }
         if (!done || done.jobId === this.planSeen.get(zone.id)) return;
         // A plan whose text failed stays unseen, so the next tick tries it again.
-        if (await this.plan(zone, done.jobId)) this.planSeen.set(zone.id, done.jobId);
+        if (await this.plan(zone, done.jobId, done.requestedBy === REROUTE_BY)) {
+            this.planSeen.set(zone.id, done.jobId);
+        }
     }
 
     /**
      * Texts the plan for the area fire reaches first: the latest time to leave and the road out,
-     * then that route on a street map. The map is drawn before anything is sent. True once the
-     * text is delivered.
+     * then that route on a street map. The map is drawn before anything is sent. A plan asked for
+     * by a new-route text is marked as another way out. True once the text is delivered.
      */
-    private async plan(zone: WatchZone, jobId: string) {
+    private async plan(zone: WatchZone, jobId: string, alternate: boolean) {
         const { api, transport, phone } = this.deps;
         const result = (await api.plannerJob(jobId)).result;
         if (!result) return true;
         const s = await api.surroundings(zone.id);
-        const lead: AreaEvacuation | undefined = result.civilianImpacts
-            .filter((i) => i.severity !== 'clear')
-            .toSorted((a, b) => (a.impactMin ?? Infinity) - (b.impactMin ?? Infinity))
-            .map((impact) => ({
-                impact,
-                route:
-                    result.evacuationRoutes.find(
-                        (r) => r.civilianAreaId === impact.civilianAreaId,
-                    ) ?? null,
-            }))[0];
+        const lead = leadEvacuation(result);
         const info = { zoneId: zone.id, kind: 'plan', jobId };
         if (!lead) {
             const body = `Ember Alert: the fire is not expected to reach a community in the next ${duration(result.horizonMin)}. No evacuation needed now.`;
             return this.deliver(() => transport.send(phone, body), info);
         }
-        const body = areaAlert(lead, s, result.generatedAt, this.now(), this.deps.timeZone);
+        const body = areaAlert(
+            lead,
+            s,
+            result.generatedAt,
+            this.now(),
+            this.deps.timeZone,
+            alternate,
+        );
         let map: Buffer | null = null;
         if (wayOut(lead, s)) {
             const onFire = (await api.riskZones(zone.id)).riskZones.filter(
