@@ -74,7 +74,15 @@ export type SwarmCoverage = {
     cells: number[];
     /** Same length as `cells`; null where the drone has no depth to measure height. */
     topM: (number | null)[];
+    /**
+     * Log-odds this drone's own frames added to cells' fire evidence since its last coverage
+     * message (never evidence relayed from peers, so nothing is counted twice). Receivers add them
+     * to their own. `onFire` and `atRisk` are the same length as `cells`.
+     */
+    evidence?: SwarmEvidence;
 };
+
+export type SwarmEvidence = { cells: number[]; onFire: number[]; atRisk: number[] };
 
 export type SwarmPayload = SwarmState | SwarmCoverage;
 

@@ -1,4 +1,5 @@
 import type { LatLng, RiskLevel } from './common.js';
+import type { DroneHello } from './droneLink.js';
 
 /**
  * Drone Info live stream: what drone-info sends viewers (dashboard, responder, sim) about the
@@ -30,10 +31,17 @@ export type DronePose = {
 export type RiskDetection = {
     id: string;
     risk: Exclude<RiskLevel, 'none'>;
+    /**
+     * Probability the region is at this risk, from evidence the drone accumulated per grid cell
+     * across frames and drones. Only regions past the drone's confirm line are reported.
+     */
     confidence: number;
     /** [x0, y0, x1, y1] in the camera pixels of the detections message, origin top-left. */
     bboxPx: [number, number, number, number];
-    /** The box outline projected onto the ground, clockwise from the top-left corner. */
+    /**
+     * The region's outline projected onto the ground, clockwise from its top-left point: the
+     * segmented shape when the detector gives one, else the box's four corners.
+     */
     ground: LatLng[];
     center: LatLng;
     areaM2: number;
@@ -86,3 +94,15 @@ export type DroneInfoMessage = FleetSnapshot | DroneTelemetry | DroneDetections;
 
 /** Viewer -> drone-info: stream `telemetry` and `detections` for one drone (null: none). */
 export type FollowDrone = { type: 'follow'; droneId: string | null };
+
+/**
+ * Edge-manager -> drone-info: what drones reported through their edge, forwarded unchanged and
+ * batched. `POST http://<drone-info>${DRONE_INFO_INGEST_PATH}`; drone-info answers
+ * `DroneInfoIngestResult`. `hello` gives a drone its name and kind in the fleet.
+ */
+export const DRONE_INFO_INGEST_PATH = '/v1/ingest';
+
+export type DroneInfoIngest = { messages: (DroneHello | DroneTelemetry | DroneDetections)[] };
+
+/** Messages that did not match the contract are dropped and counted, never fail the batch. */
+export type DroneInfoIngestResult = { accepted: number; rejected: number; errors: string[] };
