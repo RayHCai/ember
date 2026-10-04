@@ -17,8 +17,6 @@ __pycache__/
 
 # Expo
 .expo/
-apps/responder/ios/
-apps/responder/android/
 
 # Model weights are fetched, never committed.
 *.pt
@@ -28,8 +26,7 @@ apps/responder/android/
 .DS_Store
 .env
 .env.local
-.dev.vars
-.wrangler/
+.vercel/
 
 .idea/
 .vscode/*

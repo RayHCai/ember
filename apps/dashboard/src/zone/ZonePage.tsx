@@ -28,7 +28,6 @@ import { HoverCard } from './HoverCard';
 import { Inspector } from './Inspector';
 import { Legend } from './Legend';
 import { OperatorPanel } from './OperatorPanel';
-import { ResponderDialog } from './ResponderDialog';
 import { ScanHud } from './ScanHud';
 import styles from './Zone.module.css';
 
@@ -114,8 +113,7 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !useUi.getState().blast && !useUi.getState().responderOpen)
-                useUi.getState().select(null);
+            if (e.key === 'Escape' && !useUi.getState().blast) useUi.getState().select(null);
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
@@ -201,9 +199,6 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                 </div>
 
                 <div className={styles.actions}>
-                    <Button icon="qr" onClick={() => ui.setResponderOpen(true)}>
-                        Connect responder
-                    </Button>
                     <Button icon="megaphone" variant="primary" onClick={() => ui.openBlast()}>
                         Event blast
                     </Button>
@@ -243,7 +238,6 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
 
             <HoverCard zone={zone} />
             <BlastDialog zone={zone} />
-            <ResponderDialog zone={zone} />
         </div>
     );
 }

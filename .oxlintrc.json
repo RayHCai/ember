@@ -24,16 +24,6 @@
         "**/src/generated/**"
     ],
     "overrides": [
-        // Reanimated shared values are mutable by design, RNGH builds gestures with Gesture.Pan(),
-        // and expo-status-bar takes a string style.
-        {
-            "files": ["apps/responder/**"],
-            "rules": {
-                "react/immutability": "off",
-                "react/capitalized-calls": "off",
-                "react/style-prop-object": "off"
-            }
-        },
         // The operator console came in from its own repo under looser lint; burn these down, then drop this.
         {
             "files": ["apps/dashboard/**"],

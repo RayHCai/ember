@@ -1,6 +1,6 @@
 # @ember/drone-info
 
-Live drone state for viewers. Edges post what their drones report; viewers (dashboard, responder,
+Live drone state for viewers. Edges post what their drones report; viewers (dashboard,
 drone-sim) get the fleet and follow one drone over a WebSocket. It keeps only the latest state per
 drone in memory: history and the registry of record live in `api`.
 

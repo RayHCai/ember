@@ -28,7 +28,6 @@ The Responder viewpoint is a mobile app. Civilians don't install anything: they 
 
 Responder viewpoint:
 
-- Connect to a watch site by scanning a QR code from the operator dashboard (there should be a connect button in the viewpoint)
 - Receive push notifications about new incidents, updates, etc from the dashboard + operator (direct 1 to N communication channel)
 - Have a map of the forest on a mobile view (once assigned to a watch site) → this should download locally first when syncing. If there is network connection, then we can just sync with the operator dashboard.
 - The map should highlight the areas that are high incident, the predicted path of fire, and highlight in circles the recommended prevention sites
@@ -120,10 +119,6 @@ The Responder viewer and the civilian map page should look as similar to the ope
         - Does path-planning + suggestion algorithm
 - Drone Info
     - Fastify (TS)
-- Responder App
-    - Expo (React Native + TS)
-    - Views
-        - 
 - Operator Agent
     - Fastify (TS) service, chat + voice panel in the Tauri dashboard
     - Tool calls: start/stop scans, run planners, query coverage/health, draft + send event blasts (needs operator approval), summarize incidents and civilian check-ins

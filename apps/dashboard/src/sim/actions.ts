@@ -3,7 +3,7 @@ import type { BlastDraft } from '../store/ui';
 import { blastId, useZones } from '../store/zones';
 import { dockDrone } from './fleet';
 import { civilianPlan, responderPlan } from './planners';
-import type { ApprovalRecord, Blast, Drone, Responder } from './types';
+import type { ApprovalRecord, Blast, Drone } from './types';
 import { pairDrone, suggestServers } from './world';
 
 // Operator actions that take time, answered by the dummy backend.
@@ -118,36 +118,4 @@ export function sendBlast(
         blast.recipients.responders,
     );
     return blast;
-}
-
-const NAMES = [
-    'Ari Mendez',
-    'Chris Novak',
-    'Priya Shah',
-    'Tomás Reyes',
-    'Morgan Lee',
-    'Jamie Cole',
-];
-const UNITS = ['Engine 12', 'Truck 3', 'Hand crew 2', 'Dozer 5', 'Water tender 9', 'Medic 18'];
-const DEVICES = ['iPhone 15', 'Pixel 9', 'Galaxy S24', 'iPhone 13'];
-
-export function joinResponder(zoneId: string): Responder | null {
-    const zone = useZones.getState().zones[zoneId];
-    if (!zone) return null;
-    const k = zone.responders.length + zone.id.length;
-    const responder: Responder = {
-        id: `r-${Date.now().toString(36)}`,
-        name: NAMES[k % NAMES.length]!,
-        unit: UNITS[(k * 7) % UNITS.length]!,
-        device: DEVICES[k % DEVICES.length]!,
-        joinedAt: Date.now(),
-    };
-    useZones.getState().addResponder(zoneId, responder);
-    notify(
-        'success',
-        'Responder connected',
-        `${responder.name} (${responder.unit}) joined ${zone.name}.`,
-        zone,
-    );
-    return responder;
 }

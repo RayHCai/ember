@@ -1,6 +1,8 @@
-// Every icon is built like the Ember mark (apps/drone-sim/public/icon.svg): flat facets
+// Every icon is built like the Ember mark (assets/brand/icon.svg): flat facets
 // separated by seams. Points live on a 24 by 24 grid. A `cut` facet is drawn in the seam
 // color, which punches a hole (a door, a pupil, a keyhole).
+
+import markSvg from '../../../../assets/brand/icon.svg?raw';
 
 export interface Facet {
     points: string;
@@ -95,23 +97,8 @@ function transform(facets: Facet[], fn: (p: Pt) => Pt): Facet[] {
     return facets.map((x) => ({ ...x, points: str(parse(x.points).map(fn)) }));
 }
 
-// The Ember mark's facets, verbatim from the drone-sim icon (1024 grid).
-export const MARK_FACETS = [
-    '512,160 628,372 540,470',
-    '512,160 540,470 440,330',
-    '440,330 540,470 392,420',
-    '392,420 350,250 440,330',
-    '628,372 708,560 540,470',
-    '540,470 708,560 604,646',
-    '540,470 604,646 500,664',
-    '540,470 500,664 392,420',
-    '392,420 500,664 318,590',
-    '708,560 642,780 604,646',
-    '604,646 642,780 500,664',
-    '500,664 642,780 512,858',
-    '500,664 512,858 378,786',
-    '500,664 378,786 318,590',
-];
+// The Ember mark's facets, read from the shared icon (1024 grid) so the two cannot drift.
+export const MARK_FACETS = Array.from(markSvg.matchAll(/<polygon points="([^"]+)"/g), (m) => m[1]!);
 
 const flame = transform(MARK_FACETS.map(f), ([x, y]) => [
     (x - 513) * 0.0305 + 12,

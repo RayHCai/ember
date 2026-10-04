@@ -29,7 +29,6 @@ interface UiState {
     selected: Picked | null;
     hover: Hover | null;
     agentOpen: boolean;
-    responderOpen: boolean;
     /** Open with a draft; `approve` jumps straight to the approval step. */
     blast: { draft: BlastDraft | null; approve: boolean } | null;
     gapsUntil: number;
@@ -38,7 +37,6 @@ interface UiState {
     select: (picked: Picked | null) => void;
     setHover: (hover: Hover | null) => void;
     setAgentOpen: (open: boolean) => void;
-    setResponderOpen: (open: boolean) => void;
     openBlast: (draft?: BlastDraft | null, approve?: boolean) => void;
     closeBlast: () => void;
     showGaps: (ms?: number) => void;
@@ -52,7 +50,6 @@ export const useUi = create<UiState>()((set) => ({
     selected: null,
     hover: null,
     agentOpen: false,
-    responderOpen: false,
     blast: null,
     gapsUntil: 0,
     setMode: (mode) =>
@@ -62,7 +59,6 @@ export const useUi = create<UiState>()((set) => ({
     select: (selected) => set({ selected }),
     setHover: (hover) => set({ hover }),
     setAgentOpen: (agentOpen) => set({ agentOpen }),
-    setResponderOpen: (responderOpen) => set({ responderOpen }),
     openBlast: (draft = null, approve = false) => set({ blast: { draft, approve } }),
     closeBlast: () => set({ blast: null }),
     showGaps: (ms = 9000) =>
@@ -74,7 +70,6 @@ export const useUi = create<UiState>()((set) => ({
             selected: null,
             hover: null,
             blast: null,
-            responderOpen: false,
             gapsUntil: 0,
         }),
 }));

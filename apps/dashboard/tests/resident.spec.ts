@@ -53,13 +53,3 @@ test('the operator agent drafts evacuation texts for approval', async ({ page })
     await page.getByRole('button', { name: /Review and approve/ }).click();
     await expect(page.getByRole('dialog', { name: 'Approve civilian alert' })).toBeVisible();
 });
-
-test('the responder QR code pairs a phone', async ({ page }) => {
-    await signIn(page);
-    await openZone(page, 'Angeles foothills');
-    await page.getByRole('button', { name: 'Connect responder' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Connect a responder' });
-    await expect(dialog.locator('svg path').first()).toBeAttached();
-    await expect(dialog.getByText(/Expires in/)).toBeVisible();
-    await expect(dialog.getByText('Just joined')).toBeVisible({ timeout: 12_000 });
-});

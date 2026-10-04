@@ -22,7 +22,6 @@ decisions and status live, so design docs can stay present-tense.
 | 0005 | Edge services         | in-progress |
 | 0006 | Runtime in drone sim  | in-progress |
 | 0007 | Planner               | in-progress |
-| 0008 | Responder app         | in-progress |
 | 0009 | Monorepo audit        | in-progress |
 | 0010 | Dashboard redesign    | done        |
 | 0011 | Fire segmentation     | in-progress |

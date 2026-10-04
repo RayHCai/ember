@@ -2,7 +2,7 @@ import type { LatLng, RiskLevel } from './common.js';
 import type { DroneHello } from './droneLink.js';
 
 /**
- * Drone Info live stream: what drone-info sends viewers (dashboard, responder, sim) about the
+ * Drone Info live stream: what drone-info sends viewers (dashboard, sim) about the
  * fleet. JSON text frames over WebSocket at `ws://<drone-info>${DRONE_INFO_STREAM_PATH}`.
  * Drones report the same `telemetry` and `detections` shapes upstream (drone-runtime).
  */

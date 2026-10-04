@@ -9,7 +9,6 @@ import type {
     Drone,
     EdgeServer,
     LatLon,
-    Responder,
     ResponderPlan,
     Schedule,
     WatchZone,
@@ -37,7 +36,6 @@ interface ZonesState {
     setCivilianPlan: (id: string, plan: CivilianPlan) => void;
     setResponderPlan: (id: string, plan: ResponderPlan) => void;
     setReportStatus: (id: string, reportId: string, status: CivilianReport['status']) => void;
-    addResponder: (id: string, responder: Responder) => void;
     addBlast: (id: string, blast: Blast) => void;
     /** Marks the risk map changed after an in-place update. */
     touchRisk: (id: string) => void;
@@ -132,9 +130,6 @@ export const useZones = create<ZonesState>()((set, get) => {
             update(id, (z) => ({
                 reports: z.reports.map((r) => (r.id === reportId ? { ...r, status } : r)),
             })),
-
-        addResponder: (id, responder) =>
-            update(id, (z) => ({ responders: [...z.responders, responder] })),
 
         addBlast: (id, blast) => update(id, (z) => ({ blasts: [blast, ...z.blasts] })),
 

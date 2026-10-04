@@ -7,4 +7,3 @@ export type { Civilian, CreateCivilianRequest } from './civilian.js';
 
 /** Every service answers this path for liveness. */
 export const SERVICE_HEALTH_PATH = '/healthz';
-export * from './responder.js';
