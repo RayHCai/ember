@@ -8,6 +8,7 @@ dependencies = [
   "scipy>=1.13",
   "pillow>=10.4",
   "websockets>=13",
+  "zeroconf>=0.136",
 ]
 
 [project.optional-dependencies]

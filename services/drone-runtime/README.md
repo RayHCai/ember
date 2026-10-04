@@ -8,6 +8,9 @@ flies back to where it took off and lands.
 
 ## Contract
 
+- **Finding the edge:** with `--edge auto` (the default without `EMBER_EDGE_URL`) the drone browses
+  mDNS for `_ember-edge._tcp` before every connect and takes the first edge server that answers, or
+  only the one named by `--edge-id`. It prefers the announcement's IPv4 address.
 - **Edge link:** a WebSocket to the edge-connector at `/v1/drone`, with the shapes in
   `packages/contracts/src/droneLink.ts` (`link/messages.py` mirrors them).
   - Up: `hello` on every connect, then `telemetry`, `detections` (as in `droneInfo.ts`),
@@ -113,14 +116,30 @@ uv run --package ember-drone-runtime drone-runtime swarm-sim --camera sensor-str
 # Watched in drone-sim: report to drone-info (implies the Demo Data camera and real time)
 uv run --package ember-drone-runtime drone-runtime swarm-sim --drone-info http://localhost:4002
 
-# One simulated drone for a real edge-connector
+# One simulated drone for a real edge-connector, found over mDNS on the local network
+uv run --package ember-drone-runtime drone-runtime run --id drone-1
+
+# Same, for a given connector
 uv run --package ember-drone-runtime drone-runtime run --id drone-1 --edge ws://localhost:8070/v1/drone
+
+# Two simulated drones (sim-1 Osprey, sim-2 Harrier) in one process for that connector
+uv run --package ember-drone-runtime drone-runtime fleet --drones 2 --edge ws://localhost:8070/v1/drone --camera sensor-stream
 ```
+
+`fleet` is `run` several times over in one process: each drone has its own edge link, camera and
+flight, so the connector sees separate drones that join the same runs as any other, a Pi included.
+They share one detector and take off on a 12 m ring around `--home`.
+
+On a Raspberry Pi (64-bit OS), `scripts/setup-pi.sh --id drone-1 [--edge ws://HOST:8070/v1/drone]` installs
+uv and this package, writes `services/drone-runtime/drone.env` and runs `run` as the `ember-drone`
+systemd service. Without `--edge` it finds the edge server over mDNS. `docs/raspberry-pi.md` walks
+through a whole Pi 5 deployment.
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `EMBER_DRONE_ID` | `drone-1` | Drone id sent in `hello` |
-| `EMBER_EDGE_URL` | `ws://localhost:8070/v1/drone` | Edge-connector link |
+| `EMBER_EDGE_URL` | `auto` | Edge-connector link, or `auto` to find one over mDNS |
+| `EMBER_EDGE_ID` | unset | With `auto`, connect only to this edge server id |
 | `EMBER_SENSOR_URL` | `ws://localhost:8090/v1/stream` | Sensor stream for `--camera sensor-stream` |
 | `EMBER_YOLO_MODEL` | unset | ONNX model; enables YOLO under `--detector auto` |
 | `EMBER_DRONE_INFO_URL` | unset | `swarm-sim --drone-info`: post reports to drone-info for viewers |

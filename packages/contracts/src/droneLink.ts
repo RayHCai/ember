@@ -9,6 +9,12 @@ import type { CameraSpec, DroneDetections, DroneKind, DroneTelemetry } from './d
  */
 export const DRONE_LINK_PATH = '/v1/drone';
 
+/**
+ * DNS-SD service type an edge-connector announces over mDNS on its network, so drones find it
+ * without being given its address. TXT records: `id` (edge server id) and `path` (the link path).
+ */
+export const EDGE_SERVICE_TYPE = '_ember-edge._tcp';
+
 export type DroneSensor = 'rgb' | 'thermal' | 'depth';
 
 /** Drone -> connector, first message on every (re)connect. */

@@ -69,6 +69,13 @@ func run(log *slog.Logger) error {
 	}
 	srv := edgehttp.NewServer(ctx, c.Handler(key))
 	log.Info("edge-connector up", "edgeServerId", id, "publicUrl", publicURL, "listen", addr, "manager", managerURL)
+	// Without the announcement drones can still connect when given the URL, so this is not fatal.
+	if mdns, err := connector.Advertise(id, addr); err != nil {
+		log.Warn("not advertising the drone link over mDNS", "err", err)
+	} else {
+		defer mdns.Shutdown()
+		log.Info("advertising the drone link over mDNS", "service", edgeproto.EdgeServiceType)
+	}
 
 	var wg sync.WaitGroup
 	wg.Add(2)

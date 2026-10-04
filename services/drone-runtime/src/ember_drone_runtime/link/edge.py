@@ -17,6 +17,8 @@ from .messages import Downlink, Json, LinkError, parse_downlink
 log = logging.getLogger(__name__)
 
 Handler = Callable[[Downlink], Awaitable[None]]
+# Called before every connect, so a drone follows its edge server to a new address.
+Resolver = Callable[[], Awaitable[str]]
 
 
 class Link(Protocol):
@@ -31,8 +33,8 @@ class Link(Protocol):
 
 
 class EdgeLink:
-    def __init__(self, url: str, hello: Json, max_backoff_s: float = 10.0) -> None:
-        self.url = url
+    def __init__(self, edge: str | Resolver, hello: Json, max_backoff_s: float = 10.0) -> None:
+        self.edge = edge
         self.hello = hello
         self.max_backoff_s = max_backoff_s
         self._ws: ClientConnection | None = None
@@ -51,14 +53,13 @@ class EdgeLink:
     async def run(self, handle: Handler) -> None:
         backoff = 1.0
         while True:
+            url = self.edge if isinstance(self.edge, str) else await self.edge()
             try:
-                async with connect(
-                    self.url, open_timeout=5, ping_interval=5, ping_timeout=10
-                ) as ws:
+                async with connect(url, open_timeout=5, ping_interval=5, ping_timeout=10) as ws:
                     await ws.send(json.dumps(self.hello))
                     self._ws = ws
                     backoff = 1.0
-                    log.info("edge link: connected to %s", self.url)
+                    log.info("edge link: connected to %s", url)
                     async for raw in ws:
                         try:
                             msg = parse_downlink(json.loads(raw))
@@ -67,7 +68,7 @@ class EdgeLink:
                             continue
                         await handle(msg)
             except (OSError, WebSocketException, TimeoutError) as exc:
-                log.warning("edge link %s: %s; retrying in %.0f s", self.url, exc, backoff)
+                log.warning("edge link %s: %s; retrying in %.0f s", url, exc, backoff)
             finally:
                 self._ws = None
             await asyncio.sleep(backoff)

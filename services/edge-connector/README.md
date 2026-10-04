@@ -16,6 +16,11 @@ swarm about twice a second. Nothing else talks to a drone-runtime.
   - Answers `ConnectorTaskResult` (the run's drones), or `{ error }` with 400, 401, 404 or 409.
 - **Uplink** (`edge.ts`): WebSocket to edge-manager's `/v1/edge`.
   - `register` on every connect, then an `EdgeUpdate` every `EMBER_EDGE_UPDATE_MS`.
+- **Discovery:** an mDNS (DNS-SD) announcement of `_ember-edge._tcp` (`EDGE_SERVICE_TYPE` in
+  `droneLink.ts`) on the listen port, named and TXT-tagged `id=<edge server id>`,
+  `path=/v1/drone`, for as long as the process runs. A connector whose announcement fails logs it
+  and still serves drones given its URL. In `compose.yaml` the connector sits on a Docker network,
+  so drones on the LAN only find one run natively (`go run`).
 - `GET /healthz`.
 - Tasks and the uplink carry `Authorization: Bearer $EMBER_EDGE_KEY`. The drone link is open: a
   drone pairs by being on the network.

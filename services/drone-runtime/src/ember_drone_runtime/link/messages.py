@@ -16,6 +16,8 @@ from ..geo import LatLng
 from ..perception.georef import RiskDetection
 
 DRONE_LINK_PATH = "/v1/drone"
+# Mirrors EDGE_SERVICE_TYPE in droneLink.ts; TXT records `id` and `path`.
+EDGE_SERVICE_TYPE = "_ember-edge._tcp"
 # Mirrors DRONE_INFO_INGEST_PATH in droneInfo.ts; what edge-manager posts reports to.
 DRONE_INFO_INGEST_PATH = "/v1/ingest"
 

@@ -409,3 +409,20 @@ func TestPublicURL(t *testing.T) {
 		t.Error("want error for a non-http public url")
 	}
 }
+
+func TestAdvertisedRecords(t *testing.T) {
+	want := []string{"id=edge-1", "path=" + edgeproto.DroneLinkPath}
+	if got := AdvertisedTXT("edge-1"); !slices.Equal(got, want) {
+		t.Errorf("AdvertisedTXT = %q; want %q", got, want)
+	}
+	for addr, want := range map[string]int{":8070": 8070, "192.168.1.20:9000": 9000} {
+		if got, err := listenPort(addr); err != nil || got != want {
+			t.Errorf("listenPort(%q) = %d, %v; want %d", addr, got, err, want)
+		}
+	}
+	for _, addr := range []string{":0", "8070", ":http"} {
+		if _, err := listenPort(addr); err == nil {
+			t.Errorf("listenPort(%q): want error", addr)
+		}
+	}
+}

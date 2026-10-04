@@ -1,4 +1,5 @@
-"""`drone-runtime run` flies one drone for an edge-connector; `swarm-sim` flies N in one process."""
+"""`drone-runtime run` flies one drone for an edge-connector and `fleet` several; `swarm-sim` flies
+N around an in-process edge."""
 
 from __future__ import annotations
 
@@ -10,16 +11,19 @@ import sys
 from pathlib import Path
 
 from .camera import CameraSpec
+from .fleet import fleet_members
 from .flight.simulated import Kinematics, SimulatedFlight
 from .geo import LatLng
-from .link.edge import EdgeLink
+from .link.discovery import discover_edge
+from .link.edge import EdgeLink, Resolver
 from .link.messages import DRONE_LINK_PATH
 from .mission import FlightParams
 from .perception import make_detector
+from .perception.detector import Detector
 from .runtime import DroneIdentity, DroneRuntime, hello
 from .sensors import Camera
 from .sensors.sensor_stream import SensorStreamCamera
-from .sensors.synthetic import SyntheticCamera, demo_world
+from .sensors.synthetic import SyntheticCamera, SyntheticWorld, demo_world
 from .swarm_sim import ScaledClock, run_swarm
 
 # Lahaina, on the path the fire takes west from the Kuialua St rekindle (14:52 HST), inside Demo
@@ -34,14 +38,14 @@ def main(argv: list[str] | None = None) -> None:
     run = sub.add_parser("run", help="fly one drone for an edge-connector")
     run.add_argument("--id", default=os.environ.get("EMBER_DRONE_ID", "drone-1"))
     run.add_argument("--name", default=None)
-    run.add_argument(
-        "--edge", default=os.environ.get("EMBER_EDGE_URL", f"ws://localhost:8070{DRONE_LINK_PATH}")
+    _edge_args(run, "lat,lng the simulated drone takes off from")
+
+    fleet = sub.add_parser("fleet", help="fly several simulated drones for an edge-connector")
+    fleet.add_argument("--drones", type=int, default=2)
+    fleet.add_argument(
+        "--id-prefix", default="sim", help="drone ids are <prefix>-1, <prefix>-2, ..."
     )
-    run.add_argument(
-        "--home", default=DEFAULT_CENTER, help="lat,lng the simulated drone takes off from"
-    )
-    run.add_argument("--time-scale", type=float, default=1.0)
-    _sensor_args(run)
+    _edge_args(fleet, "lat,lng the drones take off on a 12 m ring around")
 
     sim = sub.add_parser("swarm-sim", help="fly N drones around an in-process edge")
     sim.add_argument("--drones", type=int, default=3)
@@ -70,12 +74,30 @@ def main(argv: list[str] | None = None) -> None:
     try:
         if args.command == "run":
             asyncio.run(_run(args))
+        elif args.command == "fleet":
+            asyncio.run(_fleet(args))
         else:
             asyncio.run(_swarm_sim(args))
     except KeyboardInterrupt:
         pass
     except (ValueError, RuntimeError, FileNotFoundError) as exc:
         sys.exit(f"drone-runtime: {exc}")
+
+
+def _edge_args(p: argparse.ArgumentParser, home_help: str) -> None:
+    p.add_argument(
+        "--edge",
+        default=os.environ.get("EMBER_EDGE_URL", "auto"),
+        help=f"edge-connector URL (ws://host:8070{DRONE_LINK_PATH}), or auto to find one over mDNS",
+    )
+    p.add_argument(
+        "--edge-id",
+        default=os.environ.get("EMBER_EDGE_ID"),
+        help="with --edge auto, connect only to this edge server id",
+    )
+    p.add_argument("--home", default=DEFAULT_CENTER, help=home_help)
+    p.add_argument("--time-scale", type=float, default=1.0)
+    _sensor_args(p)
 
 
 def _sensor_args(p: argparse.ArgumentParser) -> None:
@@ -108,34 +130,64 @@ def _latlng(text: str) -> LatLng:
 
 
 def _camera(
-    args: argparse.Namespace, drone_id: str, spec: CameraSpec, origin: LatLng, radius_m: float
+    args: argparse.Namespace, drone_id: str, spec: CameraSpec, world: SyntheticWorld | None
 ) -> Camera:
-    if args.camera == "sensor-stream":
+    if world is None:
         return SensorStreamCamera(args.sensor_url, drone_id, spec)
-    return SyntheticCamera(demo_world(origin, radius_m), spec)
+    return SyntheticCamera(world, spec)
 
 
-async def _run(args: argparse.Namespace) -> None:
-    home = _latlng(args.home)
+def _edge(args: argparse.Namespace) -> str | Resolver:
+    if args.edge != "auto":
+        return str(args.edge)
+    edge_id: str | None = args.edge_id
+    return lambda: discover_edge(edge_id)
+
+
+def _world(args: argparse.Namespace, origin: LatLng) -> SyntheticWorld | None:
+    return None if args.camera == "sensor-stream" else demo_world(origin, 3000.0)
+
+
+def _runtime(
+    args: argparse.Namespace,
+    drone_id: str,
+    name: str,
+    home: LatLng,
+    world: SyntheticWorld | None,
+    detector: Detector,
+) -> DroneRuntime:
     spec = CameraSpec(640, 480, 84.0)
     params = FlightParams()
-    identity = DroneIdentity(
-        args.id, args.name or args.id, "simulated", params.max_speed_mps, 1500.0
-    )
-    camera = _camera(args, args.id, spec, home, 3000.0)
+    identity = DroneIdentity(drone_id, name, "simulated", params.max_speed_mps, 1500.0)
+    camera = _camera(args, drone_id, spec, world)
     clock = ScaledClock(args.time_scale)
-    runtime = DroneRuntime(
+    return DroneRuntime(
         identity,
-        EdgeLink(args.edge, hello(identity, camera)),
+        EdgeLink(_edge(args), hello(identity, camera)),
         SimulatedFlight(Kinematics(home, max_speed_mps=params.max_speed_mps), clock),
         camera,
-        make_detector(args.detector, args.yolo_model),
+        detector,
         params,
         clock=clock,
         control_period_s=0.1 / args.time_scale,
         frame_period_s=0.5 / args.time_scale,
     )
-    await runtime.run()
+
+
+async def _run(args: argparse.Namespace) -> None:
+    home = _latlng(args.home)
+    detector = make_detector(args.detector, args.yolo_model)
+    await _runtime(args, args.id, args.name or args.id, home, _world(args, home), detector).run()
+
+
+async def _fleet(args: argparse.Namespace) -> None:
+    center = _latlng(args.home)
+    members = fleet_members(args.id_prefix, args.drones, center)
+    world = _world(args, center)
+    detector = make_detector(args.detector, args.yolo_model)
+    async with asyncio.TaskGroup() as tg:
+        for m in members:
+            tg.create_task(_runtime(args, m.drone_id, m.name, m.home, world, detector).run())
 
 
 async def _swarm_sim(args: argparse.Namespace) -> None:

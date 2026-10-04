@@ -8,6 +8,15 @@ import (
 // DroneLinkPath mirrors DRONE_LINK_PATH in @ember/contracts (droneLink.ts).
 const DroneLinkPath = "/v1/drone"
 
+// EdgeServiceType mirrors EDGE_SERVICE_TYPE in @ember/contracts (droneLink.ts): the DNS-SD type an
+// edge-connector announces on its network, with TXT records EdgeTxtID and EdgeTxtPath.
+const EdgeServiceType = "_ember-edge._tcp"
+
+const (
+	EdgeTxtID   = "id"
+	EdgeTxtPath = "path"
+)
+
 // LatLng mirrors LatLng in @ember/contracts.
 type LatLng struct {
 	Lat float64 `json:"lat"`

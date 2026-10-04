@@ -128,6 +128,43 @@ def test_edge_link_says_hello_and_hands_on_valid_messages() -> None:
     assert [type(m) for m in got] == [Welcome, StartMapping, SwarmIn]
 
 
+def test_edge_link_resolves_again_on_every_connect() -> None:
+    async def scenario() -> tuple[int, list[Json]]:
+        heard: list[Json] = []
+
+        async def connector(ws: ServerConnection) -> None:
+            heard.append(json.loads(await ws.recv()))
+
+        server, live = await _serve(connector)
+        urls = iter(["ws://127.0.0.1:1", live])
+        asked = 0
+
+        async def resolve() -> str:
+            nonlocal asked
+            asked += 1
+            return next(urls, live)
+
+        link = EdgeLink(resolve, {"type": "hello", "droneId": "drone-1"})
+
+        async def ignore(msg: Downlink) -> None:
+            pass
+
+        task = asyncio.create_task(link.run(ignore))
+        for _ in range(150):
+            await asyncio.sleep(0.02)
+            if heard:
+                break
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+        server.close()
+        return asked, heard
+
+    asked, heard = asyncio.run(scenario())
+    assert asked == 2
+    assert heard == [{"type": "hello", "droneId": "drone-1"}]
+
+
 def _b64(img: Image.Image, fmt: str) -> str:
     buf = io.BytesIO()
     img.save(buf, format=fmt)

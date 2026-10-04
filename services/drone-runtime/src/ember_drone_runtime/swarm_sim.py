@@ -16,6 +16,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from .camera import CameraSpec
+from .fleet import ring
 from .flight.simulated import Kinematics, SimulatedFlight
 from .geo import LatLng, LocalFrame
 from .link.drone_info import DroneInfoForwarder
@@ -87,10 +88,7 @@ async def run_swarm(
     params = FlightParams()
     min_sep = math.inf
     tasks = []
-    for i, drone_id in enumerate(ids):
-        # Drones start a few metres apart beside the edge server, as if set down by hand.
-        angle = 2 * math.pi * i / max(1, drones)
-        home = local.latlng(12 * math.cos(angle), 12 * math.sin(angle))
+    for i, (drone_id, home) in enumerate(zip(ids, ring(center, drones), strict=True)):
         identity = DroneIdentity(
             drone_id, f"Sim {i + 1}", "simulated", params.max_speed_mps, 1500.0
         )
