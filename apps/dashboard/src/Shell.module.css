@@ -1,0 +1,10 @@
+.page {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+}
+
+/* Over the map, the page itself is transparent; only its panels catch the pointer. */
+.page[data-on-map='true'] {
+    pointer-events: none;
+}

@@ -1,0 +1,152 @@
+.page {
+    --top: 16px;
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+}
+
+html[data-shell='desktop'] .page {
+    --top: 40px;
+}
+
+.glass {
+    --facet: var(--surface);
+    border: 1px solid rgba(236, 228, 220, 0.9);
+    border-radius: 16px;
+    background: var(--glass);
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(20px) saturate(1.5);
+}
+
+.header {
+    position: absolute;
+    top: var(--top);
+    left: 16px;
+    right: 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+}
+
+.header > * {
+    pointer-events: auto;
+}
+
+.titleCard {
+    composes: glass;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-self: start;
+    max-width: 100%;
+    padding: 7px 14px 7px 7px;
+}
+
+.titleCard > button {
+    box-shadow: none;
+}
+
+.titleText {
+    display: grid;
+    min-width: 0;
+}
+
+.title {
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: 680;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.region {
+    overflow: hidden;
+    color: var(--ink-3);
+    font-size: 12px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.modeCard {
+    composes: glass;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 5px 12px 5px 5px;
+}
+
+.modeCard > div {
+    border: 0;
+    background: transparent;
+}
+
+.suggestToggle {
+    --facet: var(--glass);
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    padding-left: 12px;
+    border-left: 1px solid var(--line);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 550;
+    cursor: pointer;
+}
+
+.suggestToggle[data-disabled='true'] {
+    color: var(--ink-3);
+    cursor: not-allowed;
+}
+
+.suggestToggle svg {
+    color: var(--route);
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-self: end;
+}
+
+.right {
+    position: absolute;
+    top: calc(var(--top) + 72px);
+    right: 16px;
+    bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 360px;
+    pointer-events: none;
+}
+
+.right > * {
+    pointer-events: auto;
+}
+
+.bottom {
+    position: absolute;
+    left: 372px;
+    right: 392px;
+    bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    pointer-events: none;
+}
+
+.bottom > * {
+    pointer-events: auto;
+}
+
+@media (max-width: 1280px) {
+    .actions > button:first-child {
+        font-size: 0;
+        gap: 0;
+        padding: 0 11px;
+    }
+}

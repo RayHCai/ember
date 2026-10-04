@@ -1,0 +1,456 @@
+.page {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+}
+
+.panel {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    width: 392px;
+    overflow: hidden;
+}
+
+html[data-shell='desktop'] .panel {
+    top: 44px;
+}
+
+.head {
+    padding: 14px 16px 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.head > button {
+    margin-left: -8px;
+}
+
+.title {
+    margin: 8px 0 16px;
+    font-size: 22px;
+    font-weight: 690;
+    letter-spacing: -0.03em;
+}
+
+.stepper {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.step {
+    --facet: var(--surface-3);
+    position: relative;
+    display: grid;
+    gap: 6px;
+    justify-items: start;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink-3);
+    font-size: 12px;
+    font-weight: 560;
+    text-align: left;
+}
+
+.step:disabled {
+    cursor: default;
+}
+
+.stepDot {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    background: var(--surface-3);
+    color: var(--ink-3);
+    transition:
+        background-color 0.3s,
+        color 0.3s,
+        box-shadow 0.3s,
+        transform 0.3s var(--ease-spring);
+}
+
+.step:not(:disabled):hover .stepDot {
+    transform: scale(1.08);
+}
+
+.step[data-state='current'] {
+    --facet: #ff6a2b;
+    color: var(--ink);
+}
+
+.step[data-state='current'] .stepDot {
+    background: var(--gradient-flame);
+    color: #fff;
+    box-shadow: var(--shadow-flame);
+}
+
+.step[data-state='done'] {
+    --facet: var(--ink);
+    color: var(--ink-2);
+}
+
+.step[data-state='done'] .stepDot {
+    background: var(--ink);
+    color: #fff;
+}
+
+.stepLine {
+    position: absolute;
+    top: 14px;
+    left: 38px;
+    right: 8px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--line);
+    overflow: hidden;
+}
+
+.stepLineFill {
+    position: absolute;
+    inset: 0;
+    background: var(--ink);
+    transform-origin: left;
+}
+
+.body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 18px 16px 16px;
+}
+
+.stepBody {
+    display: grid;
+    gap: 16px;
+}
+
+.searchRow {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.searchInput {
+    --facet: var(--surface);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: var(--surface);
+    color: var(--ink-3);
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
+}
+
+.searchInput:focus-within {
+    border-color: var(--flame);
+    box-shadow: 0 0 0 4px rgba(242, 84, 27, 0.12);
+}
+
+.searchInput input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--ink);
+}
+
+.results {
+    display: grid;
+    gap: 2px;
+    margin: -8px 0 0;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    list-style: none;
+    overflow: hidden;
+}
+
+.results button {
+    --facet: var(--surface);
+    display: flex;
+    gap: 7px;
+    align-items: flex-start;
+    width: 100%;
+    padding: 8px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    font-size: 12.5px;
+    text-align: left;
+}
+
+.results button:hover {
+    --facet: var(--surface-2);
+    background: var(--surface-2);
+}
+
+.error {
+    margin-top: -8px;
+    color: var(--fire);
+    font-size: 12.5px;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: -6px;
+}
+
+.chip {
+    height: 28px;
+    padding: 0 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 520;
+    transition:
+        border-color 0.2s,
+        color 0.2s,
+        transform 0.25s var(--ease-spring),
+        background-color 0.2s;
+}
+
+.chip:hover {
+    border-color: var(--flame-line);
+    background: var(--flame-soft);
+    color: var(--flame-hot);
+    transform: translateY(-1px);
+}
+
+.help {
+    --facet: var(--surface-2);
+    display: grid;
+    gap: 7px;
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 13px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    font-size: 12.5px;
+    list-style: none;
+}
+
+.help li {
+    display: flex;
+    gap: 9px;
+    align-items: center;
+}
+
+.help svg {
+    color: var(--boundary);
+}
+
+.drawStats {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 18px;
+    align-items: end;
+}
+
+.drawStats > div {
+    display: grid;
+}
+
+.drawStats strong {
+    font-size: 20px;
+    font-weight: 650;
+}
+
+.drawStatus {
+    --facet: var(--surface-3);
+    justify-self: end;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--surface-3);
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.drawStatus span {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.drawStatus[data-ready='true'] {
+    --facet: var(--boundary-soft);
+    background: var(--boundary-soft);
+    color: var(--boundary);
+}
+
+.tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.footer {
+    display: grid;
+    gap: 6px;
+    margin-top: 4px;
+    text-align: center;
+}
+
+/* A scanner line across the map while the forest fit runs. */
+.sweep {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(47, 107, 255, 0) 40%,
+        rgba(47, 107, 255, 0.18) 49%,
+        rgba(255, 255, 255, 0.55) 50%,
+        rgba(47, 107, 255, 0.18) 51%,
+        rgba(47, 107, 255, 0) 60%,
+        transparent 100%
+    );
+    background-size: 220% 100%;
+    animation: sweep 1.3s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes sweep {
+    from {
+        background-position: 110% 0;
+    }
+    to {
+        background-position: -10% 0;
+    }
+}
+
+.coverage {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background: var(--surface);
+}
+
+.coverage [data-low='true'] {
+    color: #b07a00;
+}
+
+.processing {
+    --facet: var(--ink);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 14px;
+    border-radius: 14px;
+    background: var(--ink);
+    color: #fff;
+}
+
+.processing strong {
+    display: block;
+    font-size: 13.5px;
+}
+
+.processing span span {
+    display: block;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 12px;
+}
+
+.processingRing {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--flame-glow);
+}
+
+.processingRing svg {
+    animation: turn 1.2s linear infinite;
+}
+
+@keyframes turn {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.pairCard {
+    --facet: var(--surface);
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background: var(--surface);
+    transition:
+        border-color 0.3s,
+        box-shadow 0.3s;
+}
+
+.pairCard strong {
+    display: block;
+}
+
+.pairCard[data-active='true'] {
+    border-color: var(--flame-line);
+    box-shadow: 0 0 0 4px rgba(242, 84, 27, 0.08);
+}
+
+.radar {
+    --facet: var(--flame-soft);
+    position: relative;
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: var(--flame-soft);
+    color: var(--flame);
+}
+
+.radar span {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--flame);
+    border-radius: inherit;
+    opacity: 0;
+}
+
+.pairCard[data-active='true'] .radar span {
+    animation: radar 1.6s var(--ease-out) infinite;
+}
+
+.pairCard[data-active='true'] .radar span + span {
+    animation-delay: 0.8s;
+}
+
+@keyframes radar {
+    from {
+        opacity: 0.7;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 0;
+        transform: scale(1.9);
+    }
+}

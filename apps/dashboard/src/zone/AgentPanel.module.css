@@ -1,0 +1,334 @@
+.agent {
+    display: flex;
+    flex: 1 1 380px;
+    flex-direction: column;
+    min-height: 300px;
+    overflow: hidden;
+}
+
+.head {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 12px 12px 14px;
+    border-bottom: 1px solid var(--line);
+}
+
+.head button {
+    width: 32px;
+    height: 32px;
+    box-shadow: none;
+}
+
+.mark {
+    --facet: #ff6a2b;
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: var(--gradient-flame);
+    color: #fff;
+    box-shadow: var(--shadow-flame);
+}
+
+.headText {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+}
+
+.headText strong {
+    font-size: 14px;
+}
+
+.headText span {
+    color: var(--ink-3);
+    font-size: 11.5px;
+    line-height: 1.3;
+}
+
+.messages {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    overflow-y: auto;
+}
+
+.welcome {
+    display: grid;
+    gap: 2px;
+    margin: auto 0 4px;
+    color: var(--ink-2);
+    font-size: 13px;
+}
+
+.welcome strong {
+    color: var(--ink);
+    font-size: 15px;
+}
+
+.message {
+    --facet: var(--surface);
+    max-width: 92%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 14px 14px 14px 4px;
+    background: var(--surface);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.message[data-role='operator'] {
+    align-self: flex-end;
+    border-color: transparent;
+    border-radius: 14px 14px 4px 14px;
+    background: var(--ink);
+    color: #fff;
+}
+
+.message p {
+    white-space: pre-wrap;
+}
+
+.caret {
+    display: inline-block;
+    width: 7px;
+    height: 13px;
+    margin-left: 2px;
+    border-radius: 2px;
+    background: var(--flame);
+    vertical-align: -2px;
+    animation: blink 0.8s steps(2) infinite;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+.tools {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.tool {
+    --facet: var(--ok-soft);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--ink-3);
+    font-size: 11px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.tool svg {
+    padding: 2px;
+    border-radius: 999px;
+    background: var(--ok-soft);
+    color: var(--ok);
+    box-sizing: content-box;
+}
+
+.tool code {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-weight: 600;
+}
+
+.tool span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.draft {
+    --facet: var(--flame-soft);
+    display: grid;
+    gap: 4px;
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--flame-line);
+    border-radius: 12px;
+    background: var(--flame-soft);
+}
+
+.draftHead {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--flame-hot);
+    font-size: 11px;
+    font-weight: 650;
+    text-transform: capitalize;
+}
+
+.draft > span:not(.draftHead) {
+    color: var(--ink-2);
+    font-size: 12.5px;
+}
+
+.draft button {
+    --facet: var(--ink);
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    justify-self: start;
+    margin-top: 6px;
+    padding: 6px 11px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: gap 0.25s var(--ease-out);
+}
+
+.draft button:hover {
+    gap: 10px;
+}
+
+.dots {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px 2px;
+}
+
+.dots i {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--ink-3);
+    animation: bounce 1s ease-in-out infinite;
+}
+
+.dots i:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.dots i:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes bounce {
+    40% {
+        transform: translateY(-5px);
+        background: var(--flame);
+    }
+}
+
+.prompts {
+    display: flex;
+    gap: 6px;
+    padding: 0 14px 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.prompts button {
+    flex-shrink: 0;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink-2);
+    font-size: 12px;
+    white-space: nowrap;
+    transition:
+        border-color 0.2s,
+        color 0.2s,
+        background-color 0.2s;
+}
+
+.prompts button:hover:not(:disabled) {
+    border-color: var(--flame-line);
+    background: var(--flame-soft);
+    color: var(--flame-hot);
+}
+
+.composer {
+    --facet: var(--surface);
+    display: flex;
+    gap: 6px;
+    margin: 0 10px 10px;
+    padding: 5px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
+}
+
+.composer:focus-within {
+    border-color: var(--flame);
+    box-shadow: 0 0 0 4px rgba(242, 84, 27, 0.1);
+}
+
+.composer input {
+    flex: 1;
+    min-width: 0;
+    padding: 0 8px;
+    border: 0;
+    outline: none;
+    background: transparent;
+}
+
+.micButton,
+.sendButton {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 10px;
+    transition:
+        transform 0.2s var(--ease-spring),
+        background-color 0.2s;
+}
+
+.micButton {
+    --facet: var(--surface-3);
+    background: var(--surface-3);
+    color: var(--ink-2);
+}
+
+.micButton[data-listening='true'] {
+    --facet: var(--fire);
+    background: var(--fire);
+    color: #fff;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    50% {
+        box-shadow: 0 0 0 6px rgba(229, 50, 27, 0.18);
+    }
+}
+
+.sendButton {
+    --facet: #ff6a2b;
+    background: var(--gradient-flame);
+    color: #fff;
+}
+
+.sendButton:hover:not(:disabled),
+.micButton:hover:not(:disabled) {
+    transform: scale(1.06);
+}
+
+.sendButton:disabled,
+.micButton:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}

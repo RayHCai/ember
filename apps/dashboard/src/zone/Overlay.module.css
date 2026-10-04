@@ -1,0 +1,200 @@
+.legend {
+    --facet: var(--glass);
+    max-width: 100%;
+    padding: 8px 14px;
+    border: 1px solid rgba(236, 228, 220, 0.9);
+    border-radius: 14px;
+    background: var(--glass);
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(18px) saturate(1.4);
+    overflow: hidden;
+}
+
+.legendRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    align-items: center;
+    justify-content: center;
+}
+
+.legendItem {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    color: var(--ink-2);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+}
+
+.gradient {
+    display: inline-block;
+    width: 64px;
+    height: 8px;
+    border-radius: 999px;
+}
+
+.gradLabel {
+    color: var(--ink-3);
+    font-size: 11px;
+}
+
+.hud {
+    --facet: var(--ink);
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    width: min(520px, 100%);
+    padding: 12px 12px 12px 14px;
+    border-radius: 18px;
+    background: rgba(28, 23, 20, 0.92);
+    color: #fff;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(16px);
+}
+
+.hudLive {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(242, 84, 27, 0.2);
+    color: var(--flame-glow);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.hudDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--flame-glow);
+    box-shadow: 0 0 10px var(--flame-glow);
+    animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0.25;
+    }
+}
+
+.hudMain {
+    flex: 1;
+    min-width: 0;
+}
+
+.hudTop {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+.hudBar {
+    height: 5px;
+    margin: 7px 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+}
+
+.hudBar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--gradient-flame);
+    box-shadow: 0 0 12px rgba(255, 106, 43, 0.8);
+}
+
+.hudStats {
+    --facet: rgba(28, 23, 20, 0.92);
+    display: flex;
+    gap: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 11.5px;
+}
+
+.hudStats span {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.hudStats [data-tone='risk'] {
+    color: #ffcf55;
+}
+
+.hudStats [data-tone='fire'] {
+    color: #ff7a66;
+}
+
+.hudStop {
+    --facet: rgba(255, 255, 255, 0.12);
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    transition: background-color 0.2s;
+}
+
+.hudStop:hover {
+    --facet: var(--fire);
+    background: var(--fire);
+}
+
+.hover {
+    --facet: var(--surface);
+    position: fixed;
+    z-index: 40;
+    display: flex;
+    gap: 9px;
+    align-items: center;
+    max-width: 280px;
+    padding: 8px 12px 8px 8px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+    transform-origin: top left;
+}
+
+.hover strong {
+    display: block;
+    font-size: 12.5px;
+}
+
+.hover span span {
+    display: block;
+    overflow: hidden;
+    color: var(--ink-3);
+    font-size: 11.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hoverIcon {
+    --facet: var(--ink);
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    background: var(--ink);
+    color: #fff;
+}
