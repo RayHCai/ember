@@ -3,7 +3,7 @@ import { buildApp } from './app.js';
 import { Prisma } from './generated/prisma/client.js';
 import type { Db } from './db.js';
 
-function stubDb(create: (args: { data: { phone: string; zipCode: string } }) => unknown): Db {
+function stubDb(create: (args: { data: { email: string; zipCode: string } }) => unknown): Db {
     return { civilian: { create } } as unknown as Db;
 }
 
@@ -18,28 +18,28 @@ test('health', async () => {
     expect(res.json()).toEqual({ service: 'api', ok: true });
 });
 
-test('creates a civilian', async () => {
+test('creates a civilian with a lowercased email', async () => {
     const res = await buildApp(okDb).inject({
         method: 'POST',
         url: '/civilians',
-        payload: { phone: '+15551234567', zipCode: '96761' },
+        payload: { email: 'Kai@Example.com', zipCode: '96761' },
     });
     expect(res.statusCode).toBe(201);
-    expect(res.json()).toMatchObject({ phone: '+15551234567', zipCode: '96761' });
+    expect(res.json()).toMatchObject({ email: 'kai@example.com', zipCode: '96761' });
 });
 
-test('rejects a malformed phone or zip', async () => {
+test('rejects a malformed email or zip', async () => {
     const app = buildApp(okDb);
     const responses = await Promise.all(
         [
-            { phone: '5551234567', zipCode: '96761' },
-            { phone: '+15551234567', zipCode: '9676' },
+            { email: 'kai@example', zipCode: '96761' },
+            { email: 'kai@example.com', zipCode: '9676' },
         ].map((payload) => app.inject({ method: 'POST', url: '/civilians', payload })),
     );
     expect(responses.map((r) => r.statusCode)).toEqual([400, 400]);
 });
 
-test('409 on duplicate phone', async () => {
+test('409 on duplicate email', async () => {
     const db = stubDb(async () => {
         throw new Prisma.PrismaClientKnownRequestError('dup', {
             code: 'P2002',
@@ -49,7 +49,7 @@ test('409 on duplicate phone', async () => {
     const res = await buildApp(db).inject({
         method: 'POST',
         url: '/civilians',
-        payload: { phone: '+15551234567', zipCode: '96761' },
+        payload: { email: 'kai@example.com', zipCode: '96761' },
     });
     expect(res.statusCode).toBe(409);
 });
