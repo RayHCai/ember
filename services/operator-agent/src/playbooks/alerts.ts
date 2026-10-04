@@ -117,6 +117,21 @@ export async function draftCivilianAlert(
             a.draft.civilianAreaId === areaId,
     );
     if (same) return same;
+    // One pending draft per area: a fresh plan replaces it only when the area's severity moved.
+    const pendingForArea = existing.find(
+        (a) =>
+            a.state === 'pending' &&
+            a.incidentId === incident.id &&
+            a.draft.kind === 'civilian_alert' &&
+            a.draft.civilianAreaId === areaId,
+    );
+    if (
+        !opts.update &&
+        pendingForArea?.draft.kind === 'civilian_alert' &&
+        pendingForArea.draft.severity === impact.severity
+    ) {
+        return pendingForArea;
+    }
     const civilians: Civilian[] = (await ctx.api.civilians(zone.id)).filter(
         (c) => c.civilianAreaId === areaId,
     );

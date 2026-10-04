@@ -19,6 +19,8 @@ import { draftCivilianAlert } from './alerts.js';
 
 const OPEN_STATES = new Set<Incident['state']>(['suspected', 'verifying', 'active']);
 const SAME_INCIDENT_M = 2000;
+/** A joined incident planned more recently than this is not replanned for one more detection. */
+const REPLAN_AFTER_MS = 10 * 60_000;
 
 function metres(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
     const rad = Math.PI / 180;
@@ -86,6 +88,13 @@ export async function escalate(
             near ? `joined Incident #${incident.number}` : `opened Incident #${incident.number}`,
         ],
     });
+    if (near?.latestJobId) {
+        const latest = await ctx.api.plan(near.latestJobId);
+        const age = latest.result
+            ? ctx.now().getTime() - Date.parse(latest.result.generatedAt)
+            : Infinity;
+        if (age < REPLAN_AFTER_MS) return incident;
+    }
     try {
         const view = await runPlanner(ctx, zone.id, {
             reason: `Incident #${incident.number}: ${reason}`,

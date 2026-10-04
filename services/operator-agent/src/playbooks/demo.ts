@@ -3,9 +3,9 @@ import { decide, type Ctx } from '../context.js';
 import { openIncidents } from './response.js';
 
 /**
- * Puts a zone back where the demo starts: no open incident, no simulated fire, every road open,
- * no scan running. Real drone detections are left alone. Approvals and the decision log are history
- * and stay.
+ * Puts a zone back where the demo starts: no open incident, no fire on record, every road open, no
+ * scan running. A demo action: it dismisses every detection of the zone, drone ones included.
+ * Approvals and the decision log are history and stay.
  */
 export async function resetDemo(ctx: Ctx, zone: WatchZone, actor: string) {
     const actions: string[] = [];
@@ -13,18 +13,15 @@ export async function resetDemo(ctx: Ctx, zone: WatchZone, actor: string) {
         await ctx.api.updateIncident(incident.id, { state: 'closed' });
         actions.push(`closed Incident #${incident.number}`);
     }
-    const simulated = (await ctx.api.detections(zone.id)).filter((d) => d.source === 'simulated');
-    const ids = new Set(simulated.map((d) => d.id));
+    const live = (await ctx.api.detections(zone.id)).filter((d) => d.verification !== 'dismissed');
     for (const r of await ctx.api.riskZones(zone.id)) {
-        if (r.detectionIds.some((id) => ids.has(id))) {
+        if (r.source === 'detection') {
             await ctx.api.deleteRiskZone(zone.id, r.id);
-            actions.push(`removed simulated fire area ${r.id.slice(0, 8)}`);
+            actions.push(`removed fire area ${r.id.slice(0, 8)}`);
         }
     }
-    for (const d of simulated.filter((x) => x.verification !== 'dismissed')) {
-        await ctx.api.verifyDetection(d.id, 'dismissed', actor);
-    }
-    if (simulated.length) actions.push(`dismissed ${simulated.length} simulated detection(s)`);
+    for (const d of live) await ctx.api.verifyDetection(d.id, 'dismissed', actor);
+    if (live.length) actions.push(`dismissed ${live.length} detection(s)`);
     for (const road of (await ctx.api.roads(zone.id)).filter((r) => r.state !== 'open')) {
         await ctx.api.observeRoad(zone.id, {
             roadId: road.id,
