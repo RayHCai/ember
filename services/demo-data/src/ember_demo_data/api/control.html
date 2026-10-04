@@ -1,172 +1,345 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Scenario Clock</title>
-<style>
-:root {
-  --bg: #111214; --panel: #1b1d21; --line: #2c2f35; --text: #ececec; --muted: #8b9099;
-  --accent: #ff6a2b; --accent-soft: #ff6a2b22;
-  color-scheme: dark;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; }
-main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
-h1 { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
-.now { font: 600 44px/1.1 ui-monospace, monospace; font-variant-numeric: tabular-nums; }
-.date { color: var(--muted); margin-bottom: 20px; }
-.state { display: inline-block; margin-left: 10px; font: 600 12px system-ui; padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); vertical-align: middle; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.label { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
-button { background: #25282d; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; font: inherit; cursor: pointer; }
-button:hover { border-color: var(--muted); }
-button.on { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 600; }
-button.big { min-width: 96px; font-weight: 600; }
-input[type=range] { width: 100%; accent-color: var(--accent); }
-input[type=datetime-local], input[type=number] { background: #25282d; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font: inherit; }
-input[type=number] { width: 90px; }
-.ticks { position: relative; height: 18px; margin: 2px 0 0; }
-.ticks span { position: absolute; transform: translateX(-50%); width: 2px; height: 8px; background: var(--muted); }
-.axis { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
-ol { list-style: none; margin: 0; padding: 0; }
-li button { width: 100%; text-align: left; display: flex; gap: 12px; margin-bottom: 4px; background: transparent; }
-li button time { font-family: ui-monospace, monospace; color: var(--accent); white-space: nowrap; }
-li button.past time { color: var(--muted); }
-.err { color: #ff6b6b; min-height: 1.4em; }
-</style>
-</head>
-<body>
-<main>
-  <h1>Ember Demo Data · Scenario clock</h1>
-  <div class="now" id="now">--:--:--</div>
-  <div class="date"><span id="date"></span><span class="state" id="state"></span></div>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Scenario Clock</title>
+        <style>
+            :root {
+                --bg: #111214;
+                --panel: #1b1d21;
+                --line: #2c2f35;
+                --text: #ececec;
+                --muted: #8b9099;
+                --accent: #ff6a2b;
+                --accent-soft: #ff6a2b22;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--text);
+                font:
+                    14px/1.4 system-ui,
+                    sans-serif;
+            }
+            main {
+                max-width: 860px;
+                margin: 0 auto;
+                padding: 24px 16px 48px;
+            }
+            h1 {
+                font-size: 13px;
+                font-weight: 600;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--muted);
+                margin: 0 0 8px;
+            }
+            .now {
+                font:
+                    600 44px/1.1 ui-monospace,
+                    monospace;
+                font-variant-numeric: tabular-nums;
+            }
+            .date {
+                color: var(--muted);
+                margin-bottom: 20px;
+            }
+            .state {
+                display: inline-block;
+                margin-left: 10px;
+                font: 600 12px system-ui;
+                padding: 2px 8px;
+                border-radius: 99px;
+                background: var(--accent-soft);
+                color: var(--accent);
+                vertical-align: middle;
+            }
+            .panel {
+                background: var(--panel);
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 16px;
+                margin-bottom: 14px;
+            }
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+            }
+            .label {
+                color: var(--muted);
+                font-size: 12px;
+                margin-bottom: 8px;
+            }
+            button {
+                background: #25282d;
+                color: var(--text);
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                padding: 7px 12px;
+                font: inherit;
+                cursor: pointer;
+            }
+            button:hover {
+                border-color: var(--muted);
+            }
+            button.on {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: #111;
+                font-weight: 600;
+            }
+            button.big {
+                min-width: 96px;
+                font-weight: 600;
+            }
+            input[type='range'] {
+                width: 100%;
+                accent-color: var(--accent);
+            }
+            input[type='datetime-local'],
+            input[type='number'] {
+                background: #25282d;
+                color: var(--text);
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                padding: 6px 8px;
+                font: inherit;
+            }
+            input[type='number'] {
+                width: 90px;
+            }
+            .ticks {
+                position: relative;
+                height: 18px;
+                margin: 2px 0 0;
+            }
+            .ticks span {
+                position: absolute;
+                transform: translateX(-50%);
+                width: 2px;
+                height: 8px;
+                background: var(--muted);
+            }
+            .axis {
+                display: flex;
+                justify-content: space-between;
+                color: var(--muted);
+                font-size: 12px;
+            }
+            ol {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+            li button {
+                width: 100%;
+                text-align: left;
+                display: flex;
+                gap: 12px;
+                margin-bottom: 4px;
+                background: transparent;
+            }
+            li button time {
+                font-family: ui-monospace, monospace;
+                color: var(--accent);
+                white-space: nowrap;
+            }
+            li button.past time {
+                color: var(--muted);
+            }
+            .err {
+                color: #ff6b6b;
+                min-height: 1.4em;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>Ember Demo Data · Scenario clock</h1>
+            <div class="now" id="now">--:--:--</div>
+            <div class="date"><span id="date"></span><span class="state" id="state"></span></div>
 
-  <div class="panel">
-    <div class="row" style="margin-bottom:12px">
-      <button class="big" id="play"></button>
-      <button data-step="-3600">−1 h</button>
-      <button data-step="-600">−10 min</button>
-      <button data-step="-60">−1 min</button>
-      <button data-step="60">+1 min</button>
-      <button data-step="600">+10 min</button>
-      <button data-step="3600">+1 h</button>
-    </div>
-    <input type="range" id="scrub" min="0" max="1" step="60">
-    <div class="ticks" id="ticks"></div>
-    <div class="axis"><span id="from"></span><span id="to"></span></div>
-  </div>
+            <div class="panel">
+                <div class="row" style="margin-bottom: 12px">
+                    <button class="big" id="play"></button>
+                    <button data-step="-3600">−1 h</button>
+                    <button data-step="-600">−10 min</button>
+                    <button data-step="-60">−1 min</button>
+                    <button data-step="60">+1 min</button>
+                    <button data-step="600">+10 min</button>
+                    <button data-step="3600">+1 h</button>
+                </div>
+                <input type="range" id="scrub" min="0" max="1" step="60" />
+                <div class="ticks" id="ticks"></div>
+                <div class="axis"><span id="from"></span><span id="to"></span></div>
+            </div>
 
-  <div class="panel">
-    <div class="label">Speed (scenario seconds per real second)</div>
-    <div class="row" id="speeds">
-      <input type="number" id="speed" min="0.1" max="3600" step="any" title="custom speed">
-    </div>
-  </div>
+            <div class="panel">
+                <div class="label">Speed (scenario seconds per real second)</div>
+                <div class="row" id="speeds">
+                    <input
+                        type="number"
+                        id="speed"
+                        min="0.1"
+                        max="3600"
+                        step="any"
+                        title="custom speed"
+                    />
+                </div>
+            </div>
 
-  <div class="panel">
-    <div class="label">Jump to</div>
-    <div class="row" style="margin-bottom:12px">
-      <input type="datetime-local" id="goto" step="60">
-      <button id="go">Go (HST)</button>
-    </div>
-    <ol id="events"></ol>
-  </div>
-  <div class="err" id="err"></div>
-</main>
-<script>
-// Scenario times are HST (UTC-10, no DST); the demo window is the first 36 hours of the fire.
-const HST_MS = -10 * 3600e3;
-const WINDOW = ['2023-08-08T00:00:00-10:00', '2023-08-09T12:00:00-10:00'].map(Date.parse);
-const SPEEDS = [1, 10, 60, 300, 900, 3600];
-const $ = (id) => document.getElementById(id);
-let clock = null, syncedAt = 0, scrubbing = false, events = [];
+            <div class="panel">
+                <div class="label">Jump to</div>
+                <div class="row" style="margin-bottom: 12px">
+                    <input type="datetime-local" id="goto" step="60" />
+                    <button id="go">Go (HST)</button>
+                </div>
+                <ol id="events"></ol>
+            </div>
+            <div class="err" id="err"></div>
+        </main>
+        <script>
+            // Scenario times are HST (UTC-10, no DST); the demo window is the first 36 hours of the fire.
+            const HST_MS = -10 * 3600e3;
+            const WINDOW = ['2023-08-08T00:00:00-10:00', '2023-08-09T12:00:00-10:00'].map(
+                Date.parse,
+            );
+            const SPEEDS = [1, 10, 60, 300, 900, 3600];
+            const $ = (id) => document.getElementById(id);
+            let clock = null,
+                syncedAt = 0,
+                scrubbing = false,
+                events = [];
 
-const hst = (ms) => new Date(ms + HST_MS).toISOString();
-const iso = (ms) => hst(ms).slice(0, 19) + '-10:00';
-const nowMs = () => {
-  if (!clock) return WINDOW[0];
-  const t = Date.parse(clock.scenario_time);
-  return clock.paused ? t : t + (performance.now() - syncedAt) * clock.speed;
-};
+            const hst = (ms) => new Date(ms + HST_MS).toISOString();
+            const iso = (ms) => hst(ms).slice(0, 19) + '-10:00';
+            const nowMs = () => {
+                if (!clock) return WINDOW[0];
+                const t = Date.parse(clock.scenario_time);
+                return clock.paused ? t : t + (performance.now() - syncedAt) * clock.speed;
+            };
 
-async function call(method, body) {
-  try {
-    const r = await fetch('v1/clock', {
-      method, headers: { 'content-type': 'application/json' }, body: body && JSON.stringify(body),
-    });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.message || r.statusText);
-    clock = j; syncedAt = performance.now(); $('err').textContent = '';
-    render();
-  } catch (e) { $('err').textContent = String(e.message || e); }
-}
-const put = (body) => call('PUT', body);
-const seek = (ms) => put({ scenario_time: iso(ms) });
+            async function call(method, body) {
+                try {
+                    const r = await fetch('v1/clock', {
+                        method,
+                        headers: { 'content-type': 'application/json' },
+                        body: body && JSON.stringify(body),
+                    });
+                    const j = await r.json();
+                    if (!r.ok) throw new Error(j.message || r.statusText);
+                    clock = j;
+                    syncedAt = performance.now();
+                    $('err').textContent = '';
+                    render();
+                } catch (e) {
+                    $('err').textContent = String(e.message || e);
+                }
+            }
+            const put = (body) => call('PUT', body);
+            const seek = (ms) => put({ scenario_time: iso(ms) });
 
-function render() {
-  if (!clock) return;
-  $('play').textContent = clock.paused ? '▶ Play' : '❚❚ Pause';
-  $('state').textContent = clock.paused ? 'paused' : `${clock.speed}×`;
-  for (const b of $('speeds').querySelectorAll('button')) b.classList.toggle('on', +b.dataset.speed === clock.speed);
-  if (document.activeElement !== $('speed')) $('speed').value = clock.speed;
-}
+            function render() {
+                if (!clock) return;
+                $('play').textContent = clock.paused ? '▶ Play' : '❚❚ Pause';
+                $('state').textContent = clock.paused ? 'paused' : `${clock.speed}×`;
+                for (const b of $('speeds').querySelectorAll('button'))
+                    b.classList.toggle('on', +b.dataset.speed === clock.speed);
+                if (document.activeElement !== $('speed')) $('speed').value = clock.speed;
+            }
 
-function tick() {
-  const t = nowMs(), s = hst(t);
-  $('now').textContent = s.slice(11, 19) + ' HST';
-  $('date').textContent = new Date(t + HST_MS).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  if (!scrubbing) $('scrub').value = t / 1000;
-  for (const b of $('events').querySelectorAll('button')) b.classList.toggle('past', +b.dataset.t <= t);
-  requestAnimationFrame(tick);
-}
+            function tick() {
+                const t = nowMs(),
+                    s = hst(t);
+                $('now').textContent = s.slice(11, 19) + ' HST';
+                $('date').textContent = new Date(t + HST_MS).toLocaleDateString('en-US', {
+                    timeZone: 'UTC',
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                });
+                if (!scrubbing) $('scrub').value = t / 1000;
+                for (const b of $('events').querySelectorAll('button'))
+                    b.classList.toggle('past', +b.dataset.t <= t);
+                requestAnimationFrame(tick);
+            }
 
-function setup(scenario) {
-  const scrub = $('scrub');
-  scrub.min = WINDOW[0] / 1000; scrub.max = WINDOW[1] / 1000;
-  $('from').textContent = 'Aug 8 00:00'; $('to').textContent = 'Aug 9 12:00';
-  scrub.addEventListener('input', () => { scrubbing = true; $('now').textContent = hst(scrub.value * 1000).slice(11, 19) + ' HST'; });
-  scrub.addEventListener('change', () => { scrubbing = false; seek(scrub.value * 1000); });
+            function setup(scenario) {
+                const scrub = $('scrub');
+                scrub.min = WINDOW[0] / 1000;
+                scrub.max = WINDOW[1] / 1000;
+                $('from').textContent = 'Aug 8 00:00';
+                $('to').textContent = 'Aug 9 12:00';
+                scrub.addEventListener('input', () => {
+                    scrubbing = true;
+                    $('now').textContent = hst(scrub.value * 1000).slice(11, 19) + ' HST';
+                });
+                scrub.addEventListener('change', () => {
+                    scrubbing = false;
+                    seek(scrub.value * 1000);
+                });
 
-  events = scenario.key_events.map((e) => ({ t: Date.parse(e.time), event: e.event }));
-  for (const e of events) {
-    const li = document.createElement('li'), b = document.createElement('button');
-    b.dataset.t = e.t;
-    b.innerHTML = `<time>${hst(e.t).slice(5, 16).replace('T', ' ')}</time><span></span>`;
-    b.lastChild.textContent = e.event;
-    b.onclick = () => seek(e.t);
-    li.append(b); $('events').append(li);
-    if (e.t >= WINDOW[0] && e.t <= WINDOW[1]) {
-      const m = document.createElement('span');
-      m.style.left = `${(100 * (e.t - WINDOW[0])) / (WINDOW[1] - WINDOW[0])}%`;
-      m.title = e.event; $('ticks').append(m);
-    }
-  }
-}
+                events = scenario.key_events.map((e) => ({
+                    t: Date.parse(e.time),
+                    event: e.event,
+                }));
+                for (const e of events) {
+                    const li = document.createElement('li'),
+                        b = document.createElement('button');
+                    b.dataset.t = e.t;
+                    b.innerHTML = `<time>${hst(e.t).slice(5, 16).replace('T', ' ')}</time><span></span>`;
+                    b.lastChild.textContent = e.event;
+                    b.onclick = () => seek(e.t);
+                    li.append(b);
+                    $('events').append(li);
+                    if (e.t >= WINDOW[0] && e.t <= WINDOW[1]) {
+                        const m = document.createElement('span');
+                        m.style.left = `${(100 * (e.t - WINDOW[0])) / (WINDOW[1] - WINDOW[0])}%`;
+                        m.title = e.event;
+                        $('ticks').append(m);
+                    }
+                }
+            }
 
-for (const s of SPEEDS) {
-  const b = document.createElement('button');
-  b.dataset.speed = s; b.textContent = s >= 60 ? `${s / 60} min/s` : `${s}×`;
-  b.onclick = () => put({ speed: s });
-  $('speed').before(b);
-}
-$('speed').addEventListener('change', (e) => put({ speed: +e.target.value }));
-$('play').onclick = () => put({ paused: !clock.paused });
-for (const b of document.querySelectorAll('[data-step]')) b.onclick = () => seek(nowMs() + b.dataset.step * 1000);
-$('go').onclick = () => $('goto').value && seek(Date.parse($('goto').value + ':00-10:00'));
-document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT') return;
-  if (e.code === 'Space') { e.preventDefault(); $('play').click(); }
-  if (e.code === 'ArrowRight') seek(nowMs() + (e.shiftKey ? 3600e3 : 600e3));
-  if (e.code === 'ArrowLeft') seek(nowMs() - (e.shiftKey ? 3600e3 : 600e3));
-});
+            for (const s of SPEEDS) {
+                const b = document.createElement('button');
+                b.dataset.speed = s;
+                b.textContent = s >= 60 ? `${s / 60} min/s` : `${s}×`;
+                b.onclick = () => put({ speed: s });
+                $('speed').before(b);
+            }
+            $('speed').addEventListener('change', (e) => put({ speed: +e.target.value }));
+            $('play').onclick = () => put({ paused: !clock.paused });
+            for (const b of document.querySelectorAll('[data-step]'))
+                b.onclick = () => seek(nowMs() + b.dataset.step * 1000);
+            $('go').onclick = () =>
+                $('goto').value && seek(Date.parse($('goto').value + ':00-10:00'));
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT') return;
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    $('play').click();
+                }
+                if (e.code === 'ArrowRight') seek(nowMs() + (e.shiftKey ? 3600e3 : 600e3));
+                if (e.code === 'ArrowLeft') seek(nowMs() - (e.shiftKey ? 3600e3 : 600e3));
+            });
 
-fetch('v1/scenario').then((r) => r.json()).then(setup).catch((e) => ($('err').textContent = String(e)));
-call('GET');
-// Other tabs and drones share this clock; resync so their changes show up here.
-setInterval(() => call('GET'), 3000);
-requestAnimationFrame(tick);
-</script>
-</body>
+            fetch('v1/scenario')
+                .then((r) => r.json())
+                .then(setup)
+                .catch((e) => ($('err').textContent = String(e)));
+            call('GET');
+            // Other tabs and drones share this clock; resync so their changes show up here.
+            setInterval(() => call('GET'), 3000);
+            requestAnimationFrame(tick);
+        </script>
+    </body>
 </html>
