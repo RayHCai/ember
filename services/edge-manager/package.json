@@ -7,5 +7,8 @@
         "typecheck": "node ../../scripts/go.mjs vet ./...",
         "format:check": "node ../../scripts/gofmt-check.mjs .",
         "test": "node ../../scripts/go.mjs test ./..."
+    },
+    "devDependencies": {
+        "@ember/go-internal": "workspace:*"
     }
 }
