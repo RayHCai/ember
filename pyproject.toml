@@ -13,6 +13,7 @@ override-dependencies = ["opencv-python; sys_platform == 'never'"]
 members = [
   "services/demo-data",
   "services/drone-runtime",
+  "services/operator-uagent",
   "services/planner",
   "tools/asset-builder",
   "tools/fire-seg",
