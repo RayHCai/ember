@@ -8,17 +8,17 @@ the latest state per drone in memory: history and the registry of record live in
 
 Shapes are in `packages/contracts/src/droneInfo.ts`.
 
-| Method | Path | Who | What |
-|---|---|---|---|
-| POST | `/v1/ingest` | edge-manager | `DroneInfoIngest`: `hello`, `telemetry` and `detections` messages, unchanged from the edge link. Answers `DroneInfoIngestResult`; bad messages are dropped and counted, never fail the batch. |
-| WS | `/v1/stream` | viewers | `fleet` on connect and every second. After `{"type": "follow", "droneId": ...}`, that drone's latest `telemetry` and `detections`, then each new one as it arrives. `{"type": "watch", "droneIds": [...]}` does the same for a list of drones (the dashboard watches a zone's fleet); each `watch` replaces the last. |
-| GET | `/healthz` | anyone | Liveness |
+| Method | Path         | Who          | What                                                                                                                                                                                                                                                                                                                  |
+| ------ | ------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/v1/ingest` | edge-manager | `DroneInfoIngest`: `hello`, `telemetry` and `detections` messages, unchanged from the edge link. Answers `DroneInfoIngestResult`; bad messages are dropped and counted, never fail the batch.                                                                                                                         |
+| WS     | `/v1/stream` | viewers      | `fleet` on connect and every second. After `{"type": "follow", "droneId": ...}`, that drone's latest `telemetry` and `detections`, then each new one as it arrives. `{"type": "watch", "droneIds": [...]}` does the same for a list of drones (the dashboard watches a zone's fleet); each `watch` replaces the last. |
+| GET    | `/healthz`   | anyone       | Liveness                                                                                                                                                                                                                                                                                                              |
 
 A drone appears in `fleet` once it has sent telemetry. Its name and kind come from its `hello`; a
 drone with no `hello` is listed under its id as `physical`.
 
-Until edge-manager exists, `drone-runtime swarm-sim --drone-info URL` posts to `/v1/ingest` in its
-place (see `docs/work/0006-runtime-in-drone-sim.md`).
+For testing without edge-manager, `drone-runtime swarm-sim --drone-info URL` posts to `/v1/ingest`
+directly.
 
 ## Run
 

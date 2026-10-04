@@ -1,7 +1,7 @@
 # Architecture
 
 Ember is a monorepo of independently deployable services that share one gate, one contracts
-package and one data store per concern. Product behaviour is specified in `readme.md`; this document
+package and one data store per concern. Product behaviour is specified in `docs/product.md`; this document
 owns the boundaries.
 
 ## Services
@@ -159,7 +159,7 @@ host's `./data`, built beforehand.
 
 ## Invariants
 
-- Outbound civilian alerts require an operator approval record (see `AGENTS.md`): the api keeps a
+- Outbound civilian alerts require an operator approval record (see `docs/development.md`): the api keeps a
   blast that reaches civilians `pending_approval` until a signed-in operator approves it, and
   operator-agent texts a blast only once it is `queued` with that approval.
 - The API is the only writer of watch zones, edge servers and drone registrations. A connector's

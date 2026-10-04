@@ -90,7 +90,7 @@ and draw a drone moving along its last reported velocity between reports.
 ## Run
 
 ```bash
-docker compose up -d --build                # the services (needs ./data, see the root AGENTS.md)
+docker compose up -d --build                # the services (needs ./data, see docs/development.md)
 pnpm --filter @ember/dashboard app          # desktop app (dev server on :5173)
 pnpm --filter @ember/dashboard dev          # same UI in a browser
 pnpm --filter @ember/dashboard app:build    # installers under src-tauri/target/release/bundle
