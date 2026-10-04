@@ -3,6 +3,7 @@ packages:
     - services/*
     - packages/*
     - tools/*
+    - internal
 
 # Three days, so a compromised publish is never taken the day it lands.
 minimumReleaseAge: 4320

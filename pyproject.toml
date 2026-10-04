@@ -5,13 +5,18 @@ requires-python = ">=3.12"
 
 [tool.uv]
 package = false
+# Ultralytics wants opencv-python; Demo Data and fire-seg use the headless build, and both in one
+# environment fight over the same cv2 module.
+override-dependencies = ["opencv-python; sys_platform == 'never'"]
 
 [tool.uv.workspace]
 members = [
-  "services/planner",
+  "services/demo-data",
   "services/drone-runtime",
+  "services/planner",
   "tools/asset-builder",
-  "tools/demo-data",
+  "tools/fire-seg",
+  "tools/seed-data",
 ]
 
 [dependency-groups]

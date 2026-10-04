@@ -13,3 +13,11 @@ updates:
     - package-ecosystem: uv
       directory: /
       schedule: { interval: weekly }
+    - package-ecosystem: docker
+      directory: /docker
+      schedule: { interval: weekly }
+    - package-ecosystem: cargo
+      directories:
+          - /apps/drone-sim/src-tauri
+          - /apps/dashboard/src-tauri
+      schedule: { interval: weekly }

@@ -3,7 +3,7 @@ name: Security
 on:
     pull_request:
     push:
-        branches: [main]
+        branches: [master]
     schedule:
         - cron: '0 6 * * 1'
 
@@ -17,7 +17,7 @@ jobs:
             - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
               with:
                   fetch-depth: 0
-            - uses: gitleaks/gitleaks-action@v2
+            - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -34,8 +34,9 @@ jobs:
             - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
               with:
                   go-version-file: go.mod
+                  cache-dependency-path: go.sum
             - name: Go advisories
-              run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-            - uses: astral-sh/setup-uv@v6
+              run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+            - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
             - name: Python advisories
-              run: uv export --all-packages --frozen --no-hashes --format requirements-txt > req.txt && uvx pip-audit -r req.txt
+              run: uv export --all-packages --frozen --no-hashes --format requirements-txt > req.txt && uvx pip-audit@2.10.1 -r req.txt

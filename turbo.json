@@ -1,7 +1,17 @@
 {
     "$schema": "https://turbo.build/schema.json",
     "ui": "stream",
-    "globalDependencies": ["tsconfig.base.json", "scripts/*.mjs", "go.mod", "pyproject.toml"],
+    // Lockfiles outside pnpm's are global so a dependency-only bump still reruns (and --affected selects) Go and Python tasks.
+    "globalDependencies": [
+        "tsconfig.base.json",
+        "scripts/*.mjs",
+        "go.mod",
+        "go.sum",
+        "pyproject.toml",
+        "uv.lock"
+    ],
+    // Service images build from `turbo prune --docker`, which needs tsconfig.base.json and scripts/ to install and compile.
+    "futureFlags": { "pruneIncludesGlobalFiles": true },
     // Hashed: a cached pass produced by a toolchain skip must not replay where the toolchain is required.
     "globalEnv": ["EMBER_REQUIRE_TOOLCHAIN"],
     "globalPassThroughEnv": [
@@ -17,6 +27,7 @@
         "GOPROXY",
         "GOTOOLCHAIN",
         "CARGO_HOME",
+        "CARGO_TARGET_DIR",
         "RUSTUP_HOME",
         "UV_CACHE_DIR",
         "UV_PYTHON"
@@ -24,7 +35,7 @@
     "tasks": {
         "build": {
             "dependsOn": ["^build"],
-            "inputs": ["src/**", "prisma/**", "tsconfig*.json", "package.json"],
+            "inputs": ["$TURBO_DEFAULT$", "!**/*.md"],
             "outputs": ["dist/**"]
         },
         "typecheck": {

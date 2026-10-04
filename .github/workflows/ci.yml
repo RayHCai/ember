@@ -2,13 +2,14 @@ name: CI
 
 on:
     push:
-        branches: [main]
+        branches: [master]
     pull_request:
+    merge_group:
     workflow_dispatch:
 
 concurrency:
     group: ci-${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+    cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 permissions:
     contents: read
@@ -16,16 +17,17 @@ permissions:
 env:
     TURBO_TELEMETRY_DISABLED: 1
     DO_NOT_TRACK: 1
+    EMBER_SKIP_HOOKS: 1
 
 jobs:
     ci:
         name: ${{ matrix.task.name }}
         runs-on: ubuntu-latest
-        timeout-minutes: 20
+        timeout-minutes: 25
         env:
             # Installed below, so an absence here is a broken install, not a skip.
-            EMBER_REQUIRE_TOOLCHAIN: go,uv
-            # PRs check only what the change reaches; main checks everything.
+            EMBER_REQUIRE_TOOLCHAIN: ${{ matrix.task.rust && 'go,uv,cargo' || 'go,uv' }}
+            # PRs check only what the change reaches; master checks everything.
             TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
             AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
         strategy:
@@ -34,8 +36,10 @@ jobs:
                 task:
                     - name: lint
                       run: pnpm run lint
+                      rust: true
                     - name: format
                       run: pnpm run format:check
+                      rust: true
                     - name: typecheck
                       run: pnpm run typecheck $AFFECTED
                     - name: build
@@ -54,10 +58,24 @@ jobs:
             - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
               with:
                   go-version-file: go.mod
-                  cache-dependency-path: go.mod
-            - uses: astral-sh/setup-uv@v6
+                  cache-dependency-path: go.sum
+            - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
               with:
                   enable-cache: true
+            # Clippy compiles the Tauri shell, which links WebKitGTK on Linux.
+            - if: matrix.task.name == 'lint'
+              run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+            - if: matrix.task.rust
+              uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # v1
+              with:
+                  toolchain: stable
+                  components: clippy, rustfmt
+            - if: matrix.task.rust
+              uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+              with:
+                  workspaces: |
+                      apps/drone-sim/src-tauri
+                      apps/dashboard/src-tauri
             - run: uv sync --all-packages --frozen
             - run: pnpm install --frozen-lockfile
             - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
@@ -77,8 +95,14 @@ jobs:
             - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
               with:
                   go-version-file: go.mod
-                  cache-dependency-path: go.mod
+                  cache-dependency-path: go.sum
             - run: go test -race -count=1 -shuffle=on ./...
+
+    images:
+        name: images
+        uses: ./.github/workflows/images.yml
+        with:
+            push: false
 
     commits:
         name: conventional commits
@@ -93,7 +117,7 @@ jobs:
                   BASE: ${{ github.event.pull_request.base.sha }}
                   HEAD: ${{ github.event.pull_request.head.sha }}
               run: |
-                  bad=$(git log --format=%s "$BASE..$HEAD" \
+                  bad=$(git log --no-merges --format=%s "$BASE..$HEAD" \
                     | grep -vE '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9/-]+\))?!?: .+' || true)
                   [ -z "$bad" ] || { echo "Non-conventional commits:"; echo "$bad"; exit 1; }
 
@@ -101,7 +125,7 @@ jobs:
     ci-ok:
         name: CI passed
         if: always()
-        needs: [ci, go-race, commits]
+        needs: [ci, go-race, images, commits]
         runs-on: ubuntu-latest
         steps:
             - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

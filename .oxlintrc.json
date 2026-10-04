@@ -20,9 +20,45 @@
         "**/node_modules/**",
         "**/.turbo/**",
         "**/target/**",
-        "**/.venv/**"
+        "**/.venv/**",
+        "**/src/generated/**"
     ],
     "overrides": [
+        // Reanimated shared values are mutable by design, RNGH builds gestures with Gesture.Pan(),
+        // and expo-status-bar takes a string style.
+        {
+            "files": ["apps/responder/**"],
+            "rules": {
+                "react/immutability": "off",
+                "react/capitalized-calls": "off",
+                "react/style-prop-object": "off"
+            }
+        },
+        // The operator console came in from its own repo under looser lint; burn these down, then drop this.
+        {
+            "files": ["apps/dashboard/**"],
+            "rules": {
+                "no-new": "off",
+                "no-underscore-dangle": "off",
+                "no-await-in-loop": "off",
+                "no-console": "off",
+                "import/no-unassigned-import": "off",
+                "react/exhaustive-effect-dependencies": "off",
+                "react/hooks": "off",
+                "react/immutability": "off",
+                "react/refs": "off",
+                "react/set-state-in-effect": "off",
+                "react/use-memo": "off",
+                "react/no-array-index-key": "off",
+                "unicorn/consistent-function-scoping": "off",
+                "unicorn/no-array-reverse": "off",
+                "unicorn/no-array-sort": "off",
+                "unicorn/no-useless-fallback-in-spread": "off",
+                "unicorn/no-useless-spread": "off",
+                "unicorn/prefer-add-event-listener": "off",
+                "oxc/no-map-spread": "off"
+            }
+        },
         {
             "files": ["**/*.test.ts", "**/tests/**"],
             "rules": { "no-console": "off", "typescript/no-explicit-any": "off" }

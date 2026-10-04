@@ -37,3 +37,10 @@ apps/responder/android/
 
 .claude/settings.local.json
 docs/work/scratch/
+
+# edge-connector store (EMBER_EDGE_DB) and its WAL files
+edge-connector.db*
+
+# Playwright output
+test-results/
+playwright-report/

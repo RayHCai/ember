@@ -1,66 +1,48 @@
 name: Release
 
-# CD: release-please opens a release PR from conventional commits on main; merging it tags a
+# CD: release-please opens a release PR from conventional commits on master; merging it tags a
 # release, which pushes service images to GHCR and attaches dashboard installers.
 on:
     push:
-        branches: [main]
+        branches: [master]
 
-permissions:
-    contents: write
-    pull-requests: write
-    packages: write
+concurrency:
+    group: release
+    cancel-in-progress: false
+
+permissions: {}
 
 jobs:
     release-please:
         runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
         outputs:
             released: ${{ steps.rp.outputs.release_created }}
             tag: ${{ steps.rp.outputs.tag_name }}
         steps:
             - id: rp
-              uses: googleapis/release-please-action@v4
+              uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
               with:
                   release-type: simple
 
     images:
         needs: release-please
         if: needs.release-please.outputs.released == 'true'
-        runs-on: ubuntu-latest
-        strategy:
-            fail-fast: false
-            matrix:
-                service:
-                    - api
-                    - drone-info
-                    - messenger
-                    - voice-agent
-                    - operator-agent
-                    - edge-manager
-                    - edge-connector
-                    - planner
-        steps:
-            - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-            - name: Skip services without a Dockerfile yet
-              id: has
-              run: echo "dockerfile=$([ -f services/${{ matrix.service }}/Dockerfile ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-            - if: steps.has.outputs.dockerfile == 'true'
-              uses: docker/login-action@v3
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
-            - if: steps.has.outputs.dockerfile == 'true'
-              uses: docker/build-push-action@v6
-              with:
-                  context: .
-                  file: services/${{ matrix.service }}/Dockerfile
-                  push: true
-                  tags: ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ needs.release-please.outputs.tag }}
+        permissions:
+            contents: read
+            packages: write
+        uses: ./.github/workflows/images.yml
+        with:
+            push: true
+            version: ${{ needs.release-please.outputs.tag }}
 
     dashboard:
         needs: release-please
         if: needs.release-please.outputs.released == 'true'
+        permissions:
+            contents: write
         strategy:
             fail-fast: false
             matrix:
@@ -79,12 +61,18 @@ jobs:
               with:
                   node-version-file: .node-version
                   cache: pnpm
+            - if: steps.has.outputs.tauri == 'true'
+              uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # v1
+              with:
+                  toolchain: stable
             - if: steps.has.outputs.tauri == 'true' && runner.os == 'Linux'
               run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
             - if: steps.has.outputs.tauri == 'true'
               run: pnpm install --frozen-lockfile
+              env:
+                  EMBER_SKIP_HOOKS: 1
             - if: steps.has.outputs.tauri == 'true'
-              uses: tauri-apps/tauri-action@v0
+              uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0.6.2
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
