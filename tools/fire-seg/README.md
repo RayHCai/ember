@@ -70,7 +70,7 @@ and stage the folder.
 | FLAME (IEEE DataPort, 2020) | Drone footage of pile burns with fire masks: the closest match to the drone's view. Use it for the test split. | `stage-mask-pairs IMAGES MASKS --aerial --group-block 50` (masks paired to images by file stem) |
 | D-Fire (github.com/gaiasd/DFireDataset) | About 21k fire and smoke images, boxes only (YOLO format, 0 smoke, 1 fire) | `stage-yolo-det --names smoke,fire`: SAM 2 turns each box into a mask. A mask filling less than 10 % of its box falls back to the box, counted in `source.json` notes. Slow on CPU. |
 | Roboflow Universe fire and smoke sets | Ready-made masks; quality and licences vary | Export as "YOLOv8"/"YOLO11" segmentation, then `stage-yolo-seg` |
-| Demo Data (services/demo-data) | Unlimited exact flame and burned labels from the Lahaina sim | `stage-demo-data` against a running `demo-data serve`. It has no smoke label, so its drawn plumes count as background; that is one reason for the 30 % cap. |
+| Demo Data (services/demo-data) | Unlimited flame and burned labels from the Lahaina sim, 15:00-20:00 | `stage-demo-data` against a running `demo-data serve`, about 2.5 s a frame. Flame is labelled where flame is actually drawn (on-fire cells that are hot in thermal), and night frames label flame only. It has no smoke label, so its drawn plumes count as background; that is one reason for the 30 % cap. |
 
 ## Licences
 

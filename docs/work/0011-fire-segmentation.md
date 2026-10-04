@@ -14,11 +14,12 @@ fire at 98 %.
 
 - [x] `tools/fire-seg`: stage sources (Roboflow YOLO-seg exports, D-Fire boxes through SAM 2, FLAME
       image/mask pairs, Demo Data truth frames), assemble one Ultralytics dataset with a held-out
-      eval set, train, export ONNX with a model card, evaluate mask IoU through the runtime's detector
-- [x] `tools/fire-seg smoke`: whole pipeline on procedural images, 1 epoch on CPU
+      test set, train, export ONNX with a model card, evaluate mask IoU through the runtime's
+      detector
+- [x] `fire-seg smoke`: whole pipeline on procedural images, 1 epoch on CPU
 - [x] drone-runtime `perception/outline.py`: mask to short polygon (crack tracing + Douglas-Peucker)
-- [x] `perception/yolo.py`: decode seg models (mask prototypes), confidence = class score x mean
-      mask probability; detection models still work
+- [x] `perception/yolo.py`: decode seg models exactly as Ultralytics 8.4 `process_mask` does;
+      confidence = class score x mean mask probability; detection models still work
 - [x] `perception/heuristic.py`: 520 K flame line, contrast with the local thermal background,
       area-aware confidence, outlines from the thermal blob
 - [x] `perception/georef.py`: project the outline when there is one
@@ -27,14 +28,18 @@ fire at 98 %.
 - [x] Evidence shared across drones in `swarm` coverage payloads (`evidence`, optional)
 - [x] Contracts: `RiskDetection` docs (droneInfo.ts), `SwarmCoverage.evidence` (droneLink.ts),
       mirrored in `link/messages.py`
-- [ ] Train on the Mac Mini (owner: Ray), copy the ONNX to the drone, set `EMBER_YOLO_MODEL`
-- [ ] Time the exported model on a Pi 5 against the 2 Hz frame budget
+- [ ] Download FLAME, D-Fire and a Roboflow set; stage, assemble, train on the Mac Mini (Ray)
+- [ ] Copy the ONNX to the drone, set `EMBER_YOLO_MODEL`, time it on a Pi 5 against 2 Hz
 - [ ] Tune `EvidenceParams` against Demo Data runs once a trained model exists
+- [ ] Optional: add a smoke label to Demo Data so its plumes stop counting as background
 
 ## Decisions
 
 - Outlines are traced in the detector (pixel corners, 8-connected, largest component), not in
   georef, so the heuristic gets real thermal shapes too and georef only projects points.
+- Mask decoding mirrors Ultralytics' `process_mask(upsample=True)` (upsample logits, then crop to
+  the box at input resolution), so the drone sees the masks training measured. Checked against
+  Ultralytics on 198 random masks: identical.
 - Persistence lives in the world-frame evidence grid, not in image space: the drone moves 4 m
   between frames, so image-space persistence would need registration the grid gives for free.
 - Evidence is linear in detector confidence (`gain * confidence`), not `logit(confidence)`: a
@@ -46,14 +51,23 @@ fire at 98 %.
   region per fire; the grid does the cross-frame part.
 - fire-seg evaluates through `ember-drone-runtime`'s own `YoloDetector` (a workspace dependency)
   so the score is for exactly what ships, including letterbox and mask decoding.
-- Training dependencies (ultralytics, torch) are the `train` extra; CI and `uv sync
---all-packages` never install them. `opencv-python` is overridden away in favour of the
-  headless build Demo Data already uses, so both never land in one environment.
-- Demo Data has no smoke label, so its frames carry flame and burned only and stay at most 30 % of
-  the training set; its plumes are unlabelled. Demo Data imagery is Maxar CC BY-NC 4.0, so a model
-  trained on it is non-commercial too. Ultralytics is AGPL-3.0.
+- Training dependencies (ultralytics, torch) are the `train` extra, which neither CI nor a plain
+  `uv sync` installs. `opencv-python` is overridden away in favour of the headless build Demo Data
+  already uses, so both never land in one environment.
+- Demo Data's labels are 10 m fire-model cells, wider than the flames it draws. Flame labels are
+  on-fire pixels that are also above 600 K in thermal (drawn flame); undrawn on-fire ground is
+  burned; night frames label flame only. Sampling stops at 20:00, since later frames are black.
+- Demo Data has no smoke label, so its frames stay at most 30 % of the training set. Its imagery is
+  Maxar CC BY-NC 4.0, so a model trained on it is non-commercial too. Ultralytics is AGPL-3.0.
 
 ## Log
 
-- 2026-10-03: Implemented everything above except training. Next: run `fire-seg smoke` on the Mac,
-  stage sources, assemble, train (see tools/fire-seg/README.md).
+- 2026-10-03: Implemented everything above except training. Verified:
+    - The full gate passes.
+    - `fire-seg smoke` runs end to end (train, export, model card, evaluate).
+    - A COCO yolo11n-seg export through `YoloDetector` matches Ultralytics' predictor: same
+      detections, boxes within 5 px, mask IoU 0.91-0.94; the gap is outline simplification.
+    - `stage-demo-data` works against a live Demo Data, and the label overlays look right.
+
+    Next: on the Mac, `uv sync --package ember-fire-seg --extra train`, then `fire-seg smoke`, stage
+    sources, assemble and train (tools/fire-seg/README.md).

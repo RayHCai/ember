@@ -21,7 +21,7 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image
 
-from ..camera import Frame
+from ..camera import CameraSpec, Frame
 from .detector import Box, Detection2D, Outline, Risk, nms
 from .outline import outline
 
@@ -199,7 +199,7 @@ class YoloDetector:
             box = (src[0] * to_cam[0], src[1] * to_cam[1], src[2] * to_cam[0], src[3] * to_cam[1])
             score, ring = cand.score, None
             if protos is not None and cand.coeffs is not None:
-                score, ring = self._region(cand, protos, scale, pad, frame)
+                score, ring = self._region(cand, protos, scale, pad, to_cam, frame.camera)
             found.append(Detection2D(risk, score, box, self.names[cand.cls], outline=ring))
         return found
 
@@ -209,7 +209,8 @@ class YoloDetector:
         protos: NDArray[np.float32],
         scale: float,
         pad: tuple[float, float],
-        frame: Frame,
+        to_cam: tuple[float, float],
+        cam: CameraSpec,
     ) -> tuple[float, Outline | None]:
         assert cand.coeffs is not None
         logits, (ox, oy) = region_mask(cand.coeffs, protos, cand.box, self.size)
@@ -219,8 +220,6 @@ class YoloDetector:
             return cand.score * 0.5, None
         ring = outline(mask)
         assert ring is not None
-        cam, rgb = frame.camera, frame.images.rgb
-        to_cam = (cam.width_px / rgb.shape[1], cam.height_px / rgb.shape[0])
         xs = np.clip((ring[:, 0] + ox - pad[0]) / scale * to_cam[0], 0.0, cam.width_px)
         ys = np.clip((ring[:, 1] + oy - pad[1]) / scale * to_cam[1], 0.0, cam.height_px)
         pts = tuple((float(x), float(y)) for x, y in zip(xs, ys, strict=True))

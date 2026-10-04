@@ -1,4 +1,5 @@
 import type { ResponderMessage } from '@ember/contracts';
+import { sorted } from "./sorted";
 
 /** Union by id, newest first, capped so the on-disk feed stays small. */
 export function mergeMessages(
@@ -9,9 +10,10 @@ export function mergeMessages(
     const byId = new Map<string, ResponderMessage>();
     for (const m of current) byId.set(m.id, m);
     for (const m of incoming) byId.set(m.id, m);
-    return [...byId.values()]
-        .toSorted((a, b) => Date.parse(b.sentAt) - Date.parse(a.sentAt))
-        .slice(0, cap);
+    return sorted([...byId.values()], (a, b) => Date.parse(b.sentAt) - Date.parse(a.sentAt)).slice(
+        0,
+        cap,
+    );
 }
 
 export function unreadCount(messages: ResponderMessage[], lastReadAt: string | null): number {

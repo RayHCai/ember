@@ -7,7 +7,6 @@ import { AnimatePresence, motion } from 'motion/react';
 import QRCode from 'qrcode';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../icons/Icon';
-import { Logo } from '../icons/Logo';
 import { joinResponder } from '../sim/actions';
 import { hex } from '../sim/world';
 import type { WatchZone } from '../sim/types';
@@ -54,7 +53,8 @@ export function ResponderDialog({ zone }: { zone: WatchZone }) {
         void QRCode.toString(JSON.stringify(code), {
             type: 'svg',
             margin: 0,
-            errorCorrectionLevel: 'H',
+            // M keeps the code at 57 modules so a phone reads it off a monitor; nothing covers it.
+            errorCorrectionLevel: 'M',
             color: { dark: '#1C1714', light: '#00000000' },
         }).then((s) => live && setSvg(s));
         return () => {
@@ -98,10 +98,6 @@ export function ResponderDialog({ zone }: { zone: WatchZone }) {
                                 dangerouslySetInnerHTML={{ __html: svg }}
                             />
                         </AnimatePresence>
-                        <span className={styles.qrLogo}>
-                            <Logo size={40} />
-                        </span>
-                        <span className={styles.scanLine} aria-hidden />
                     </div>
                     <div className={styles.expiry}>
                         <span className="mono">
@@ -125,7 +121,7 @@ export function ResponderDialog({ zone }: { zone: WatchZone }) {
                         <li>
                             <span>1</span>
                             <p>
-                                Open Ember Responder and tap <b>Connect</b>.
+                                Open <b>Ember Responder</b>.
                             </p>
                         </li>
                         <li>

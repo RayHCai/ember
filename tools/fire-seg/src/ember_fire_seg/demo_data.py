@@ -1,12 +1,17 @@
 """Training frames from Demo Data (services/demo-data) with its per-pixel truth labels.
 
 Talks to Demo Data only over HTTP: `/v1/truth/fire` to find where the fire is at a time, then
-`/v1/observation?truth=true` for an RGB frame and its label image. Most shots look at the active
-front from varied heights and angles; the rest wander the burn area for burned ground and
-background.
+`/v1/observation?truth=true` for an RGB frame, its thermal frame and its label image. Most shots
+look at the active front from varied heights and angles; the rest wander the burn area for burned
+ground and background.
 
-Demo Data labels ground classes only. Its smoke plumes are drawn but unlabelled, so they would be
-taught as background; keep this source to at most 30 % of the training set (assembly's cap).
+Demo Data's labels are the fire model's 10 m cell states, wider than the flames it draws. Flame is
+therefore the on-fire pixels that are also hot in thermal (Demo Data writes 520 K + 680 K x flame
+opacity where it draws flame); on-fire ground with no drawn flame reads as burned. At night burned
+ground is invisible, so night frames label flame only.
+
+Its smoke plumes are drawn but unlabelled, so they would be taught as background; keep this source
+to at most 30 % of the training set (assembly's cap).
 """
 
 from __future__ import annotations
@@ -30,16 +35,17 @@ from .labels import Instance, mask_instances
 from .sources import SourceInfo, Stager
 
 HST = timezone(timedelta(hours=-10))
-# The rekindle that burned Lahaina, from first flames to the town mostly burned.
+# The rekindle that burned Lahaina, to an hour after sunset (19:05): later frames are mostly black.
 FIRE_START = datetime(2023, 8, 8, 15, 0, tzinfo=HST)
-FIRE_END = datetime(2023, 8, 8, 23, 0, tzinfo=HST)
+FIRE_END = datetime(2023, 8, 8, 20, 0, tzinfo=HST)
 # Demo Data's coverage box, and the burn inside it.
 COVERAGE = (20.838, -156.695, 20.915, -156.640)
 BURN = (20.862, -156.690, 20.897, -156.655)
 M_PER_DEG_LAT = 111_320.0
-# Demo Data label ids: 2 on_fire; 3 smouldering and 4 burned read as burned ground from above.
-LABEL_CLASSES = ((FLAME, (2,)), (BURNED, (3, 4)))
-SKY = 255
+# Demo Data label ids.
+ON_FIRE, SMOULDERING, BURNED_ID, SKY = 2, 3, 4, 255
+# Thermal at a drawn flame opacity of about 0.2, where it starts to show in RGB.
+FLAME_K = 600.0
 LICENSE = (
     "Synthetic render by Ember Demo Data over Maxar CC BY-NC 4.0 and Esri Wayback imagery: "
     "non-commercial"
@@ -100,10 +106,25 @@ def fire_points(truth: dict[str, Any]) -> list[tuple[float, float]]:
     return points
 
 
-def label_instances(labels: NDArray[np.uint8]) -> list[Instance]:
-    out: list[Instance] = []
-    for cls, ids in LABEL_CLASSES:
-        out += mask_instances(np.isin(labels, ids), cls)
+def label_instances(
+    labels: NDArray[np.uint8], thermal_k: NDArray[np.float32], night: bool
+) -> list[Instance]:
+    hot = thermal_k >= FLAME_K
+    flame = (labels == ON_FIRE) & hot
+    burned = np.isin(labels, (SMOULDERING, BURNED_ID)) | ((labels == ON_FIRE) & ~hot)
+    out = mask_instances(flame, FLAME)
+    if not night:
+        out += mask_instances(burned, BURNED)
+    return out
+
+
+def decode_thermal(png: bytes, shape: tuple[int, int]) -> NDArray[np.float32]:
+    """Kelvin from Demo Data's 16-bit deci-kelvin PNG, at `shape` (rows, cols)."""
+    with Image.open(io.BytesIO(png)) as im:
+        dk = np.asarray(im).astype(np.float32)
+    if dk.shape != shape:
+        dk = np.asarray(Image.fromarray(dk).resize((shape[1], shape[0]), Image.Resampling.NEAREST))
+    out: NDArray[np.float32] = dk / 10.0
     return out
 
 
@@ -149,20 +170,25 @@ def stage_demo_data(
             "width": size[0],
             "height": size[1],
             "hfov_deg": 84.0,
-            "images": "rgb,labels",
+            "thermal_width": size[0],
+            "images": "rgb,thermal,labels",
             "truth": "true",
         }
         res = http.get("/v1/observation", params=params)
         if not res.is_success:
             stager.notes["failed_requests"] += 1
             continue
-        images = res.json()["images"]
+        obs = res.json()
+        images = obs["images"]
         rgb = base64.b64decode(images["rgb"]["data"])
         with Image.open(io.BytesIO(base64.b64decode(images["labels"]["data"]))) as im:
             labels = np.asarray(im)
         if np.mean(labels == SKY) > 0.9:
             stager.notes["skipped_sky"] += 1
             continue
+        thermal = decode_thermal(base64.b64decode(images["thermal"]["data"]), labels.shape)
+        night = bool(obs.get("environment", {}).get("is_night", False))
+        stager.notes["night_frames"] += night
         stem = f"{shot.t:%H%M}_{shot.alt_m:.0f}m_{-shot.pitch_deg:.0f}deg"
-        stager.add(stem, rgb, ".jpg", label_instances(labels))
+        stager.add(stem, rgb, ".jpg", label_instances(labels, thermal, night))
     return stager.finish()

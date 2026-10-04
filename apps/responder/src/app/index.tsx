@@ -13,6 +13,13 @@ import { C, font } from '../ui/theme';
 
 const FRAME = 240;
 
+/**
+ * Off until the api serves `RESPONDER_PAIR_PATH` and the dashboard puts a reachable api URL in its
+ * code: any QR code then opens the demo zone so every screen can be tried.
+ */
+const PAIRING_LIVE = false;
+const DEMO_LOADING_MS = 1200;
+
 function describe(e: unknown): string {
     if (e instanceof HttpError && [401, 403, 410].includes(e.status)) return 'Code expired';
     return 'Connection failed';
@@ -29,7 +36,11 @@ export default function Home() {
     const [permission, requestPermission] = useCameraPermissions();
     const [loading, setLoading] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [hint, setHint] = useState<string | null>(null);
+    const hintTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const handled = useRef(false);
+
+    useEffect(() => () => clearTimeout(hintTimer.current), []);
 
     useEffect(() => {
         if (permission && !permission.granted && permission.canAskAgain) void requestPermission();
@@ -54,11 +65,32 @@ export default function Home() {
         setError(describe(e));
     };
 
+    // Without this, a code that is not ours looks like a scanner that does not work.
+    const showHint = (text: string) => {
+        clearTimeout(hintTimer.current);
+        hintTimer.current = setTimeout(() => setHint(null), 2000);
+        if (hint !== text) setHint(text);
+    };
+
+    const startDemo = () => {
+        handled.current = true;
+        setError(null);
+        setLoading('Demo site');
+        // Long enough to see the loading screen; the demo bundle itself is instant.
+        setTimeout(() => connectDemo().catch(fail), DEMO_LOADING_MS);
+    };
+
     const onScan = ({ data }: BarcodeScanningResult) => {
         if (handled.current) return;
+        if (!PAIRING_LIVE) {
+            buzz(Haptics.NotificationFeedbackType.Success);
+            startDemo();
+            return;
+        }
         const parsed = parsePairingCode(data);
         if (!parsed.ok) {
             if (parsed.reason === 'expired') setError('Code expired');
+            else showHint('Not a site code');
             return;
         }
         handled.current = true;
@@ -92,6 +124,7 @@ export default function Home() {
                 <CameraView
                     style={StyleSheet.absoluteFill}
                     facing="back"
+                    autofocus="on"
                     barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                     onBarcodeScanned={error ? undefined : onScan}
                 />
@@ -108,7 +141,9 @@ export default function Home() {
                     <View style={styles.shade} />
                 </View>
                 <View style={[styles.shade, styles.caption]}>
-                    <Text style={[font.heading, styles.light]}>Scan the site QR code</Text>
+                    <Text style={[font.heading, styles.light]}>
+                        {hint ?? 'Scan the site QR code'}
+                    </Text>
                 </View>
             </View>
 
@@ -133,10 +168,7 @@ export default function Home() {
                 <Pressable
                     accessibilityRole="button"
                     hitSlop={12}
-                    onPress={() => {
-                        setLoading('Demo site');
-                        connectDemo().catch(fail);
-                    }}
+                    onPress={startDemo}
                     style={[styles.demo, { bottom: insets.bottom + 16 }]}
                 >
                     <Text style={[font.small, styles.dim]}>Demo</Text>

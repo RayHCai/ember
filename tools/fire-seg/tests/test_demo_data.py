@@ -67,9 +67,26 @@ def labels_image() -> np.ndarray:
     return labels
 
 
-def test_label_ids_map_to_flame_and_burned() -> None:
-    instances = label_instances(labels_image())
-    assert sorted(i.cls for i in instances) == [FLAME, BURNED]
+def thermal_image() -> np.ndarray:
+    """Flames drawn on the left half of the on-fire cells only."""
+    thermal = np.full((48, 64), 305.0, dtype=np.float32)
+    thermal[10:20, 10:20] = 900.0
+    return thermal
+
+
+def test_flame_is_only_where_flame_is_drawn_and_the_rest_reads_burned() -> None:
+    instances = label_instances(labels_image(), thermal_image(), night=False)
+    flame = [i for i in instances if i.cls == FLAME]
+    assert len(flame) == 1
+    assert np.allclose(flame[0].polygon.min(axis=0), (10 / 64, 10 / 48))
+    assert np.allclose(flame[0].polygon.max(axis=0), (20 / 64, 20 / 48))
+    # The undrawn on-fire half, and the smouldering and burned cells together.
+    assert sum(i.cls == BURNED for i in instances) == 2
+
+
+def test_night_frames_label_flame_only() -> None:
+    instances = label_instances(labels_image(), thermal_image(), night=True)
+    assert [i.cls for i in instances] == [FLAME]
 
 
 def png(array: np.ndarray, mode: str | None = None) -> str:
@@ -82,6 +99,14 @@ def png(array: np.ndarray, mode: str | None = None) -> str:
     return base64.b64encode(buf.getvalue()).decode()
 
 
+def thermal_png(kelvin: np.ndarray) -> str:
+    """Demo Data's encoding at half the RGB width, like its default thermal camera."""
+    dk = Image.fromarray(np.round(kelvin * 10).astype(np.uint16)[::2, ::2])
+    buf = io.BytesIO()
+    dk.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode()
+
+
 def test_stages_frames_from_a_demo_data_server(tmp_path: Path) -> None:
     calls: list[str] = []
     rgb = np.full((48, 64, 3), 100, dtype=np.uint8)
@@ -91,17 +116,20 @@ def test_stages_frames_from_a_demo_data_server(tmp_path: Path) -> None:
         if request.url.path == "/v1/truth/fire":
             return httpx.Response(200, json={"features": []})
         q = request.url.params
-        assert q["truth"] == "true" and q["images"] == "rgb,labels"
+        assert q["truth"] == "true" and q["images"] == "rgb,thermal,labels"
         images = {
             "rgb": {"format": "jpeg", "data": png(rgb)},
+            "thermal": {"format": "png16_decikelvin", "data": thermal_png(thermal_image())},
             "labels": {"format": "png_palette", "data": png(labels_image(), "P")},
         }
-        return httpx.Response(200, content=json.dumps({"images": images}))
+        body = {"images": images, "environment": {"is_night": False}}
+        return httpx.Response(200, content=json.dumps(body))
 
     client = httpx.Client(base_url="http://demo", transport=httpx.MockTransport(handler))
     info = stage_demo_data("http://demo", tmp_path / "demo", "demo", count=3, client=client)
     assert info.images == 3 and info.synthetic and info.aerial
-    assert info.instances == {"burned": 3, "flame": 3}
+    assert info.instances == {"burned": 6, "flame": 3}
+    assert info.notes == {"night_frames": 0}
     assert calls.count("/v1/observation") == 3
     first = sorted((tmp_path / "demo" / "labels").iterdir())[0]
-    assert sorted(i.cls for i in read_seg(first)) == [FLAME, BURNED]
+    assert sorted(i.cls for i in read_seg(first)) == [FLAME, BURNED, BURNED]

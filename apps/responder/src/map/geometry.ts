@@ -16,6 +16,7 @@ import {
     type Projection,
 } from '../lib/geo';
 import { fuelRuns } from '../lib/terrain';
+import { sorted } from "../lib/sorted";
 
 type Risk = Exclude<RiskLevel, 'none'>;
 
@@ -65,9 +66,7 @@ export function buildGeometry(b: ResponderZoneBundle): ZoneGeometry {
         }
     }
 
-    const isochrones = (plan?.isochrones ?? [])
-        .toSorted((a, c) => c.atMin - a.atMin)
-        .map((iso) => {
+    const isochrones = sorted(plan?.isochrones ?? [], (a, c) => c.atMin - a.atMin).map((iso) => {
             const pts = iso.polygons.flatMap((p) => p.outer.map(toXY));
             const h = ((heading ?? 0) * Math.PI) / 180;
             const dir = { x: Math.sin(h), y: -Math.cos(h) };
@@ -96,16 +95,12 @@ export function buildGeometry(b: ResponderZoneBundle): ZoneGeometry {
         boundary: pathD(boundaryXY, true),
         fuel,
         roads: b.roads.map((r) => ({ id: r.id, d: pathD(r.path.map(toXY), false), kind: r.kind })),
-        risk: b.riskZones
-            .toSorted((a, c) => Number(a.risk === 'on_fire') - Number(c.risk === 'on_fire'))
-            .map((z) => ({ id: z.id, risk: z.risk, d: pathD(z.polygon.map(toXY), true) })),
+        risk: sorted(b.riskZones, (a, c) => Number(a.risk === "on_fire") - Number(c.risk === "on_fire")).map((z) => ({ id: z.id, risk: z.risk, d: pathD(z.polygon.map(toXY), true) })),
         detections: b.detections.map((d) => ({ id: d.id, risk: d.risk, p: toXY(d.center) })),
         isochrones,
         track: pathD(trackXY, false),
         head: last && heading !== null ? { p: last, deg: heading } : null,
-        attack: (plan?.attackZones ?? [])
-            .toSorted((a, c) => c.rank - a.rank)
-            .map((zone) => ({
+        attack: sorted(plan?.attackZones ?? [], (a, c) => c.rank - a.rank).map((zone) => ({
                 zone,
                 p: toXY(zone.center),
                 r: zone.radiusM,

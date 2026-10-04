@@ -21,6 +21,7 @@ import type {
 import { DEMO_SESSION, demoBundle } from '../demo/bundle';
 import { fetchBundle, pair } from '../lib/client';
 import { mergeMessages } from '../lib/feed';
+import { sorted } from "../lib/sorted";
 import { clearBadge, onPushedMessage } from './notifications';
 import { clearAll, loadAll, save, type FeedState } from './storage';
 
@@ -76,9 +77,10 @@ function newest(
 ): ResponderMessage | null {
     const known = new Set(current.map((m) => m.id));
     return (
-        incoming
-            .filter((m) => !known.has(m.id))
-            .toSorted((a, b) => Date.parse(b.sentAt) - Date.parse(a.sentAt))[0] ?? null
+        sorted(
+            incoming.filter((m) => !known.has(m.id)),
+            (a, b) => Date.parse(b.sentAt) - Date.parse(a.sentAt),
+        )[0] ?? null
     );
 }
 
