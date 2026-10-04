@@ -1,3 +1,7 @@
+> **Try Ember on ASI:One:** message `@agent1qdxvsh9u6apatpn78dew2lvcvtvqq4kv80wjkrm2ys4wnmv5fg73cwj7nnx`
+> at [asi1.ai](https://asi1.ai/chat) with "Analyze wildfire risk around Lahaina." How it works and how to
+> run it yourself: [docs/asi1-agent.md](docs/asi1-agent.md).
+
 ---
 
 ## Summary

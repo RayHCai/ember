@@ -26,3 +26,4 @@ decisions and status live, so design docs can stay present-tense.
 | 0009 | Monorepo audit        | in-progress |
 | 0010 | Dashboard redesign    | done        |
 | 0011 | Fire segmentation     | in-progress |
+| 0012 | Master agent          | in-progress |
