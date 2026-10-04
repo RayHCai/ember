@@ -41,7 +41,10 @@ civilian-map ──HTTP (public read-only)──▶ api
 contact-collector ──HTTP──▶ api                         (POST /civilians)
 operator-agent ──HTTP GET /v1/civilians (api.ts)──▶ api  (phones in one ZIP; EMBER_AGENT_KEY only)
 operator-agent ──Photon Spectrum (iMessage)──▶ civilians (approved evacuation blasts)
-operator-agent ──HTTPS──▶ OpenStreetMap Nominatim        (the ZIP of each civilian area)
+operator-agent ──Photon Spectrum (iMessage)──▶ operator's notify phone (each evacuation plan with its route map)
+operator's notify phone ──Photon Spectrum (iMessage)──▶ operator-agent (asks for a new route)
+operator-agent ──HTTPS (Anthropic API, Claude Haiku)──▶ Anthropic (is a notify-phone text a new-route request)
+operator-agent ──HTTPS──▶ OpenStreetMap Nominatim, tiles (the ZIP of each civilian area, route map)
 operator-uagent ──HTTP POST /v1/chat (agent.ts)──▶ operator-agent
 
 api ──HTTP /v1/tasks, /v1/edge-servers (edge.ts)──▶ edge-manager (start/stop a zone's run, registry)
@@ -101,7 +104,8 @@ added per cell, so every drone of the run confirms detections on what all of the
 
 fire-seg is a development tool, not a running service. It imports drone-runtime's perception
 package to score models through the exact code the drone runs, and ships nothing to drones but the
-ONNX file an operator copies over (`EMBER_YOLO_MODEL`).
+ONNX file: the released one is committed under `data/fire-seg/models/` and drone-runtime loads it by
+default (`EMBER_YOLO_MODEL` overrides it).
 
 drone-sim renders only what these two report: it moves no drone and runs no detector. Without a
 drone-info URL it plays one stationary dummy drone instead (`apps/drone-sim/src/droneInfo/dummy.ts`),

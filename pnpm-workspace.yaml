@@ -16,3 +16,4 @@ allowBuilds:
     workerd: true
     '@prisma/engines': true
     prisma: true
+    protobufjs: false

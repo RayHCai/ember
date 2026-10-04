@@ -214,7 +214,12 @@ export class IncidentLoop {
             // oxlint-disable-next-line no-await-in-loop -- sequential on purpose
             const blast = await api.createBlast(
                 zone.id,
-                evacuationBlast(zone, e, surroundings, config.civilianMapUrl),
+                evacuationBlast(zone, e, surroundings, {
+                    generatedAt: result.generatedAt,
+                    now: this.now(),
+                    timeZone: config.timeZone,
+                    mapUrl: config.civilianMapUrl,
+                }),
             );
             log.info(
                 { zoneId: zone.id, blastId: blast.blastId, zipCode: e.zipCode, state: blast.state },

@@ -13,7 +13,33 @@ export type AgentConfig = {
     deliveryLookbackMin: number;
     /** Attack zones named in a responder brief, best first. */
     responderZones: number;
+    /** The operator's phone, texted each evacuation plan without approval; null for none. */
+    notifyPhone: string | null;
+    /** How often the notify phone's plan check runs, apart from the incident loop. */
+    notifyTickMs: number;
+    /** IANA zone the alert times are written in, where the people texted are. */
+    timeZone: string;
 };
+
+function phone(v: string | undefined): string | null {
+    if (!v) return null;
+    if (!/^\+[1-9][0-9]{7,14}$/.test(v)) {
+        throw new Error(`EMBER_NOTIFY_PHONE must be E.164 (e.g. +15551234567), got ${v}`);
+    }
+    return v;
+}
+
+function timeZone(v: string | undefined): string {
+    const tz = v || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    try {
+        Intl.DateTimeFormat('en-US', { timeZone: tz }).format();
+    } catch {
+        throw new Error(
+            `EMBER_TIME_ZONE must be an IANA time zone (e.g. Pacific/Honolulu), got ${v}`,
+        );
+    }
+    return tz;
+}
 
 export function configFromEnv(env: NodeJS.ProcessEnv): AgentConfig {
     const num = (name: string, fallback: number) => {
@@ -32,5 +58,8 @@ export function configFromEnv(env: NodeJS.ProcessEnv): AgentConfig {
         planRetryMs: num('EMBER_PLAN_RETRY_MS', 120_000),
         deliveryLookbackMin: num('EMBER_DELIVERY_LOOKBACK_MIN', 60),
         responderZones: num('EMBER_RESPONDER_ZONES', 3),
+        notifyPhone: phone(env.EMBER_NOTIFY_PHONE),
+        notifyTickMs: num('EMBER_NOTIFY_TICK_MS', 2_000),
+        timeZone: timeZone(env.EMBER_TIME_ZONE),
     };
 }

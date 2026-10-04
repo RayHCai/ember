@@ -36,6 +36,9 @@ export const config: AgentConfig = {
     planRetryMs: 120_000,
     deliveryLookbackMin: 60,
     responderZones: 3,
+    notifyPhone: null,
+    notifyTickMs: 2_000,
+    timeZone: 'Pacific/Honolulu',
 };
 
 export function fire(firstSeenAt = T0): RiskZone {
@@ -216,6 +219,7 @@ export const result: PlannerResult = {
 
 /** The api's records in memory, holding the same approval line the real one does. */
 export class FakeApi implements Api {
+    zoneList: WatchZone[] = [zone];
     riskZoneList: RiskZone[] = [];
     jobs: PlannerJob[] = [];
     blastList: Blast[] = [];
@@ -231,7 +235,7 @@ export class FakeApi implements Api {
     constructor(private readonly clock: () => Date) {}
 
     async zones() {
-        return [zone];
+        return this.zoneList;
     }
     async riskZones(): Promise<RiskZonesView> {
         const at = this.clock().toISOString();

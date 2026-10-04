@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest';
 import {
-    DISCLAIMER,
+    areaAlert,
+    clock,
+    duration,
     evacuationBlast,
     evacuationsByZip,
     isResponderBrief,
@@ -8,7 +10,14 @@ import {
     zipOfBlast,
 } from './alerts.js';
 import { compass, roadNamesAlong } from './geo.js';
-import { result, surroundings, zone } from './testing/fake.js';
+import { result, surroundings, T0, zone } from './testing/fake.js';
+
+const plan = (mapUrl: string | null) => ({
+    generatedAt: T0,
+    now: new Date(T0),
+    timeZone: 'Pacific/Honolulu',
+    mapUrl,
+});
 
 const zips = new Map<string, string | null>([
     ['a-kahana', '96761'],
@@ -32,28 +41,25 @@ test('an area with no known zip is reported, not guessed', () => {
     expect(unplaced.map((i) => i.name)).toEqual(['Napili', 'Front Street']);
 });
 
-test('an evacuation text names the route, destination, map and disclaimer', () => {
+test('an evacuation text gives when fire arrives, when to leave and the way out, in clock time', () => {
     const [kahana, front] = evacuationsByZip(result, zips).byZip;
-    const blast = evacuationBlast(zone, kahana!, surroundings, 'https://map.ember.test');
+    const blast = evacuationBlast(zone, kahana!, surroundings, plan('https://map.ember.test'));
     expect(blast).toMatchObject({ audience: 'civilians', priority: 'critical', area: 'near_fire' });
     expect(zipOfBlast(blast.title)).toBe('96761');
-    expect(blast.body).toContain('Fire is forecast to reach Kahana in about 25 min. Evacuate now.');
-    expect(blast.body).toContain(
-        'Kahana: take Honoapiilani Hwy to Kapalua Airport (about 12 min).',
-    );
-    expect(blast.body).toContain('Napili: no safe road out was found');
-    expect(blast.body).toContain('Map: https://map.ember.test?zone=zone-1');
-    expect(blast.body.endsWith(DISCLAIMER)).toBe(true);
+    expect(blast.body.split('\n')).toEqual([
+        'Ember Alert: Evacuate by 12:15 am HST via Honoapiilani Hwy to Kapalua Airport.',
+        'Napili: Evacuate by 12:50 am HST. No safe road out was found; if you cannot leave safely, call 911.',
+        'Map: https://map.ember.test?zone=zone-1',
+    ]);
 
-    const other = evacuationBlast(zone, front!, surroundings, null);
+    const other = evacuationBlast(zone, front!, surroundings, plan(null));
     expect(other.priority).toBe('urgent');
-    expect(other.body).toContain(
-        'Front Street: no safe road out was found. If you cannot leave safely, call 911.',
+    expect(other.body).toBe(
+        'Ember Alert: Evacuate by 12:30 am HST. No safe road out was found; if you cannot leave safely, call 911.',
     );
-    expect(other.body).not.toContain('Map:');
 });
 
-test('a long evacuation text drops extra areas but keeps the lead route and disclaimer', () => {
+test('a long evacuation text drops extra areas but keeps the lead alert and map', () => {
     const [kahana] = evacuationsByZip(result, zips).byZip;
     const many = {
         ...kahana!,
@@ -65,12 +71,34 @@ test('a long evacuation text drops extra areas but keeps the lead route and disc
             })),
         ],
     };
-    const blast = evacuationBlast(zone, many, surroundings, 'https://map.ember.test');
+    const blast = evacuationBlast(zone, many, surroundings, plan('https://map.ember.test'));
     expect(blast.body.length).toBeLessThanOrEqual(1000);
     expect(blast.title.length).toBeLessThanOrEqual(120);
     expect(zipOfBlast(blast.title)).toBe('96761');
-    expect(blast.body).toContain('Kahana: take Honoapiilani Hwy');
-    expect(blast.body.endsWith(DISCLAIMER)).toBe(true);
+    expect(blast.body).toContain('Evacuate by 12:15 am HST via Honoapiilani Hwy');
+    expect(blast.body.endsWith('Map: https://map.ember.test?zone=zone-1')).toBe(true);
+});
+
+const at = (min: number) => new Date(Date.parse(T0) + min * 60_000);
+
+test('an alert gives the latest time to leave, or now once that has passed', () => {
+    const [kahana] = evacuationsByZip(result, zips).byZip;
+    const lead = kahana!.areas[0]!;
+    const tz = 'Pacific/Honolulu';
+    expect(areaAlert(lead, surroundings, T0, at(0), tz)).toBe(
+        'Ember Alert: Evacuate by 12:15 am HST via Honoapiilani Hwy to Kapalua Airport.',
+    );
+    expect(areaAlert(lead, surroundings, T0, at(20), tz)).toBe(
+        'Ember Alert: Evacuate now via Honoapiilani Hwy to Kapalua Airport.',
+    );
+    expect([1, 59, 60, 80, 120].map(duration)).toEqual([
+        '1 min',
+        '59 min',
+        '1 hr',
+        '1 hr 20 min',
+        '2 hr',
+    ]);
+    expect(clock(new Date('2026-10-04T22:40:00Z'), tz)).toBe('12:40 pm HST');
 });
 
 test('the responder brief lists the best attack zones by rank', () => {

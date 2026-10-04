@@ -1,10 +1,14 @@
+import Anthropic from '@anthropic-ai/sdk';
 import { HttpApi } from './api.js';
 import { buildApp } from './app.js';
 import { LogTransport, type CivilianTransport } from './channels.js';
 import { configFromEnv } from './config.js';
 import { nominatimZip } from './geo.js';
 import { IncidentLoop } from './incidents.js';
+import { osmTiles } from './map.js';
+import { Notices } from './notices.js';
 import { PhotonTransport } from './photon.js';
+import { haikuRouteAsk, Reroute } from './reroute.js';
 
 const env = process.env;
 const port = Number(env.PORT ?? 4006);
@@ -30,10 +34,47 @@ if (transport instanceof LogTransport) {
 if (!config.apiKey) log.warn({}, 'EMBER_AGENT_KEY unset: the api must run without keys');
 if (!config.chatKey) log.warn({}, 'EMBER_AGENT_CHAT_KEY unset: /v1/chat accepts any caller');
 
+const api = new HttpApi(config.apiUrl, config.apiKey);
+const osmAgent = env.EMBER_OSM_USER_AGENT ?? 'ember-operator-agent (dev)';
+const notices = config.notifyPhone
+    ? new Notices({
+          api,
+          transport,
+          phone: config.notifyPhone,
+          tiles: osmTiles(osmAgent, env.EMBER_MAP_TILE_URL || undefined),
+          timeZone: config.timeZone,
+          log,
+      })
+    : null;
+if (notices) log.info({ phone: config.notifyPhone }, 'evacuation plans go to the notify phone');
+if (config.notifyPhone && transport instanceof PhotonTransport) {
+    if (env.ANTHROPIC_API_KEY) {
+        const reroute = new Reroute({
+            api,
+            transport,
+            phone: config.notifyPhone,
+            wantsNewRoute: haikuRouteAsk(new Anthropic(), log),
+            log,
+        });
+        transport.listen((from, text) =>
+            reroute
+                .handle(from, text)
+                .catch((err: unknown) =>
+                    log.warn(
+                        { err: err instanceof Error ? err.message : String(err) },
+                        'reroute failed',
+                    ),
+                ),
+        );
+        log.info({}, 'texts from the notify phone asking for a new route are planned and sent');
+    } else {
+        log.warn({}, 'ANTHROPIC_API_KEY unset: new-route texts from the notify phone are not read');
+    }
+}
 const loop = new IncidentLoop({
-    api: new HttpApi(config.apiUrl, config.apiKey),
+    api,
     transport,
-    zipOf: nominatimZip(env.EMBER_NOMINATIM_USER_AGENT ?? 'ember-operator-agent (dev)'),
+    zipOf: nominatimZip(osmAgent),
     config,
     log,
 });
@@ -49,9 +90,11 @@ deps.health = async () => {
     return { ok: apiUp && loopOk, api: apiUp, loop: tick, transport: transport.name };
 };
 loop.start();
+notices?.start(config.notifyTickMs);
 
 app.addHook('onClose', async () => {
     loop.stop();
+    notices?.stop();
     await transport.close();
 });
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

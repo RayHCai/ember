@@ -14,7 +14,6 @@ import { compass, roadNamesAlong } from './geo.js';
 const TITLE_MAX = 120;
 const BODY_MAX = 1000;
 
-export const DISCLAIMER = 'Ember forecast, not an official order: follow emergency officials.';
 const RESPONDER_PREFIX = 'Responder staging: ';
 const EVACUATION_TITLE = /^Evacuation ZIP (\d{5})\b/;
 
@@ -67,27 +66,89 @@ export function evacuationsByZip(
 }
 
 const minutes = (m: number) => `about ${Math.max(1, Math.round(m))} min`;
-const point = (p: LatLng) => `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`;
+export const point = (p: LatLng) => `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`;
 
-function arrival(impact: CivilianImpact) {
-    if (impact.impactMin === null) return `Fire threatens ${impact.name}.`;
-    if (impact.impactMin <= 0) return `Fire has reached ${impact.name}.`;
-    return `Fire is forecast to reach ${impact.name} in ${minutes(impact.impactMin)}.`;
+/** Lead over the fire kept when telling people the latest time to leave. */
+const LEAVE_MARGIN_MIN = 10;
+
+/** "25 min", "1 hr 20 min", "2 hr". */
+export function duration(min: number) {
+    const m = Math.max(1, Math.round(min));
+    if (m < 60) return `${m} min`;
+    const h = Math.floor(m / 60);
+    return m % 60 ? `${h} hr ${m % 60} min` : `${h} hr`;
 }
 
-function routeLine(a: AreaEvacuation, s: ZoneSurroundings) {
-    const { route, impact } = a;
-    if (!route || route.status === 'no_safe_route' || !route.path.length) {
-        return `${impact.name}: no safe road out was found. If you cannot leave safely, call 911.`;
-    }
+/** "3:40 pm HST": the wall clock where the alert is read. */
+export function clock(at: Date, timeZone: string) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZoneName: 'short',
+    }).formatToParts(at);
+    const part = (type: Intl.DateTimeFormatPartTypes) =>
+        parts.find((p) => p.type === type)?.value ?? '';
+    return `${part('hour')}:${part('minute')} ${part('dayPeriod').toLowerCase()} ${part('timeZoneName')}`;
+}
+
+const usable = (r: EvacuationRoute | null) =>
+    r && r.status !== 'no_safe_route' && r.path.length > 1 ? r : null;
+
+/**
+ * When fire reaches the area, and the latest time to leave: before the fire reaches the area or
+ * cuts its route (the route's clearance), less a margin. Null when the plan has no arrival.
+ */
+export function timing(a: AreaEvacuation, generatedAt: string) {
+    const { impactMin } = a.impact;
+    if (impactMin === null) return null;
+    const t0 = Date.parse(generatedAt);
+    const lead = Math.min(impactMin, usable(a.route)?.clearanceMin ?? impactMin);
+    return {
+        reachAt: new Date(t0 + impactMin * 60_000),
+        leaveBy: new Date(t0 + Math.max(0, lead - LEAVE_MARGIN_MIN) * 60_000),
+    };
+}
+
+/** "via Honoapiilani Hwy to Kapalua Airport"; null without a safe route. */
+export function wayOut(a: AreaEvacuation, s: ZoneSurroundings) {
+    const route = usable(a.route);
+    if (!route) return null;
     const via = roadNamesAlong(route.path, s.roads);
     const safe = route.destination?.safeZoneId
         ? s.safeZones.find((z) => z.id === route.destination!.safeZoneId)
         : undefined;
     const to = safe?.name ?? (route.destination ? point(route.destination.location) : 'safety');
-    const road = via.length ? `take ${via.join(', then ')}` : 'take the nearest main road';
-    const tight = route.status === 'tight' ? ' Leave right away: the margin is small.' : '';
-    return `${impact.name}: ${road} to ${to} (${minutes(route.etaMin)}).${tight}`;
+    return `${via.length ? `via ${via.join(', then ')} ` : ''}to ${to}`;
+}
+
+const NO_ROUTE = 'No safe road out was found; if you cannot leave safely, call 911.';
+
+/** "Evacuate by 3:40 pm HST via Honoapiilani Hwy to Kapalua Airport." */
+function evacuate(
+    a: AreaEvacuation,
+    s: ZoneSurroundings,
+    generatedAt: string,
+    now: Date,
+    tz: string,
+) {
+    const leaveBy = timing(a, generatedAt)?.leaveBy;
+    const when =
+        leaveBy && leaveBy.getTime() - now.getTime() > 60_000 ? `by ${clock(leaveBy, tz)}` : 'now';
+    const way = wayOut(a, s);
+    return way ? `Evacuate ${when} ${way}.` : `Evacuate ${when}. ${NO_ROUTE}`;
+}
+
+/** The alert for someone in one area: "Ember Alert: Evacuate by 3:40 pm HST via ... to ...". */
+export function areaAlert(
+    a: AreaEvacuation,
+    s: ZoneSurroundings,
+    generatedAt: string,
+    now: Date,
+    tz: string,
+) {
+    return `Ember Alert: ${evacuate(a, s, generatedAt, now, tz)}`;
 }
 
 /** Joins lines in order, dropping optional ones that would push past the limit. */
@@ -103,16 +164,20 @@ function fit(required: string[], optional: string[], tail: string[], max: number
     return [...required, ...kept, ...tail].join('\n').slice(0, max);
 }
 
-/** An evacuation blast for one ZIP; it waits for an operator's approval at the api. */
+/**
+ * An evacuation blast for one ZIP; it waits for an operator's approval at the api, so its times
+ * are clock times, still right whenever it is sent.
+ */
 export function evacuationBlast(
     zone: WatchZone,
     e: ZipEvacuation,
     s: ZoneSurroundings,
-    mapUrl: string | null,
+    plan: { generatedAt: string; now: Date; timeZone: string; mapUrl: string | null },
 ): CreateBlastRequest {
-    const lead = e.areas[0]!;
+    const { generatedAt, now, timeZone: tz, mapUrl } = plan;
+    const line = (a: AreaEvacuation, lead: boolean) =>
+        `${lead ? 'Ember Alert' : a.impact.name}: ${evacuate(a, s, generatedAt, now, tz)}`;
     const names = e.areas.map((a) => a.impact.name).join(', ');
-    const lines = e.areas.map((a) => routeLine(a, s));
     const map = mapUrl ? [`Map: ${mapUrl}?${new URLSearchParams({ zone: zone.id })}`] : [];
     return {
         audience: 'civilians',
@@ -120,12 +185,9 @@ export function evacuationBlast(
         area: 'near_fire',
         title: `Evacuation ZIP ${e.zipCode}: ${names}`.slice(0, TITLE_MAX),
         body: fit(
-            [
-                `EMBER WILDFIRE ALERT, ZIP ${e.zipCode}. ${arrival(lead.impact)} Evacuate now.`,
-                lines[0]!,
-            ],
-            lines.slice(1),
-            [...map, DISCLAIMER],
+            [line(e.areas[0]!, true)],
+            e.areas.slice(1).map((a) => line(a, false)),
+            map,
             BODY_MAX,
         ),
     };
