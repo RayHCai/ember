@@ -6,24 +6,25 @@ owns the boundaries.
 
 ## Services
 
-| Service           | Lang      | Path                      | Owns                                                                                     |
-| ----------------- | --------- | ------------------------- | ---------------------------------------------------------------------------------------- |
-| api               | TS        | `services/api`            | Auth, civilians, watch zones, edge server + drone registry, scans, planner jobs. Record. |
-| drone-info        | TS        | `services/drone-info`     | Live drone telemetry and detections; streams to dashboard, responder and drone-sim.      |
-| operator-agent    | TS        | `services/operator-agent` | Natural-language copilot calling the same API actions as the dashboard. uAgent.          |
-| edge-manager      | Go        | `services/edge-manager`   | Single API link; live registry of edge connectors, task fan-out, their updates on.       |
-| edge-connector    | Go        | `services/edge-connector` | One edge server's drone network: pairing, drone health, runs, swarm relay, updates up.   |
-| planner           | Python    | `services/planner`        | Orchestrator (Redis queue) and Celery workers: fire spread, attack zones, evacuation.    |
-| drone-runtime     | Python    | `services/drone-runtime`  | On-drone flight, swarm mapping of the edge's radius, risk detection, reports up.         |
-| dashboard         | Rust + TS | `apps/dashboard`          | Operator desktop app (Tauri).                                                            |
-| responder         | TS        | `apps/responder`          | Responder mobile app (Expo), offline-first zone map.                                     |
-| civilian-map      | TS        | `apps/civilian-map`       | Read-only evacuation map linked from texts.                                              |
-| contact-collector | TS        | `apps/contact-collector`  | Public signup page. Validates email and ZIP, then creates a civilian through the API.    |
-| drone-sim         | Rust + TS | `apps/drone-sim`          | Desktop 3D view of one connected drone (from drone-info) and what it sees.               |
-| demo-data         | Python    | `services/demo-data`      | Lahaina Aug 2023 scenario: drone camera frames, fire model, 3D world for drone-sim.      |
-| seed-data         | Python    | `tools/seed-data`         | Seed data generators for the api database.                                               |
-| asset-builder     | Python    | `tools/asset-builder`     | Generates the low-poly 3D models in `assets/` (drone, trees, buildings, fire, smoke).    |
-| fire-seg          | Python    | `tools/fire-seg`          | Fire segmentation dataset, training and ONNX export of drone-runtime's YOLO model.       |
+| Service           | Lang      | Path                       | Owns                                                                                                                                                                                                  |
+| ----------------- | --------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| api               | TS        | `services/api`             | Record: civilians and their messages, watch zones, geography and road state, detections, risk zones, edge servers, scans, planner jobs and results, incidents, approvals, responders and assignments. |
+| drone-info        | TS        | `services/drone-info`      | Live drone telemetry and detections; streams to dashboard, responder and drone-sim.                                                                                                                   |
+| operator-agent    | TS        | `services/operator-agent`  | Master agent: watches the api, decides (scans, verification, escalation, replans), acts through api routes, talks to operators, responders and civilians. Claude for language. Its own decision log.  |
+| operator-uagent   | Python    | `services/operator-uagent` | Fetch.ai uAgent on Agentverse (Agent Chat Protocol, mailbox): forwards ASI:One chat to operator-agent. No logic.                                                                                      |
+| edge-manager      | Go        | `services/edge-manager`    | Single API link; live registry of edge connectors, task fan-out, their updates on.                                                                                                                    |
+| edge-connector    | Go        | `services/edge-connector`  | One edge server's drone network: pairing, drone health, runs, swarm relay, updates up.                                                                                                                |
+| planner           | Python    | `services/planner`         | Orchestrator (Redis queue) and Celery workers: fire spread, attack zones, evacuation.                                                                                                                 |
+| drone-runtime     | Python    | `services/drone-runtime`   | On-drone flight, swarm mapping of the edge's radius, risk detection, reports up.                                                                                                                      |
+| dashboard         | Rust + TS | `apps/dashboard`           | Operator desktop app (Tauri).                                                                                                                                                                         |
+| responder         | TS        | `apps/responder`           | Responder mobile app (Expo), offline-first zone map.                                                                                                                                                  |
+| civilian-map      | TS        | `apps/civilian-map`        | Read-only evacuation map linked from texts.                                                                                                                                                           |
+| contact-collector | TS        | `apps/contact-collector`   | Public signup page. Validates email and ZIP, then creates a civilian through the API.                                                                                                                 |
+| drone-sim         | Rust + TS | `apps/drone-sim`           | Desktop 3D view of one connected drone (from drone-info) and what it sees.                                                                                                                            |
+| demo-data         | Python    | `services/demo-data`       | Lahaina Aug 2023 scenario: drone camera frames, fire model, 3D world for drone-sim.                                                                                                                   |
+| seed-data         | Python    | `tools/seed-data`          | Seed data generators for the api database.                                                                                                                                                            |
+| asset-builder     | Python    | `tools/asset-builder`      | Generates the low-poly 3D models in `assets/` (drone, trees, buildings, fire, smoke).                                                                                                                 |
+| fire-seg          | Python    | `tools/fire-seg`           | Fire segmentation dataset, training and ONNX export of drone-runtime's YOLO model.                                                                                                                    |
 
 ## Channels
 
@@ -36,6 +37,7 @@ dashboard ──HTTP/WS──▶ api ──HTTP──▶ edge-manager ──HTTP
                         │      edge-manager ──HTTP──▶ drone-info ──WS──▶ dashboard, responder, drone-sim
                         ├──Redis queue──▶ planner (orchestrator ▶ workers) ──result──▶ api
 operator-agent ──HTTP (same routes as dashboard)──▶ api
+ASI:One ──Agentverse mailbox (Agent Chat Protocol)──▶ operator-uagent ──HTTP /v1/chat (agent.ts)──▶ operator-agent
 civilian-map ──HTTP (public read-only)──▶ api
 contact-collector ──HTTP──▶ api                         (POST /civilians)
 responder ──HTTP pair, zone bundle (responder.ts)──▶ api        (QR token for a session; offline bundle)
@@ -44,6 +46,8 @@ api ──HTTP /v1/tasks, /v1/edge-servers (edge.ts)──▶ edge-manager (star
 edge-manager ──HTTP /v1/tasks (edge.ts)──▶ edge-connector        (start/stop on one edge server)
 edge-connector ──WS /v1/edge (edge.ts)──▶ edge-manager           (register, then aggregated updates)
 edge-manager ──HTTP /v1/ingest (droneInfo.ts)──▶ drone-info      (hellos, changed telemetry, detections)
+drone-info ──HTTP /v1/detections (zone.ts)──▶ api                (each detections frame, for the record)
+api ──HTTP /v1/context/weather──▶ demo-data                      (when EMBER_WEATHER_PROVIDER=demo-data)
 drone-runtime ──WS /v1/drone (droneLink.ts)──▶ edge-connector  (hello, telemetry, detections, swarm)
 drone-runtime ──WS /v1/stream──▶ demo-data                      (simulated camera frames)
 drone-info ──WS /v1/stream (droneInfo.ts)──▶ drone-sim           (fleet, followed drone's pose and detections)
@@ -53,6 +57,11 @@ api ──Redis list ember:planner:jobs (planner.ts)──▶ planner orchestrat
 planner orchestrator ──HTTP planner-context, status, result (planner.ts)──▶ api
 planner orchestrator ──Celery over Redis, queue planner──▶ planner workers  (job + context in, result back)
 ```
+
+External services, each behind one interface in the service that calls it: the api reads weather
+from NWS (`api.weather.gov`) or a fixed Lahaina fixture; operator-agent calls Claude (language), Gemini
+(alert map images only), Photon Spectrum (civilian iMessage) and OpenStreetMap Nominatim (place
+names to points).
 
 The planner never reads the api's database: the orchestrator fetches each job's `PlannerContext`
 (zone boundary, terrain, weather, risk zones, detections, civilian areas, roads, safe zones,
@@ -68,6 +77,16 @@ edge-manager posts what drones report to drone-info's `/v1/ingest` (`DroneInfoIn
 edge services running, `drone-runtime swarm-sim --drone-info` posts there in their place:
 its in-process edge stands in for both, as drone-sim's dummy feed stands in when no drone-info URL is
 given.
+
+operator-agent holds no record of its own. It reads the api, decides by deterministic policy (scan
+cadence from the planner's sector risk and the weather, verification and escalation from detection
+confidence and corroboration, replanning when a road a current plan relies on changes) and acts
+through the api's routes, so every action is visible to the dashboard. Planning means enqueueing a
+planner job through the api and reading its result: the agent computes no route, spread, risk score
+or assignment. Claude interprets chat, sequences tool calls, parses free-text reports and writes
+explanations and drafts from planner output; text whose numbers are not in that output is
+discarded for a template. Its decision log, chat turns and per-civilian notes live in its own
+Postgres schema, `operator_agent`.
 
 An edge-connector registers by opening its uplink to edge-manager and sending `register` (its token
 and the URL edge-manager reaches it at), again on every reconnect, so edge-manager's registry is live
@@ -91,8 +110,10 @@ which reads Demo Data's `/v1/clock` and `/v1/observation` as a drone would.
 
 ## Data
 
-- **Postgres + PostGIS**: owned by `api`. Zone boundaries, coverage and risk cells are geometry.
-  Agents keep per-civilian memory in their own schema, reached only through their service.
+- **Postgres + PostGIS**: owned by `api`. Records are one table each, keyed and zone-indexed, the
+  contract shape in a jsonb column; geometry is `LatLng` rings tested in the api. Civilians have
+  their own typed table. operator-agent keeps its decision log and per-civilian memory in its own
+  schema, `operator_agent`, reached only through operator-agent.
 - **Redis**: planner job queue and results; pub/sub for live telemetry fan-out.
 - **Edge-connector local store**: one SQLite file per edge server: its token, paired drones with
   their last health, and its runs. Read by nothing else.
@@ -113,7 +134,12 @@ not to a registry. demo-data and drone-sim are local demo tooling.
 
 ## Invariants
 
-- Outbound civilian alerts require an operator approval record (see `AGENTS.md`).
+- Outbound civilian alerts require an operator approval record (see `AGENTS.md`). The api enforces
+  it: `POST /v1/civilian-messages` accepts an outbound text only with an approved civilian-alert
+  approval listing that civilian with exactly that text, or as a reply within 24 h to a message the
+  civilian sent. Approval decisions need the operator key and the approval's confirmation code.
+- Ember never contacts authorities or utilities itself; an approved notification is handed to the
+  operator.
 - The API is the only writer of watch zones, edge servers and drone registrations. A connector's
   pairings and edge-manager's registry are live state, not a second record.
 - Every service exposes `GET /healthz`.
