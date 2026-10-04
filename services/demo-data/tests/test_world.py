@@ -5,12 +5,11 @@ import json
 
 import numpy as np
 import pytest
+from ember_demo_data.config import DERIVED_DIR, LAYERS, ORIGIN_LAT, ORIGIN_LON
+from ember_demo_data.world.frame import EXTENT, FRAME
+from ember_demo_data.world.layers import BARE, BUILT_UP, GRASSLAND, ROAD_WIDTH_M, TREE_COVER, WATER
+from ember_demo_data.world.vegetation import FIELDS, FORMS, canopy_mask, crowns
 from scipy import ndimage
-
-from demo_data.config import DERIVED_DIR, LAYERS, ORIGIN_LAT, ORIGIN_LON
-from demo_data.world.frame import EXTENT, FRAME
-from demo_data.world.layers import BARE, BUILT_UP, GRASSLAND, ROAD_WIDTH_M, TREE_COVER, WATER
-from demo_data.world.vegetation import FIELDS, FORMS, canopy_mask, crowns
 
 have_data = (DERIVED_DIR / "arrival.tif").exists() and all(
     layer.path.exists() for layer in LAYERS.values()
@@ -52,7 +51,7 @@ def test_a_crown_becomes_a_tree_where_trees_can_grow(code):
     assert (mask & crown).sum() > 0.6 * crown.sum()
     # Features are smoothed at crown scale, so the canopy may spill by a pixel or two, no further.
     assert not (mask & ~ndimage.binary_dilation(crown, iterations=2)).any()
-    centres, radius = crowns(mask, lum)
+    _centres, radius = crowns(mask, lum)
     assert 1 <= len(radius) <= 3 and radius.max() > 4
 
 
@@ -78,7 +77,7 @@ def test_open_grass_is_not_canopy():
 
 @pytest.fixture(scope="module")
 def world():
-    from demo_data.world import store
+    from ember_demo_data.world import store
 
     store.build()
     d = store._dir()
@@ -91,7 +90,7 @@ def world():
 
 @needs_data
 def test_trees_avoid_water_buildings_and_roads(world):
-    from demo_data.world.layers import WATER_FUEL, ground_layers, road_mask
+    from ember_demo_data.world.layers import WATER_FUEL, ground_layers, road_mask
 
     trees, *_ = world
     L = ground_layers()
@@ -114,7 +113,7 @@ def test_trees_vary_in_form_height_and_colour(world):
     trees, *_ = world
     assert len(trees) > 10_000
     forms = np.bincount(trees[:, F["form"]].astype(int), minlength=len(FORMS))
-    assert (forms > 0).all(), dict(zip(FORMS, forms))
+    assert (forms > 0).all(), dict(zip(FORMS, forms, strict=True))
     assert trees[:, F["height_m"]].std() > 2.0
     assert trees[:, F["crown_radius_m"]].std() > 0.5
     assert (trees[:, F["r"] : F["b"] + 1].std(0) > 0.02).all()
@@ -139,7 +138,7 @@ def test_buildings_and_fire_grid(world):
     assert len(fire) == n * 17
     cells = np.frombuffer(fire[: n * 16], "<f4").reshape(g["height"], g["width"], 4)
     # Rows run south to north: the cell holding the rekindle origin matches the model grid there.
-    from demo_data.world.layers import ground_layers
+    from ember_demo_data.world.layers import ground_layers
 
     x, y = FRAME.to_local(ORIGIN_LON, ORIGIN_LAT)
     col = int((x - EXTENT.min_x) // g["cell_m"])
@@ -156,9 +155,8 @@ def test_buildings_and_fire_grid(world):
 
 @needs_data
 def test_world_api(world):
+    from ember_demo_data.api.app import app
     from fastapi.testclient import TestClient
-
-    from demo_data.api.app import app
 
     client = TestClient(app)
     m = client.get("/v1/world").json()

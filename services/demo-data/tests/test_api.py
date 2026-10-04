@@ -5,9 +5,8 @@ import io
 
 import numpy as np
 import pytest
+from ember_demo_data.config import DERIVED_DIR, LAYERS
 from PIL import Image
-
-from demo_data.config import DERIVED_DIR, LAYERS
 
 pytestmark = pytest.mark.skipif(
     not (DERIVED_DIR / "arrival.tif").exists()
@@ -18,9 +17,8 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture(scope="module")
 def client():
+    from ember_demo_data.api.app import app
     from fastapi.testclient import TestClient
-
-    from demo_data.api.app import app
 
     return TestClient(app)
 
@@ -61,7 +59,7 @@ def test_observation_is_georeferenced_to_the_request(client):
 
 
 def test_fire_timeline_at_one_place(client):
-    """Front St by the Banyan tree: intact before the rekindle, burning in the evening, burned after."""
+    """Front St Banyan tree: intact before the rekindle, burning in the evening, burned after."""
 
     def fractions(t):
         r = client.get(

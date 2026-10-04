@@ -2,23 +2,22 @@ import math
 
 import numpy as np
 import pytest
-
-from demo_data.config import AOI
-from demo_data.geo import (
+from ember_demo_data.config import AOI
+from ember_demo_data.geo import (
     FittedTransform,
     LocalFrame,
     LocationError,
+    from_utm,
+    geodesic_m,
     global_px_to_lonlat,
     ground_resolution_m,
-    geodesic_m,
     lonlat_to_global_px,
     lonlat_to_tile,
     tile_bounds,
     to_utm,
-    from_utm,
     validate_position,
 )
-from demo_data.tiles import _tms_row
+from ember_demo_data.tiles import _tms_row
 
 
 def test_known_tiles():

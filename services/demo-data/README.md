@@ -20,6 +20,8 @@ uv run demo-data download   # ~270 MB into ../../data, a few minutes
 uv run demo-data build      # fire model, imagery co-registration and the 3D world, ~3 min
 uv run demo-data verify     # georeferencing and model checks -> data/verify/report.json
 uv run demo-data serve      # http://localhost:8090, interactive docs at /docs
+uv run demo-data serve --host 0.0.0.0   # reachable from other machines (drones, a LAN viewer)
+uv run demo-data serve --speed 30 --start 2023-08-08T15:00   # the town burns in minutes
 ```
 
 Look at one spot across the whole fire (RGB | thermal | labels):
@@ -34,8 +36,9 @@ Environment variables:
 | Variable | Default | Meaning |
 |---|---|---|
 | `EMBER_DATA_DIR` | `<repo>/data` | Where downloaded and derived data lives |
-| `EMBER_CLOCK_START` | `2023-08-08T14:30-10:00` | Scenario time the clock starts at |
-| `EMBER_CLOCK_SPEED` | `1` | Scenario seconds per wall-clock second |
+| `EMBER_CLOCK_START` | `2023-08-08T14:30-10:00` | Scenario time the clock starts at (`serve --start`) |
+| `EMBER_CLOCK_SPEED` | `1` | Scenario seconds per wall-clock second, up to 3600 (`serve --speed`) |
+| `EMBER_DEMO_DATA_ORIGINS` | none | Browser origins allowed besides localhost and the Tauri webview, comma-separated |
 
 ## What the drone sees, by time (HST)
 
@@ -58,7 +61,7 @@ All of these inputs are real:
   - The morning fire at 06:34.
   - The rekindle at 14:52 at the end of Kuʻialua St (ATF/MFD report; FSRI timeline).
 - **Fuels:** ESA WorldCover land cover plus 2,969 pre-fire building footprints (OpenStreetMap as of 2023-08-07, gaps filled from Microsoft footprints).
-- **Timing:** 50 fire sightings hand-picked from the FSRI timeline (e.g. "the big banyan tree is on fire", 16:24) and geocoded against OpenStreetMap. They are listed with quotes in `src/demo_data/scenario/anchors.csv`, built by `scripts/build_anchors.py`.
+- **Timing:** 50 fire sightings hand-picked from the FSRI timeline (e.g. "the big banyan tree is on fire", 16:24) and geocoded against OpenStreetMap. They are listed with quotes in `src/ember_demo_data/scenario/anchors.csv`, built by `scripts/build_anchors.py`.
 
 How those inputs are combined:
 
@@ -193,7 +196,7 @@ minutes; `demo-data world` does it ahead of time) and they are cached in `data/d
 ## Code layout
 
 ```
-src/demo_data/
+src/ember_demo_data/
   config.py        AOI, event timeline, imagery layers (capture dates, licenses)
   geo.py           tile math, UTM / local projections, position validation
   tiles.py         MBTiles storage, imagery sampling with co-registration

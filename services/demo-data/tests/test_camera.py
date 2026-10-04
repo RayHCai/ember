@@ -2,9 +2,8 @@ import math
 
 import numpy as np
 import pytest
-
-from demo_data.geo import LocalFrame, geodesic_m
-from demo_data.render.camera import Camera, Pose, cast, footprint, ground_point
+from ember_demo_data.geo import LocalFrame, geodesic_m
+from ember_demo_data.render.camera import Camera, Pose, cast, footprint, ground_point
 
 
 def test_nadir_footprint_size():
