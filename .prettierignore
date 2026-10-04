@@ -3,9 +3,8 @@ uv.lock
 **/dist/**
 **/target/**
 **/.venv/**
-readme.md
+docs/product.md
 data/
 **/src-tauri/gen/**
 assets/manifest.json
 **/src/generated/**
-**/expo-env.d.ts

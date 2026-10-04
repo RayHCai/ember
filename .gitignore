@@ -15,9 +15,6 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
-# Expo
-.expo/
-
 # Model weights stay out of git, except the released fire-seg models drone-runtime loads by default.
 *.pt
 *.onnx
@@ -33,8 +30,6 @@ __pycache__/
 .vscode/*
 !.vscode/extensions.json
 
-.claude/settings.local.json
-docs/work/scratch/
 
 # edge-connector store (EMBER_EDGE_DB) and its WAL files
 edge-connector.db*
