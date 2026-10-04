@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { DRONE_INFO_INGEST_PATH } from '@ember/contracts';
 import type { DroneInfoIngestResult } from '@ember/contracts';
 import type { Fleet } from '../fleet.js';
+import type { DetectionForwarder } from '../forward.js';
 import { parseReported } from '../validate.js';
 
 const body = {
@@ -13,7 +14,11 @@ const body = {
 /** Errors listed back per batch, so one noisy drone cannot make the reply huge. */
 const MAX_ERRORS = 20;
 
-export function ingestRoutes(app: FastifyInstance, fleet: Fleet) {
+export function ingestRoutes(
+    app: FastifyInstance,
+    fleet: Fleet,
+    forwarder?: Pick<DetectionForwarder, 'push'>,
+) {
     app.post<{ Body: { messages: unknown[] } }>(
         DRONE_INFO_INGEST_PATH,
         { schema: { body } },
@@ -23,6 +28,8 @@ export function ingestRoutes(app: FastifyInstance, fleet: Fleet) {
                 const parsed = parseReported(raw);
                 if ('message' in parsed) {
                     fleet.ingest(parsed.message);
+                    const m = parsed.message;
+                    if (m.type === 'detections' && m.detections.length > 0) forwarder?.push(m);
                     result.accepted += 1;
                 } else {
                     result.rejected += 1;

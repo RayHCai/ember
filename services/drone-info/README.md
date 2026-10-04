@@ -28,3 +28,9 @@ pnpm --filter @ember/drone-info build && node services/drone-info/dist/main.js  
 
 `PORT` overrides the port. It listens on both IPv4 and IPv6, because on Windows `localhost` tries
 `::1` first, and an IPv4-only listener costs every new connection a 2 s fallback.
+
+| Env | Default | What |
+|---|---|---|
+| `PORT` | `4002` | Listen port |
+| `EMBER_API_URL` | unset | Base URL of `api`. When set, every accepted `detections` frame with at least one detection is forwarded unchanged to `POST /v1/detections`, so `api` keeps detections on record. The queue holds 500 frames (oldest dropped first), sends one request at a time, retries network errors and 5xx with 0.5 s to 30 s backoff, and drops a frame on 4xx. |
+| `EMBER_INGEST_KEY` | unset | Sent as `Authorization: Bearer` on forwarded requests |

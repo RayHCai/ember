@@ -1,11 +1,16 @@
 import { buildApp } from './app.js';
+import { DetectionForwarder } from './forward.js';
 
 const port = Number(process.env.PORT ?? 4002);
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error(`PORT must be 1-65535, got ${process.env.PORT}`);
 }
 
-const app = buildApp();
+const apiUrl = process.env.EMBER_API_URL;
+const forwarder = apiUrl
+    ? new DetectionForwarder({ apiUrl, key: process.env.EMBER_INGEST_KEY || undefined })
+    : undefined;
+const app = buildApp({ forwarder });
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     process.once(signal, () => {
         app.close().then(
