@@ -26,12 +26,16 @@ It writes every model as `.glb`, `manifest.json`, and `previews/*.png`. The outp
 
 ```
 src/ember_asset_builder/
-  mesh.py        triangle meshes and primitives (loft, tube, box, blob), per-face tints
+  mesh.py        triangle meshes and primitives (loft, tube, lathe, strut, clump), per-face tints
   gltf.py        model = node tree of single-material meshes; .glb encoding
   drone.py       quadcopter
-  trees.py       broadleaf, conifer, palm, umbrella, shrub; each at two levels of detail
-  buildings.py   gable house, hip house, shop, ruin
+  trees.py       broadleaf, conifer, palm, umbrella, shrub; each at three levels of detail
+  parts.py       what buildings are assembled from: walls, windows, doors, roof gear, a car
+  houses.py      a house built to a footprint (gable or hip, lanai, carport, one or two storeys)
+  commercial.py  a flat-roofed block built to a footprint (store, shop, office, lodge, hall)
+  ruins.py       the ruin a footprint leaves
   fx.py          flames, smoke
+  terrain.py     the ground square
   catalog.py     which models are written to which path, and what the preview sheets show
   preview.py     software renderer for the preview sheets
   cli.py         asset-builder
@@ -39,7 +43,9 @@ src/ember_asset_builder/
 
 ## Changing or adding a model
 
-1. Edit the model function, or add one and register it in `catalog.py`.
+1. Edit the model function, or add one and register it in `catalog.py`. Buildings are parametric:
+   another footprint is one more `House(...)` or `Block(...)` line in `catalog.py`, and the sim
+   picks it up by its size without a code change there.
 2. `uv run asset-builder`, then look at `assets/previews/`. The renderer culls back faces, so a
    face wound the wrong way shows as a hole.
 3. Keep faces wound counter-clockwise seen from outside (`loft`, `tube` and `face` do this), and

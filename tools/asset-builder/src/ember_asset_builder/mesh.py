@@ -62,6 +62,15 @@ class Mesh:
     def keep(self, mask: NDArray[np.bool_]) -> Mesh:
         return Mesh(self.tris[mask], self.tint[mask])
 
+    def flipped(self) -> Mesh:
+        """Facing the other way: the inside of a wall, the underside of a sheet."""
+        return Mesh(self.tris[:, ::-1], self.tint)
+
+    def facing(self, direction: Sequence[float], least: float = 0.0) -> NDArray[np.bool_]:
+        """Which faces turn towards `direction` (cosine above `least`)."""
+        mask: NDArray[np.bool_] = self.normals() @ np.asarray(direction, dtype=np.float64) > least
+        return mask
+
     def solid(self) -> Mesh:
         """Without the triangles that have collapsed to a line or a point."""
         edges = np.cross(self.tris[:, 1] - self.tris[:, 0], self.tris[:, 2] - self.tris[:, 0])
@@ -199,6 +208,49 @@ def box(w: float, h: float, d: float, *, bevel: float = 0.0) -> Mesh:
     )
 
 
+def skin(rows: Sequence[Array]) -> Mesh:
+    """Like `loft`, for rows that do not close into rings: a shell, a blade, a strip of roof."""
+    parts: list[Mesh] = []
+    for lo, hi in pairwise(rows):
+        parts.append(Mesh.of(np.stack([lo[:-1], hi[:-1], hi[1:]], axis=1)))
+        parts.append(Mesh.of(np.stack([lo[:-1], hi[1:], lo[1:]], axis=1)))
+    return Mesh.join(parts)
+
+
+def lathe(
+    profile: Sequence[tuple[float, float]],
+    sides: int,
+    *,
+    phase: float = 0.0,
+    bottom: bool = False,
+    top: bool = False,
+) -> Mesh:
+    """A profile of (radius, y) points turned round the Y axis: motors, lenses, tanks, domes."""
+    return loft([ring(sides, r, y, phase=phase) for r, y in profile], bottom=bottom, top=top)
+
+
+def panel(w: float, h: float, d: float) -> Mesh:
+    """A box without its back, standing `d` proud of the wall z = 0 it is fixed to."""
+    whole = box(w, h, d).move(z=d / 2)
+    return whole.keep(~whole.facing((0.0, 0.0, -1.0), 0.9))
+
+
+def strut(
+    a: Sequence[float], b: Sequence[float], w: float, h: float | None = None, *, ends: bool = True
+) -> Mesh:
+    """A beam of section `w` (sideways) by `h` (upright) from `a` to `b`: rails, posts, rafters."""
+    p, q = np.asarray(a, dtype=np.float64), np.asarray(b, dtype=np.float64)
+    along = (q - p) / np.linalg.norm(q - p)
+    ref = np.array([1.0, 0.0, 0.0]) if abs(along[1]) > 0.95 else np.array([0.0, 1.0, 0.0])
+    side = np.cross(ref, along)
+    side /= np.linalg.norm(side)
+    upright = np.cross(side, along)
+    x, z = w / 2, (w if h is None else h) / 2
+    section = np.array([x * side + z * upright, -x * side + z * upright])
+    section = np.concatenate([section, -section])
+    return loft([p + section, q + section], bottom=ends, top=ends)
+
+
 def cylinder(sides: int, r: float, h: float, *, r_top: float | None = None) -> Mesh:
     """Closed prism standing on y = 0."""
     return loft(
@@ -297,3 +349,38 @@ def blob(rng: random.Random, level: int = 1, lump: float = 0.18) -> Mesh:
     push = np.array([1 + lump * rng.uniform(-1, 1) for _ in verts])
     mesh = Mesh.of((verts * push[:, None])[faces])
     return mesh.turn("y", rng.uniform(0, 360)).turn("x", rng.uniform(0, 360))
+
+
+# One lump of a clump: centre, radius, height, icosphere level.
+Lobe = tuple[tuple[float, float, float], float, float, int]
+
+
+def clump(
+    rng: random.Random, lobes: Sequence[Lobe], *, belly: float = 1.0, lump: float = 0.16
+) -> list[Mesh]:
+    """Overlapping blobs as one surface: a crown, a puff of smoke. Each lobe comes back as its
+    own mesh, without the faces buried inside a neighbour; `belly` flattens their undersides."""
+
+    def flatten(p: Array) -> Array:
+        p = p.copy()
+        p[:, 1] = np.where(p[:, 1] < 0, p[:, 1] * belly, p[:, 1])
+        return p
+
+    built = [
+        blob(rng, level, lump if level else 1.75 * lump)
+        .warp(flatten)
+        .scale(radius, height, radius)
+        .move(*at)
+        for at, radius, height, level in lobes
+    ]
+    kept = []
+    for i, mesh in enumerate(built):
+        buried = np.zeros(len(mesh.tris), dtype=np.bool_)
+        for j, (at, radius, height, _) in enumerate(lobes):
+            if i == j:
+                continue
+            local = (mesh.tris - np.array(at)) / np.array([radius, height, radius])
+            local[..., 1] = np.where(local[..., 1] < 0, local[..., 1] / belly, local[..., 1])
+            buried |= (np.linalg.norm(local, axis=2) < 0.9).all(axis=1)
+        kept.append(mesh.keep(~buried))
+    return kept

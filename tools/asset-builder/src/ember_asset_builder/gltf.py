@@ -54,7 +54,7 @@ class Node:
 class Model:
     root: Node
     materials: dict[str, Material]
-    extras: dict[str, float] = field(default_factory=dict)
+    extras: dict[str, float | str] = field(default_factory=dict)
 
     def triangles(self) -> int:
         return sum(len(mesh.tris) for _, mesh in self.root.walk())
