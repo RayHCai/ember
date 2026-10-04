@@ -4,7 +4,7 @@ Low-poly 3D models for the sim (`apps/drone-sim`): flat-shaded facets, flat colo
 object the sim draws is one of them (`apps/drone-sim/src/world/models.ts` loads them): the drone, trees,
 buildings and their ruins, flames, smoke and the ground.
 
-Everything here is generated. Do not edit the files; change the model code in
+The models are generated. Do not edit the files; change the model code in
 `tools/asset-builder` and rebuild:
 
 ```bash
@@ -105,3 +105,18 @@ the one nearest in size to the footprint.
 
 `terrain/ground.glb`: a flat square one metre across, centred on the origin. Scale it over the
 world; the consumer paints it (the sim: land cover, roads and fire, as facets).
+
+## Brand
+
+`brand/icon.svg` is the Ember mark, drawn by hand and the only copy in the repo. The apps point at
+it instead of keeping their own: the dashboard and drone-sim reference it from `index.html`, and
+contact-collector copies it into its static folder at build time. The dashboard's animated logo
+reads its facets from the same file (`apps/dashboard/src/icons/glyphs.ts`).
+
+`brand/app-icon.png` is the desktop app icon: the mark, white on a black rounded square. Both Tauri
+apps bundle the same set generated from it; after changing it, regenerate and copy:
+
+```bash
+pnpm --filter @ember/drone-sim exec tauri icon ../../assets/brand/app-icon.png
+cp apps/drone-sim/src-tauri/icons/* apps/dashboard/src-tauri/icons/
+```

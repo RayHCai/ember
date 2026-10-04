@@ -16,7 +16,7 @@ only network traffic is map imagery and address search.
 | `#/zones`                   | Watch zone cards with search, status filters and "New watch zone"            |
 | `#/zones/new`               | Onboarding step 1: draw the boundary                                         |
 | `#/zones/:id/setup/:step`   | Onboarding: `boundary` (also "Edit boundary"), `servers`, `drones`           |
-| `#/zones/:id`               | The zone: map, operator panel, inspector, agent, blasts, responder QR        |
+| `#/zones/:id`               | The zone: map, operator panel, inspector, agent, blasts                       |
 
 Onboarding follows the readme: a zone is complete once its boundary is drawn; edge servers and drones
 can come later, and the zone page asks for them. Editing a boundary rebuilds the grid and sends the
@@ -43,7 +43,7 @@ src/
   auth/               sign-in page
   zones/              watch zone list and cards
   setup/              onboarding wizard (boundary, edge servers, drones)
-  zone/               zone page: operator panel, inspector, agent, blast and responder dialogs
+  zone/               zone page: operator panel, inspector, agent and blast dialogs
   chrome/             notifications menu, account menu
   map/                Cesium viewer, camera, input, overlays (layers/) and the boundary tool (tools/)
   sim/                dummy backend: seeded zones, scan engine, planners, agent, operator actions
@@ -90,7 +90,7 @@ Light, warm and minimal, with fire as the accent.
 | `--route`                   | `#12A37A`             | evacuation routes and safe zones             |
 
 - Type: Geist for UI, Geist Mono for numbers, coordinates and IDs. Sentence case.
-- Icons: every glyph is built like the Ember mark (the drone-sim icon): flat facets with seams
+- Icons: every glyph is built like the Ember mark (`assets/brand/icon.svg`): flat facets with seams
   (`src/icons/glyphs.ts`). Map badges are drawn from the same glyphs. The app icon is the mark.
 - Floating panels are frosted glass over the map; the map is never boxed in.
 - Motion: page transitions, a camera dive into each zone, springs on panels and hovers, count-ups

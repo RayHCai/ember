@@ -18,7 +18,7 @@ function centroid(points: string): [number, number] {
     ];
 }
 
-/** The Ember mark, identical to the drone-sim icon. */
+/** The Ember mark, identical to assets/brand/icon.svg. */
 export function Logo({ size = 32, assemble = false, alive = false, className }: LogoProps) {
     const reduced = useReducedMotion();
     const animate = assemble && !reduced;

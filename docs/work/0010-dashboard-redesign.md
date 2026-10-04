@@ -6,7 +6,7 @@
 ## Goal
 
 The operator dashboard implements every operator view in the readme (sign in, watch zone list,
-onboarding, the zone page with its overlays, planners, blasts, responder pairing, operator agent) on
+onboarding, the zone page with its overlays, planners, blasts, operator agent) on
 dummy data, in a light, minimal, fire-themed design with the drone-sim mark as its icon language,
 and a top-down map.
 
@@ -17,7 +17,7 @@ and a top-down map.
       planners, operator agent, operator actions
 - [x] Pages: sign in (7-day device session), zone list, onboarding wizard, zone page
 - [x] Map: one persistent Cesium viewer, top-down camera, boundary tool, overlay layers
-- [x] Civilian blasts behind a hold-to-approve record; responder QR encodes `ResponderPairingCode`
+- [x] Civilian blasts behind a hold-to-approve record
 - [x] Playwright specs rewritten for the new UI (16 passing with `PW_CHANNEL=chrome`)
 - [x] Removed the previous console's modules and its resident page
 

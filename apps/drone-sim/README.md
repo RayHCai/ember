@@ -34,7 +34,7 @@ pnpm --filter @ember/drone-sim start --browser           # same view in a browse
 ### Watching drone-runtime drones fly
 
 ```bash
-cd services/demo-data && uv run demo-data serve --speed 30 --start 2023-08-08T15:00   # fire within minutes
+cd services/demo-data && uv run demo-data serve --start 2023-08-08T15:00   # paused: set 30x and play at :8090/control
 pnpm --filter @ember/drone-info build && node services/drone-info/dist/main.js     # port 4002
 uv run --package ember-drone-runtime drone-runtime swarm-sim --drone-info http://localhost:4002
 pnpm --filter @ember/drone-sim start --drone sim-1 --drone-info localhost:4002
