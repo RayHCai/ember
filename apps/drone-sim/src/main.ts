@@ -1,5 +1,6 @@
 import { App } from './app';
 import type { InjectedLaunch } from './launch';
+import { showBrandMark } from './brand';
 import { readLaunch } from './launch';
 
 const canvas = document.querySelector<HTMLCanvasElement>('canvas#view');
@@ -8,6 +9,8 @@ const connect = document.querySelector<HTMLFormElement>('form#connect');
 const field = document.querySelector<HTMLInputElement>('input#drone');
 if (!canvas || !status || !connect || !field)
     throw new Error('index.html must have canvas#view, #status and form#connect with input#drone');
+
+showBrandMark();
 
 const injected = (window as Window & { emberSimLaunch?: InjectedLaunch }).emberSimLaunch;
 const launch = readLaunch(injected, location.search);

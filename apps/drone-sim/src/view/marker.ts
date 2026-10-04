@@ -24,10 +24,10 @@ import type { WorldFrame } from '../world/frame';
 import { LAYER } from '../world/visibility';
 import { cameraBasis } from './droneCamera';
 
-/** Readme colours: yellow for at-risk, red for current fire. */
+/** Cool hues rather than the readme's red/yellow, which vanish against rendered flames. */
 export const RISK_COLOUR: Record<RiskDetection['risk'], string> = {
-    on_fire: '#ff3b30',
-    at_risk: '#ffcc00',
+    on_fire: '#ff00ff',
+    at_risk: '#00e5ff',
 };
 
 const ZONE_OPACITY = 0.3;
