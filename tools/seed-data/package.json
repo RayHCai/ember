@@ -1,0 +1,11 @@
+{
+    "name": "@ember/seed-data",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "lint": "node ../../scripts/uv.mjs run --package ember-seed-data ruff check .",
+        "format:check": "node ../../scripts/uv.mjs run --package ember-seed-data ruff format --check .",
+        "typecheck": "node ../../scripts/uv.mjs run --package ember-seed-data mypy src",
+        "test": "node ../../scripts/uv.mjs run --package ember-seed-data pytest"
+    }
+}

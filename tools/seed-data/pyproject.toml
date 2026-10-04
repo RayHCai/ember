@@ -1,0 +1,10 @@
+[project]
+name = "ember-seed-data"
+version = "0.0.0"
+description = "Seed data generators for the api database."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
