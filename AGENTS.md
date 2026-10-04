@@ -2,7 +2,7 @@
 
 Ember is a wildfire detection and response platform: drones and edge servers watch forests, planners
 predict spread and evacuation, and three viewpoints (operator dashboard, responder app, civilian
-SMS/voice agent) act on it. `readme.md` is the product spec; this file is how to work in the repo.
+SMS agent) act on it. `readme.md` is the product spec; this file is how to work in the repo.
 
 ## Read order
 
@@ -20,13 +20,14 @@ Read only what the task touches. Do not preload the whole `docs/` tree.
 
 ```
 apps/        dashboard (Tauri), responder (Expo), civilian-map (web), contact-collector (web), drone-sim (Tauri)
-services/    api, drone-info, messenger, voice-agent, operator-agent  (Fastify, TS)
+services/    api, drone-info, operator-agent  (Fastify, TS)
              edge-manager, edge-connector                                            (Go, one root module)
-             planner, drone-runtime                                                  (Python, uv workspace)
+             planner, drone-runtime, demo-data                                       (Python, uv workspace)
 packages/    contracts (shared TS types)
-tools/       demo-data, asset-builder (Python)
+tools/       asset-builder, seed-data, fire-seg (Python)
 assets/      generated 3D models for the sim (.glb); built by tools/asset-builder, never edited by hand
-internal/    Go packages shared by the Go services
+internal/    Go packages shared by the Go services (@ember/go-internal, so turbo sees the dependency)
+docker/      one Dockerfile per language; .github/workflows/images.yml maps each service to one
 docs/        architecture, style, work tracking
 ```
 

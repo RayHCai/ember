@@ -22,9 +22,9 @@ The desktop app dashboard is the “operator” viewpoint. There are 3 total vie
 
 - Operator
 - Responder
-- Civilian (no app → agentic SMS/iMessage + voice)
+- Civilian (no app → agentic SMS/iMessage)
 
-The Responder viewpoint is a mobile app. Civilians don't install anything: they interact with Ember through an agent over text and phone calls. The operator also gets an agent (Operator Agent) that can drive the dashboard from natural language.
+The Responder viewpoint is a mobile app. Civilians don't install anything: they interact with Ember through an agent over text. The operator also gets an agent (Operator Agent) that can drive the dashboard from natural language.
 
 Responder viewpoint:
 
@@ -33,14 +33,13 @@ Responder viewpoint:
 - Have a map of the forest on a mobile view (once assigned to a watch site) → this should download locally first when syncing. If there is network connection, then we can just sync with the operator dashboard.
 - The map should highlight the areas that are high incident, the predicted path of fire, and highlight in circles the recommended prevention sites
 
-Civilian viewpoint (agentic SMS + voice):
+Civilian viewpoint (agentic SMS):
 
 - Subscribe by texting the Ember number (SMS / iMessage) with an address or shared location → agent geocodes it and links the civilian to the nearest watch site(s)
 - Two-way conversation, not just alerts. Civilians can ask “is my house at risk?”, “when should I leave?”, “which road is safe?” and the agent answers from live planner output (risk zones, predicted fire spread, evacuation path)
 - Proactive outreach: when an incident or operator event blast affects a civilian's area, the agent texts them a short summary + an evacuation route (link to a lightweight read-only map page, no install)
-- Voice fallback: for high-severity events (or no reply to texts), the agent places an outbound call with a natural voice, reads the alert, and answers follow-up questions. Civilians can also call in
 - Context persists per civilian (location, household notes like pets/mobility needs, past messages) so follow-ups are personalized. Check-ins (“reply SAFE when evacuated”) roll up to the operator dashboard
-- Inbound reports: civilians can text/call in smoke or fire sightings (with photos) → agent structures them into a report that appears on the operator map for verification
+- Inbound reports: civilians can text in smoke or fire sightings (with photos) → agent structures them into a report that appears on the operator map for verification
 
 Operator Agent:
 
@@ -55,8 +54,8 @@ The Responder viewer and the civilian map page should look as similar to the ope
 | Track | How Ember uses it |
 | --- | --- |
 | Photon – Agents in iMessage | Operator Agent runs on iMessage through Photon's Spectrum framework: persistent per-civilian context, proactive alerts, two-way Q&A, photo-based fire reports |
-| Relay – Interactive Agents | Operator Agent also available in the Relay app (text, call, video chat): text for alerts, call for the voice agent, video to show the fire/smoke to the agent |
-| ElevenLabs | Voice for the outbound emergency calls and inbound hotline (Conversational AI + TTS), plus the Operator Agent's voice mode |
+| Relay – Interactive Agents | Operator Agent also available in the Relay app (text, call, video chat): text for alerts, video to show the fire/smoke to the agent |
+| ElevenLabs | The Operator Agent's voice mode (TTS) |
 | FetchAI – ASI:One Agent Challenge | Operator agent registered as a uAgent, discoverable through ASI:One (“is there a wildfire risk near me?”). It takes real actions (subscribe, report, trigger planners, send blasts) |
 | MHacks – Actually Intelligent (AI) / Sustainability | Agents act on live drone + planner data instead of being a chatbot wrapper; wildfire prevention and evacuation |
 
@@ -82,7 +81,6 @@ The Responder viewer and the civilian map page should look as similar to the ope
                 - Detection map: base is a black and white map (boundary of forest is blue highlighted), as areas get mapped it should fill in with color (if there has already been mapping then we can keep it filled in with what has been viewed), identified areas are custom colored/overlayed zones based on risk (yellow for at-risk, red for current fire)
                 - Suggestions (overlay toggle on top of detection map): if there are suggested paths → predicted fire movement areas are marked by custom colored/overlayed zones (similar to a weather hurricane predicted movement graph → show the predicted movement of the fire spread), highlight affected civilian areas in a gradient radius (i.e, if nothing is done about the fire, this is where civilians will be impacted → 100% in gradient is most soon, 0% in gradient is least soon). For civilian areas, show a recommended path (line) of movement away from the fire (i.e, if there are multiple fires around the area, show an evacuation plan that avoids these). For responders, show the optimal response locations in the map with drop site + radius (shown as a circle overlay)
             - Event/notification blast → send events/status information to either civilians, responders, or both
-            - Messenger → direct 1-N communication with responders
 - API
     - Fastify (TS)
 - Edge Manager
@@ -126,14 +124,6 @@ The Responder viewer and the civilian map page should look as similar to the ope
     - Expo (React Native + TS)
     - Views
         - 
-- Messenger
-    - Fastify (TS)
-    - Operator → responder 1-N messaging + event blasts
-    - Routes civilian-facing blasts to the Voice Agent
-- Voice Agent
-    - Fastify (TS)
-    - ElevenLabs Conversational AI for outbound emergency calls + inbound hotline
-    - Escalates to voice when severity is high or texts go unanswered
 - Operator Agent
     - Fastify (TS) service, chat + voice panel in the Tauri dashboard
     - Tool calls: start/stop scans, run planners, query coverage/health, draft + send event blasts (needs operator approval), summarize incidents and civilian check-ins

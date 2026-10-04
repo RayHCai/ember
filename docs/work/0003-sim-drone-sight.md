@@ -7,8 +7,9 @@
 
 The sim has no panels. It is launched from the terminal for exactly one drone (chosen there; a
 different drone means restarting it) and the window shows only that drone's model in 3D. Around it,
-whatever the drone's camera can see is rebuilt in 3D from Demo Data (land cover, roads, trees,
-buildings, fire), with no aerial imagery, and everything it cannot see is white. Dragging orbits the
+the whole map is rebuilt in 3D from Demo Data (land cover, roads, trees, buildings, fire), with no
+aerial imagery; what the drone's camera can see is drawn at full brightness and everything it
+cannot see is darkened. Dragging orbits the
 camera around the drone, as in Unity's scene view.
 
 ## Plan
@@ -21,7 +22,7 @@ camera around the drone, as in Unity's scene view.
       `EMBER_DEMO_DATA_URL`) to the page; the browser reads the same from the query string
 - [x] Remove the DOM UI (panels, HUD, sensor feed, screen boxes, view modes) and the imagery ground
 - [x] Ground rebuilt from the 10 m fuel grid and the roads; fire compositing kept
-- [x] Visibility: a depth pass from the drone camera each frame; every world material whitens what
+- [x] Visibility: a depth pass from the drone camera each frame; every world material darkens what
       is outside that camera's frustum or hidden behind something
 - [x] Orbit camera that follows the drone; `F` refocuses on it
 - [ ] Run the Tauri window on the demo laptop (only the browser build was checked)
@@ -35,8 +36,8 @@ camera around the drone, as in Unity's scene view.
   reliably attached under `tauri dev`).
 - "Cannot see" means outside the frustum or occluded, tested per fragment against a depth map
   rendered from the drone camera (shadow-map style). Rejected: a screen-space post pass, which
-  cannot handle the transparent flames and smoke and would whiten smoke against the sky.
-- Smoke and flames do not occlude in the depth pass, and the drone model is never whitened (it sits
+  cannot handle the transparent flames and smoke.
+- Smoke and flames do not occlude in the depth pass, and the drone model is never darkened (it sits
   on a layer the drone camera does not render).
 - Ground colour comes from the fire model's fuel classes (grass, shrub, tree, urban, structure,
   bare, water), blended across the 10 m cells with noise so edges are not blocky. Tree and roof
@@ -45,6 +46,8 @@ camera around the drone, as in Unity's scene view.
   `onDroneLayer` in `view/marker.ts`; flames and smoke on `LAYER.EFFECTS`) and go through
   `withVisibility` (`world/visibility.ts`) or test `emberVisible` itself, or it will show where the
   drone cannot see.
+- Unseen is darkened, not hidden or whitened, so the whole map stays readable around the drone's
+  view. Every tree chunk is drawn at any range (its `_lod2` beyond 700 m); buildings already were.
 - Demo Data's imagery endpoints stay (nothing in the sim uses them now); removing them from the
   world build is a separate cleanup.
 
@@ -57,4 +60,6 @@ camera around the drone, as in Unity's scene view.
       frustum and a 3D rebuild of their view with fire and red outlines, white elsewhere and behind
       occluders; an unknown drone shows an all-white world and the "not in the fleet" line.
     - Not checked: orbit and pan by mouse (headless), and the Tauri window itself.
+    - Switched unseen from white to darkened, with the whole map drawn (trees no longer stop at
+      4.5 km). Typecheck, sim tests and prettier green; not yet checked in a browser.
     - Next: run the Tauri window on the demo laptop and try the camera by hand.

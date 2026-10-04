@@ -28,7 +28,7 @@ Demo Data stream is one camera adapter among others.
       failsafes
 - [x] Adapters: simulated flight, Demo Data sensor stream camera, synthetic 3D world camera
 - [x] Async runtime, edge WS client, in-process hub, `drone-runtime run` and `swarm-sim` CLI
-- [ ] edge-connector: serve `/v1/drone` per `droneLink.ts` (pairing store, start/stop fan-out, relay
+- [x] edge-connector (0005): serve `/v1/drone` per `droneLink.ts` (pairing store, start/stop fan-out, relay
       `swarm` to the other drones of the run, telemetry and detections up to edge-manager)
 - [ ] YOLO weights: train fire/smoke (e.g. D-Fire, plus Demo Data `truth=true` labels) and export to
       ONNX; the runtime loads them from `EMBER_YOLO_MODEL`
