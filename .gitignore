@@ -18,9 +18,10 @@ __pycache__/
 # Expo
 .expo/
 
-# Model weights are fetched, never committed.
+# Model weights stay out of git, except the released fire-seg models drone-runtime loads by default.
 *.pt
 *.onnx
+!data/fire-seg/models/*.onnx
 
 *.log
 .DS_Store
@@ -42,3 +43,4 @@ edge-connector.db*
 test-results/
 playwright-report/
 services/drone-runtime/drone.env
+.demo/

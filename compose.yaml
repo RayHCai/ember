@@ -182,18 +182,22 @@ services:
 
     # Two simulated drones over Lahaina (sim-1 Osprey, sim-2 Harrier) in one process. They pair
     # with the edge-connector and fly the runs the api starts through edge-manager, alongside any
-    # real drone that pairs there too. Their camera is Demo Data's sensor stream.
+    # real drone that pairs there too. Their camera is Demo Data's sensor stream. They take off
+    # around EMBER_FLEET_HOME (lat,lng); `pnpm demo` sets it to its zone.
     drone-fleet:
         <<: *python
         build:
             <<: *python-build
             args: { PACKAGE: ember-drone-runtime, SCRIPT: drone-runtime }
+        environment:
+            EMBER_YOLO_MODEL: /models/fire-seg-v1.onnx
+        volumes: ['./data/fire-seg/models:/models:ro']
         command:
             - fleet
             - --drones
             - '2'
             - --home
-            - '20.8838,-156.6670'
+            - ${EMBER_FLEET_HOME:-20.8838,-156.6670}
             - --edge
             - ws://edge-connector:8070/v1/drone
             - --camera

@@ -6,7 +6,8 @@
 #   --id ID            drone id sent in hello (default: drone-<hostname>)
 #   --edge URL|auto    edge-connector WebSocket, e.g. ws://10.0.0.5:8070/v1/drone (default: auto, mDNS)
 #   --edge-id ID       with auto, connect only to this edge server
-#   --yolo-model PATH  ONNX model; installs onnxruntime and enables YOLO
+#   --home LAT,LNG     where the simulated drone takes off (default: drone-runtime's, near Lahaina)
+#   --yolo-model PATH  ONNX model (default: the checkout's data/fire-seg/models/fire-seg-v1.onnx)
 #   --sensor-url URL   take frames from Demo Data, e.g. ws://10.0.0.5:8090/v1/stream (default: synthetic camera)
 #   --dir PATH         checkout location (default: ~/ember)
 #   --ref REF          git branch or tag (default: master)
@@ -17,6 +18,7 @@ REPO_URL="${EMBER_REPO_URL:-https://github.com/RayHCai/ember.git}"
 DRONE_ID="drone-$(hostname -s)"
 EDGE_URL="auto"
 EDGE_ID=""
+HOME_AT=""
 YOLO_MODEL=""
 SENSOR_URL=""
 DIR="$HOME/ember"
@@ -28,12 +30,13 @@ while [[ $# -gt 0 ]]; do
     --id) DRONE_ID="$2"; shift 2 ;;
     --edge) EDGE_URL="$2"; shift 2 ;;
     --edge-id) EDGE_ID="$2"; shift 2 ;;
+    --home) HOME_AT="$2"; shift 2 ;;
     --yolo-model) YOLO_MODEL="$2"; shift 2 ;;
     --sensor-url) SENSOR_URL="$2"; shift 2 ;;
     --dir) DIR="$2"; shift 2 ;;
     --ref) REF="$2"; shift 2 ;;
     --no-service) SERVICE=0; shift ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -71,9 +74,7 @@ fi
 log "Installing drone-runtime"
 cd "$DIR"
 "$UV" python install 3.12
-sync_args=(--package ember-drone-runtime --no-dev)
-[[ -n "$YOLO_MODEL" ]] && sync_args+=(--extra yolo)
-"$UV" sync "${sync_args[@]}"
+"$UV" sync --package ember-drone-runtime --no-dev
 "$UV" run --package ember-drone-runtime --no-sync drone-runtime --help >/dev/null
 
 ENV_FILE="$DIR/services/drone-runtime/drone.env"
@@ -82,6 +83,7 @@ log "Writing $ENV_FILE"
   echo "EMBER_DRONE_ID=$DRONE_ID"
   echo "EMBER_EDGE_URL=$EDGE_URL"
   [[ -n "$EDGE_ID" ]] && echo "EMBER_EDGE_ID=$EDGE_ID"
+  [[ -n "$HOME_AT" ]] && echo "EMBER_DRONE_HOME=$HOME_AT"
   [[ -n "$YOLO_MODEL" ]] && echo "EMBER_YOLO_MODEL=$YOLO_MODEL"
   [[ -n "$SENSOR_URL" ]] && echo "EMBER_SENSOR_URL=$SENSOR_URL"
 } > "$ENV_FILE"

@@ -17,6 +17,8 @@
         "format": "prettier --write .",
         "format:check": "prettier --check . && turbo run format:check",
         "clean": "turbo run clean && rm -rf .turbo",
+        "demo": "node scripts/demo.mjs",
+        "demo:laptop": "node scripts/demo.mjs --remote-edge",
         "prepare": "node scripts/install-hooks.mjs"
     },
     "devDependencies": {

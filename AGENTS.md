@@ -42,6 +42,7 @@ toolchain skips with a line locally and fails in CI (`EMBER_REQUIRE_TOOLCHAIN`).
 pnpm install && uv sync --all-packages     # deps; also installs git hooks
 docker compose up -d postgres redis        # stores only, for services run with pnpm dev
 docker compose up -d --build               # all services (needs ./data from `uv run demo-data build`); desktop apps via pnpm
+pnpm demo                                  # all services + a third drone + dashboard + drone-sim, on a 30 s demo zone
 pnpm run lint | format:check | typecheck | build | test
 pnpm run test --filter @ember/api          # one package
 ```
