@@ -3,7 +3,7 @@
 One edge server's drone network. Drones on its network pair with it over a WebSocket. It keeps them
 and their health in its own SQLite file, starts and stops mapping runs on them, relays swarm
 messages between the drones of a run, and sends edge-manager one deduplicated update of the whole
-swarm about twice a second. Nothing else talks to a drone-runtime.
+swarm about 20 times a second. Nothing else talks to a drone-runtime.
 
 ## Contract
 
@@ -59,8 +59,8 @@ swarm about twice a second. Nothing else talks to a drone-runtime.
   - Telemetry no newer than the drone's last `sentAt` is dropped.
   - A detections frame is kept once per drone, `frameId` and `capturedAt`.
   - Coverage cells are a set per run.
-- Drone health (battery, mode, phase, position, last seen) goes to the store each tick, for drones
-  that reported.
+- Drone health (battery, mode, phase, position, last seen) goes to the store at most once a second,
+  for drones that reported since the last write.
 
 ## Store
 
@@ -89,4 +89,4 @@ uv run --package ember-drone-runtime drone-runtime run --id drone-1 --edge ws://
 | `EMBER_EDGE_TOKEN` | generated, kept | This edge server's id |
 | `EMBER_EDGE_KEY` | unset | Shared bearer key. Unset accepts any task and logs a warning (local dev only) |
 | `EMBER_EDGE_DB` | `edge-connector.db` | SQLite file |
-| `EMBER_EDGE_UPDATE_MS` | `500` | Update interval |
+| `EMBER_EDGE_UPDATE_MS` | `50` | Update interval: at least twice the drones' 10 Hz telemetry, so none is overwritten |

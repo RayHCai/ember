@@ -33,7 +33,7 @@ func run(log *slog.Logger) error {
 	addr := edgehttp.Env("EMBER_EDGE_ADDR", ":8070")
 	managerURL := edgehttp.Env("EMBER_EDGE_MANAGER_URL", "http://localhost:8060")
 	key := os.Getenv("EMBER_EDGE_KEY")
-	every, err := strconv.Atoi(edgehttp.Env("EMBER_EDGE_UPDATE_MS", "500"))
+	every, err := strconv.Atoi(edgehttp.Env("EMBER_EDGE_UPDATE_MS", "50"))
 	if err != nil || every <= 0 {
 		return fmt.Errorf("EMBER_EDGE_UPDATE_MS %q: want a positive integer", os.Getenv("EMBER_EDGE_UPDATE_MS"))
 	}

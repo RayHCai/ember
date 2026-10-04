@@ -278,6 +278,40 @@ func TestUpdateDedupesAndKeepsDetectionsUntilTaken(t *testing.T) {
 	}
 }
 
+func TestHealthIsStoredAtMostOnceASecond(t *testing.T) {
+	h := newHarness(t)
+	a := h.drone("a")
+	stored := func() float64 {
+		var battery float64
+		h.store.db.QueryRow(`SELECT battery_pct FROM drones WHERE drone_id = 'a'`).Scan(&battery)
+		return battery
+	}
+	report := func(sentAt string, battery float64) {
+		a.telemetry(sentAt, battery)
+		at, _ := time.Parse(time.RFC3339, sentAt)
+		h.waitFor("telemetry "+sentAt, func(c *Connector) bool { return c.drones["a"].telemetryAt.Equal(at) })
+	}
+
+	report("2026-10-03T10:00:01Z", 90)
+	h.tick()
+	report("2026-10-03T10:00:02Z", 70)
+	var tel struct {
+		BatteryPct float64 `json:"batteryPct"`
+	}
+	json.Unmarshal(h.tick().Drones[0].Telemetry, &tel)
+	if tel.BatteryPct != 70 || stored() != 90 {
+		t.Fatalf("within the second: sent %v, stored %v; want 70 sent, 90 stored", tel.BatteryPct, stored())
+	}
+
+	h.c.mu.Lock()
+	h.c.agg.healthAt = h.c.agg.healthAt.Add(-healthEvery)
+	h.c.mu.Unlock()
+	h.tick()
+	if stored() != 70 {
+		t.Fatalf("after a second: stored %v, want 70", stored())
+	}
+}
+
 func TestTaskRefusals(t *testing.T) {
 	h := newHarness(t)
 	if status, body := h.start("run-1"); status != http.StatusConflict || !strings.Contains(string(body), "no drones") {

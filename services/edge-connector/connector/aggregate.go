@@ -16,6 +16,9 @@ const (
 	maxPerUpdate = 200
 	// seenFor is how long a detections frame is remembered for dedupe.
 	seenFor = 5 * time.Minute
+	// healthEvery bounds store writes: updates go many times a second, and health is only a
+	// last-known record.
+	healthEvery = time.Second
 )
 
 // aggregate is what the connector has to send up that is not plain drone state: detections not yet
@@ -26,6 +29,8 @@ type aggregate struct {
 	pending []pendingDetections
 	seen    map[frameKey]time.Time
 	dropped int
+	// healthAt is when drone health last went to the store.
+	healthAt time.Time
 }
 
 type pendingDetections struct {
@@ -194,6 +199,10 @@ func (c *Connector) snapshot() tickResult {
 		Detections:   []json.RawMessage{},
 	}}
 
+	saveHealth := now.Sub(c.agg.healthAt) >= healthEvery
+	if saveHealth {
+		c.agg.healthAt = now
+	}
 	ids := make([]string, 0, len(c.drones))
 	for id := range c.drones {
 		ids = append(ids, id)
@@ -209,7 +218,7 @@ func (c *Connector) snapshot() tickResult {
 			Telemetry: d.telemetry,
 			Status:    d.status,
 		})
-		if d.dirty {
+		if d.dirty && saveHealth {
 			out.health = append(out.health, d.health)
 			d.dirty = false
 		}

@@ -5,7 +5,7 @@ import { DroneInfoClient, streamUrl } from './client';
 import { hotspotDetections } from './dummy';
 import { DUMMY_DRONE } from './dummyDrone';
 import { parseDroneInfoMessage } from './messages';
-import { DroneTrack, interpolatePose } from './track';
+import { DroneTrack, interpolatePose, RENDER_DELAY_MS } from './track';
 
 const pose = { lat: 20.87, lng: -156.67, altM: 150, headingDeg: 350, pitchDeg: -50 };
 const northOf = (northM: number) => ({ ...pose, lat: pose.lat + northM / 110_740 });
@@ -22,6 +22,11 @@ const telemetry: DroneTelemetry = {
     batteryPct: 90,
     mode: 'patrol',
 };
+const sentAt = (ms: number, p = pose): DroneTelemetry => ({
+    ...telemetry,
+    sentAt: new Date(ms).toISOString(),
+    pose: p,
+});
 
 class FakeSocket implements SocketLike {
     sent: string[] = [];
@@ -103,12 +108,44 @@ describe('DroneTrack', () => {
         [0, 0.2, 5, 10].forEach((m, i) =>
             track.ingest({ ...telemetry, pose: northOf(m) }, 1000 + i * 100),
         );
-        expect(track.trailAt(1300 + 150).map((p) => p.lat)).toEqual(
+        expect(track.trailAt(1300 + RENDER_DELAY_MS).map((p) => p.lat)).toEqual(
             [0, 5, 10].map((m) => northOf(m).lat),
         );
-        expect(track.trailAt(1200 + 150)).toHaveLength(2);
+        expect(track.trailAt(1200 + RENDER_DELAY_MS)).toHaveLength(2);
         track.follow('d1');
         expect(track.trailAt(5000)).toEqual([]);
+    });
+
+    it('moves at the drone pace however unevenly messages arrive', () => {
+        const track = new DroneTrack();
+        track.follow('d1');
+        // Sent every 100 ms at 8 m/s; the viewer's clock is 5 s ahead and arrivals come in bursts.
+        const arrivals = [5000, 5300, 5300, 5300, 5420, 5500, 5800, 5800, 5800, 5900];
+        arrivals.forEach((at, i) => track.ingest(sentAt(i * 100, northOf(i * 0.8)), at));
+        const northAt = (now: number) => (track.poseAt(now)!.lat - pose.lat) * 110_740;
+        const start = 5000 + RENDER_DELAY_MS;
+        for (let ms = 0; ms <= 800; ms += 100) {
+            expect(northAt(start + ms)).toBeCloseTo((ms / 1000) * 8, 6);
+        }
+    });
+
+    it('carries on along the velocity when messages are late, then holds', () => {
+        const track = new DroneTrack();
+        track.follow('d1');
+        const moving = { ...telemetry, velocity: { eastMps: 0, northMps: 10, upMps: 0 } };
+        track.ingest({ ...moving, sentAt: new Date(0).toISOString() }, 50);
+        const northAt = (now: number) => (track.poseAt(now)!.lat - pose.lat) * 110_740;
+        expect(northAt(50 + RENDER_DELAY_MS + 200)).toBeCloseTo(2, 6);
+        expect(northAt(50 + RENDER_DELAY_MS + 5000)).toBeCloseTo(10, 6);
+    });
+
+    it('ignores repeated and late messages', () => {
+        const track = new DroneTrack();
+        track.follow('d1');
+        track.ingest(sentAt(100, northOf(1)), 200);
+        track.ingest(sentAt(100, northOf(2)), 210);
+        track.ingest(sentAt(50, northOf(3)), 220);
+        expect(track.telemetry!.pose).toEqual(northOf(1));
     });
 
     it('interpolates headings the short way round', () => {

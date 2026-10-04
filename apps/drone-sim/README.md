@@ -116,6 +116,9 @@ view, and the drone model is never darkened.
 
 With `--drone-info` set, the sim reads `ws://<drone-info>/v1/stream`: a `fleet` snapshot about once a
 second, then `telemetry` (10 Hz) and `detections` (one per captured frame) for the chosen drone.
+The followed drone is drawn 300 ms behind its own clock, placed by each message's `sentAt` rather
+than when it arrived, so uneven delivery does not show as the drone lurching
+(`src/droneInfo/track.ts`).
 
 drone-info is not built yet, so without it the sim plays **dummy drone data**
 (`src/droneInfo/dummy.ts`) behind the same interface:

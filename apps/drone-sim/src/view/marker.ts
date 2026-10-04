@@ -1,4 +1,5 @@
 import {
+    Box3,
     BufferGeometry,
     DoubleSide,
     Float32BufferAttribute,
@@ -75,6 +76,8 @@ function onDroneLayer(o: Object3D): void {
 export class DroneMarker {
     readonly group = new Group();
     private readonly model: Object3D;
+    /** Scaled depth of the skid feet below the model's origin, its hull's waist. */
+    private readonly skidDepthM: number;
     private readonly gimbal: Object3D | null;
     private readonly frustum: LineSegments;
     private readonly footprint: LineLoop;
@@ -84,6 +87,7 @@ export class DroneMarker {
     /** `drone`: the `assets/` quadcopter (front towards +Z). */
     constructor(scene: Scene, drone: Object3D) {
         this.model = drone;
+        this.skidDepthM = Math.max(0, -new Box3().setFromObject(drone).min.y) * MODEL_SCALE;
         this.model.scale.setScalar(MODEL_SCALE);
         this.gimbal = drone.getObjectByName('gimbal') ?? null;
         // In flight the blur discs stand in for the spinning blades (assets/README.md).
@@ -110,7 +114,8 @@ export class DroneMarker {
     ): void {
         this.group.visible = true;
         const { x, y } = toLocal(frame, pose.lat, pose.lng);
-        toScene(x, y, pose.altM, this.model.position);
+        // Near the ground the model stands on its skids; higher up its origin is the reported pose.
+        toScene(x, y, Math.max(pose.altM, this.skidDepthM), this.model.position);
         // Rotating +Z (the model's front) by pi - heading points it along the heading.
         this.model.rotation.y = Math.PI - (pose.headingDeg * Math.PI) / 180;
         if (this.gimbal) this.gimbal.rotation.x = (-pose.pitchDeg * Math.PI) / 180;

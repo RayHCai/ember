@@ -99,7 +99,7 @@ export type EdgeRun = {
 };
 
 /**
- * Connector -> manager about twice a second. `drones` and `run` are a snapshot; `detections` and `run.newCells` are only what is new since the
+ * Connector -> manager about 20 times a second. `drones` and `run` are a snapshot; `detections` and `run.newCells` are only what is new since the
  * previous update, each detections frame sent once.
  */
 export type EdgeUpdate = {
