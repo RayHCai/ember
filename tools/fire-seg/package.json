@@ -1,0 +1,14 @@
+{
+    "name": "@ember/fire-seg",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "lint": "node ../../scripts/uv.mjs run --package ember-fire-seg ruff check .",
+        "format:check": "node ../../scripts/uv.mjs run --package ember-fire-seg ruff format --check .",
+        "typecheck": "node ../../scripts/uv.mjs run --package ember-fire-seg mypy src",
+        "test": "node ../../scripts/uv.mjs run --package ember-fire-seg pytest"
+    },
+    "devDependencies": {
+        "@ember/drone-runtime": "workspace:*"
+    }
+}

@@ -1,0 +1,32 @@
+[project]
+name = "ember-fire-seg"
+version = "0.0.0"
+description = "Builds the fire segmentation dataset, trains and exports the drone's YOLO model, and evaluates it."
+requires-python = ">=3.12"
+dependencies = [
+  "ember-drone-runtime",
+  "numpy>=2.0",
+  "pillow>=10.4",
+  "httpx>=0.27",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+eval = ["onnxruntime>=1.18"]
+train = [
+  "ultralytics>=8.3.0,<9",
+  "opencv-python-headless>=4.9,<5",
+  "onnx>=1.16",
+  "onnxslim>=0.1.31",
+  "onnxruntime>=1.18",
+]
+
+[project.scripts]
+fire-seg = "ember_fire_seg.cli:main"
+
+[tool.uv.sources]
+ember-drone-runtime = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
