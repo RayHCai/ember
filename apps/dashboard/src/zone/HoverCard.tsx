@@ -2,10 +2,17 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Icon } from '../icons/Icon';
 import type { GlyphName } from '../icons/glyphs';
 import { getTelemetry } from '../sim/live';
-import type { WatchZone } from '../sim/types';
+import type { EdgeServerLive, WatchZone } from '../sim/types';
 import { useUi, type Hover } from '../store/ui';
 import { minutes } from '../ui/format';
 import styles from './Overlay.module.css';
+
+function liveServerDetail(live: EdgeServerLive | null): string {
+    if (!live) return 'No live status from edge-manager';
+    return live.online
+        ? `Online · ${live.connectedDrones}/${live.drones} drones connected`
+        : 'Offline';
+}
 
 function describe(
     zone: WatchZone,
@@ -20,9 +27,11 @@ function describe(
                 icon: 'server',
                 title: `Edge server ${s.name}`,
                 detail:
-                    s.status === 'pending'
-                        ? 'Suggested · not deployed'
-                        : `${drones} drones · ${s.health.latencyMs} ms · ${s.health.temperatureC} °C`,
+                    s.live !== undefined
+                        ? liveServerDetail(s.live)
+                        : s.status === 'pending'
+                          ? 'Suggested · not deployed'
+                          : `${drones} drones · ${s.health.latencyMs} ms · ${s.health.temperatureC} °C`,
             };
         }
         case 'drone': {

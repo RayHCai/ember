@@ -226,6 +226,8 @@ export function riskCounts(zone: WatchZone): { mapped: number; atRisk: number; o
 }
 
 export function setupStep(zone: WatchZone): 1 | 2 | 3 | null {
+    // Live zones are set up in Ember itself; their drones are not paired from here.
+    if (zone.live) return null;
     if (!zone.servers.some((s) => s.status === 'deployed')) return 2;
     if (zone.drones.length === 0) return 3;
     return null;

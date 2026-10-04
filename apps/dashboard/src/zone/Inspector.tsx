@@ -6,7 +6,7 @@ import { flyToPoint } from '../map/camera';
 import { useMap } from '../map/viewer';
 import { getTelemetry } from '../sim/live';
 import { stopScan } from '../sim/scan';
-import type { DroneTelemetry, WatchZone } from '../sim/types';
+import type { DroneTelemetry, EdgeServer, WatchZone } from '../sim/types';
 import { notify } from '../store/notifications';
 import { useUi, type Picked } from '../store/ui';
 import { useZones } from '../store/zones';
@@ -87,12 +87,46 @@ function Shell({
     );
 }
 
+/** A live edge server: only what edge-manager reports, no simulated health. */
+function LiveServerView({ server }: { server: EdgeServer }) {
+    const live = server.live ?? null;
+    return (
+        <Shell
+            icon="server"
+            tone="ink"
+            title={`Edge server ${server.name}`}
+            subtitle={`${server.lat.toFixed(4)}, ${server.lon.toFixed(4)}`}
+            tag={
+                <span className={panel.tag} data-tone={live?.online ? 'ok' : 'flame'}>
+                    {live ? (live.online ? 'Online' : 'Offline') : 'No status'}
+                </span>
+            }
+        >
+            <dl className={panel.kv}>
+                <div>
+                    <dt>Radius</dt>
+                    <dd>{(server.radiusM / 1000).toFixed(1)} km</dd>
+                </div>
+                <div>
+                    <dt>Drones connected</dt>
+                    <dd>{live ? `${live.connectedDrones}/${live.drones}` : '—'}</dd>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                    <dt>Last seen</dt>
+                    <dd>{live ? ago(live.lastSeenAt) : 'edge-manager has no status for it'}</dd>
+                </div>
+            </dl>
+        </Shell>
+    );
+}
+
 function ServerView({ zone, id }: { zone: WatchZone; id: string }) {
     const now = useNow(1000);
     const deployServer = useZones((s) => s.deployServer);
     const select = useUi((s) => s.select);
     const server = zone.servers.find((s) => s.id === id);
     if (!server) return null;
+    if (server.live !== undefined) return <LiveServerView server={server} />;
     const h = server.health;
     const drones = zone.drones.filter((d) => d.serverId === server.id);
     const pending = server.status === 'pending';
@@ -471,7 +505,7 @@ function CommunityView({ zone, id }: { zone: WatchZone; id: string }) {
                     </span>
                 </div>
             ) : null}
-            {route ? (
+            {route && !zone.live ? (
                 <Button
                     variant="primary"
                     icon="megaphone"
@@ -515,21 +549,23 @@ function DropView({ zone, id }: { zone: WatchZone; id: string }) {
                     </dd>
                 </div>
             </dl>
-            <Button
-                icon="megaphone"
-                block
-                onClick={() =>
-                    openBlast({
-                        audience: 'responders',
-                        priority: 'urgent',
-                        title: `Stage at ${site.name}`,
-                        body: `${site.purpose}. Stage ${site.crews} crew${site.crews === 1 ? '' : 's'} at ${site.lat.toFixed(4)}, ${site.lon.toFixed(4)} within ${site.radiusM} m.`,
-                        area: 'zone',
-                    })
-                }
-            >
-                Send to responders
-            </Button>
+            {zone.live ? null : (
+                <Button
+                    icon="megaphone"
+                    block
+                    onClick={() =>
+                        openBlast({
+                            audience: 'responders',
+                            priority: 'urgent',
+                            title: `Stage at ${site.name}`,
+                            body: `${site.purpose}. Stage ${site.crews} crew${site.crews === 1 ? '' : 's'} at ${site.lat.toFixed(4)}, ${site.lon.toFixed(4)} within ${site.radiusM} m.`,
+                            area: 'zone',
+                        })
+                    }
+                >
+                    Send to responders
+                </Button>
+            )}
         </Shell>
     );
 }

@@ -16,7 +16,8 @@ export default defineConfig({
         url: `http://localhost:${PORT}`,
         reuseExistingServer: false,
         timeout: 60_000,
-        env: { VITE_GOOGLE_MAPS_API_KEY: '', VITE_CESIUM_ION_TOKEN: '' },
+        // Live mode off: the browser tests run on the dummy data alone.
+        env: { VITE_GOOGLE_MAPS_API_KEY: '', VITE_CESIUM_ION_TOKEN: '', EMBER_LIVE: '0' },
     },
     projects: [
         {

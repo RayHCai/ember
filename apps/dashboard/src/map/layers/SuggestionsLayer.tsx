@@ -91,6 +91,29 @@ function hours(min: number): string {
     return h ? `${h}h ${m.toString().padStart(2, '0')}m` : `${m}m`;
 }
 
+function trackLabel(atMin: number): string {
+    return atMin % 60 === 0 ? `+${atMin / 60}h` : `+${hours(atMin)}`;
+}
+
+/** Predicted perimeters as thin fire-colored contours over the arrival gradient. */
+function addIsochrones(ds: CustomDataSource, spread: SpreadForecast) {
+    for (const iso of spread.isochrones ?? []) {
+        iso.rings.forEach((ring, k) => {
+            if (ring.length < 3) return;
+            ds.entities.add({
+                id: `isochrone:${iso.atMin}:${k}`,
+                polyline: {
+                    positions: [...ring, ring[0]!].map((p) => toCartesian(p)),
+                    width: 1.5,
+                    clampToGround: true,
+                    classificationType: ClassificationType.BOTH,
+                    material: C.fire.withAlpha(0.6),
+                },
+            });
+        });
+    }
+}
+
 /** The forecast's hurricane-style cone: widening uncertainty around the head's track. */
 function addCone(ds: CustomDataSource, spread: SpreadForecast) {
     const theta = (spread.headingDeg * Math.PI) / 180;
@@ -140,13 +163,29 @@ function addCone(ds: CustomDataSource, spread: SpreadForecast) {
                 heightReference: HeightReference.CLAMP_TO_GROUND,
                 disableDepthTestDistance: ALWAYS_ON_TOP,
             },
-            label: { ...label(`+${p.atMin / 60}h`, C.fire), pixelOffset: new Cartesian2(0, 12) },
+            label: { ...label(trackLabel(p.atMin), C.fire), pixelOffset: new Cartesian2(0, 12) },
         });
     });
 }
 
 function addRoutes(ds: CustomDataSource, plan: CivilianPlan, safeZones: SafeZone[]) {
     for (const route of plan.routes) {
+        if (route.alternate) {
+            ds.entities.add({
+                id: `route-alt:${route.id}`,
+                polyline: {
+                    positions: route.alternate.map((p) => toCartesian(p)),
+                    width: 4,
+                    clampToGround: true,
+                    classificationType: ClassificationType.BOTH,
+                    material: new PolylineDashMaterialProperty({
+                        color: C.route,
+                        gapColor: C.white.withAlpha(0.7),
+                        dashLength: 12,
+                    }),
+                },
+            });
+        }
         const positions = route.path.map((p) => toCartesian(p));
         ds.entities.add({
             id: `route-halo:${route.id}`,
@@ -280,8 +319,9 @@ export function SuggestionsLayer({ civilian, responder, safeZones, visible }: Pr
         );
         const arrival = new Float32Array(g.rows * g.cols).fill(Number.POSITIVE_INFINITY);
         for (const [lat, lon, m] of spread.cells) {
-            const row = Math.floor((lat - g.south) / g.dlat);
-            const col = Math.floor((lon - g.west) / g.dlon);
+            // Cells sit on bin edges; the half step keeps float noise from skipping a bin.
+            const row = Math.floor((lat - g.south) / g.dlat + 0.5);
+            const col = Math.floor((lon - g.west) / g.dlon + 0.5);
             if (row >= 0 && row < g.rows && col >= 0 && col < g.cols)
                 arrival[row * g.cols + col] = m;
         }
@@ -336,7 +376,8 @@ export function SuggestionsLayer({ civilian, responder, safeZones, visible }: Pr
         if (!ds) return;
         ds.entities.removeAll();
         if (!visible) return;
-        if (spread) addCone(ds, spread);
+        if (spread) addIsochrones(ds, spread);
+        if (spread && spread.track.length > 0) addCone(ds, spread);
         if (civilian) {
             addRoutes(ds, civilian, safeZones);
             addCommunities(ds, civilian);

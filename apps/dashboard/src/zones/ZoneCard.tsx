@@ -1,6 +1,8 @@
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import type { MouseEvent } from 'react';
 import { Icon } from '../icons/Icon';
+import { LiveBadge } from '../live/LiveStatus';
+import { useLive } from '../live/store';
 import { navigate } from '../store/router';
 import type { WatchZone } from '../sim/types';
 import { deployedCoverage, riskCounts, setupStep, zoneStatus } from '../sim/world';
@@ -17,6 +19,11 @@ export function ZoneCard({ zone }: { zone: WatchZone }) {
     const { atRisk, onFire } = riskCounts(zone);
     const deployed = zone.servers.filter((s) => s.status === 'deployed').length;
     const coverage = deployed ? deployedCoverage(zone) : 0;
+    const incident = useLive((s) => (zone.live ? s.incident : null));
+    const waiting = useLive((s) => (zone.live ? s.alerts.length : 0));
+    const drones = zone.live
+        ? zone.servers.reduce((n, s) => n + (s.live?.connectedDrones ?? 0), 0)
+        : zone.drones.length;
 
     // A slight tilt toward the pointer.
     const px = useMotionValue(0.5);
@@ -55,6 +62,7 @@ export function ZoneCard({ zone }: { zone: WatchZone }) {
                 </div>
                 <div className={styles.cardBadges}>
                     <StatusPill status={status} step={step} />
+                    {zone.live ? <LiveBadge /> : null}
                     {zone.scan ? (
                         <span className={styles.livePill}>
                             <span className={styles.liveDot} /> Scanning{' '}
@@ -86,7 +94,7 @@ export function ZoneCard({ zone }: { zone: WatchZone }) {
                     </div>
                     <div>
                         <dt>Drones</dt>
-                        <dd>{zone.drones.length}</dd>
+                        <dd>{drones}</dd>
                     </div>
                     <div>
                         <dt>Area</dt>
@@ -95,7 +103,27 @@ export function ZoneCard({ zone }: { zone: WatchZone }) {
                 </dl>
             </div>
             <div className={styles.cardFoot}>
-                {step ? (
+                {zone.live ? (
+                    <>
+                        <span>
+                            <Icon name="flame" size={13} />{' '}
+                            {incident
+                                ? `Incident #${incident.number} · ${incident.state}`
+                                : 'No open incident'}
+                        </span>
+                        <span className={styles.footRight}>
+                            {waiting ? (
+                                <b className={styles.fireText}>
+                                    {waiting} alert{waiting === 1 ? '' : 's'} to approve
+                                </b>
+                            ) : onFire ? (
+                                <b className={styles.fireText}>Fire on the map</b>
+                            ) : (
+                                'Watching'
+                            )}
+                        </span>
+                    </>
+                ) : step ? (
                     <button
                         type="button"
                         className={styles.setupCta}

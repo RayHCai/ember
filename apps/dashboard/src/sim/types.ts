@@ -1,4 +1,4 @@
-// The console's view of a watch zone. Everything here runs on built-in dummy data.
+// The console's view of a watch zone, from built-in dummy data or, for live zones, the Ember api.
 
 export type LatLon = [number, number];
 
@@ -30,6 +30,14 @@ export interface EdgeServerHealth {
     power: 'grid' | 'solar' | 'battery';
 }
 
+/** What edge-manager last reported for a live edge server. */
+export interface EdgeServerLive {
+    online: boolean;
+    drones: number;
+    connectedDrones: number;
+    lastSeenAt: number;
+}
+
 export interface EdgeServer {
     id: string;
     name: string;
@@ -38,6 +46,8 @@ export interface EdgeServer {
     radiusM: number;
     status: EdgeServerStatus;
     health: EdgeServerHealth;
+    /** Live zones only: null when edge-manager has no status for it. */
+    live?: EdgeServerLive | null;
 }
 
 export type DroneState = 'docked' | 'charging' | 'launching' | 'scanning' | 'returning';
@@ -121,6 +131,9 @@ export interface EvacuationRoute {
     path: LatLon[];
     distanceKm: number;
     etaMin: number;
+    status?: 'clear' | 'tight';
+    /** A way out that shares no road with `path`. */
+    alternate?: LatLon[] | null;
 }
 
 export interface SpreadForecast {
@@ -130,8 +143,10 @@ export interface SpreadForecast {
     cellM: number;
     /** [lat, lon, minutes until the fire arrives]. */
     cells: [number, number, number][];
-    /** Hurricane-style track: the head's predicted position each hour. */
+    /** Hurricane-style track: the head's predicted position over time. */
     track: { at: LatLon; atMin: number; radiusM: number }[];
+    /** Predicted perimeters, when the planner draws them. */
+    isochrones?: { atMin: number; rings: LatLon[][] }[];
 }
 
 export interface CivilianPlan {
@@ -173,6 +188,15 @@ export interface Responder {
     unit: string;
     device: string;
     joinedAt: number;
+}
+
+export type RoadState = 'open' | 'blocked' | 'uncertain';
+
+export interface ZoneRoad {
+    id: string;
+    name: string | null;
+    path: LatLon[];
+    state: RoadState;
 }
 
 export type BlastAudience = 'civilians' | 'responders' | 'both';
@@ -223,6 +247,9 @@ export interface WatchZone {
     reports: CivilianReport[];
     responders: Responder[];
     blasts: Blast[];
+    /** Sourced from the Ember api (src/live/) rather than the dummy backend. */
+    live?: boolean;
+    roads?: ZoneRoad[];
 }
 
 export type ZoneStatus = 'setup' | 'awaiting' | 'healthy' | 'at_risk' | 'on_fire';

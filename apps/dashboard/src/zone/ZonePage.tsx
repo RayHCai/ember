@@ -10,9 +10,16 @@ import { DetectionLayer } from '../map/layers/DetectionLayer';
 import { DronesLayer } from '../map/layers/DronesLayer';
 import { GapsLayer } from '../map/layers/GapsLayer';
 import { ReportsLayer } from '../map/layers/ReportsLayer';
+import { RoadsLayer } from '../map/layers/RoadsLayer';
 import { ServersLayer } from '../map/layers/ServersLayer';
 import { SuggestionsLayer } from '../map/layers/SuggestionsLayer';
 import { useMap } from '../map/viewer';
+import { ApprovalsPanel } from '../live/ApprovalsPanel';
+import { LivePanel } from '../live/LivePanel';
+import { LiveStrip } from '../live/LiveStatus';
+import { isLiveZoneId } from '../live/map';
+import { LIVE_POLL_MS, placeFire, setRoadState, useLivePolling } from '../live/poller';
+import { useLive } from '../live/store';
 import { riskCounts, setupStep, zoneStatus } from '../sim/world';
 import type { LatLon } from '../sim/types';
 import { navigate, useRouter } from '../store/router';
@@ -41,24 +48,47 @@ function picked(id: string): { kind: Pickable; id: string } | null {
 
 export const ZONE_FRAME = { left: 0.3, right: 0.2, top: 0.16, bottom: 0.18 };
 
+const LIVE_ONLY = 'Ember runs this itself on a live zone';
+
 export function ZonePage({ zoneId }: { zoneId: string }) {
     const viewer = useMap((s) => s.viewer);
     const zone = useZones((s) => s.zones[zoneId]);
     const previous = useRouter((s) => s.previous);
     const ui = useUi();
+    const liveId = isLiveZoneId(zoneId);
+    const live = zone?.live === true;
+    const liveStatus = useLive((s) => s.status);
+    const tool = useLive((s) => (live ? s.tool : null));
+    useLivePolling(liveId ? LIVE_POLL_MS : null);
+    const present = zone !== undefined;
     const hasPlans = Boolean(zone?.civilianPlan || zone?.responderPlan);
     // Entry effects run once per zone; they read the latest values through this ref.
     const latest = useRef({ zone, cameFromSetup: previous?.name === 'setup' });
     latest.current = { zone, cameFromSetup: previous?.name === 'setup' };
 
+    // A live zone opened by URL arrives with the first poll.
+    const waiting = liveId && (liveStatus === 'connecting' || liveStatus === 'online');
+    const entered = useRef<string | null>(null);
     useEffect(() => {
         const z = latest.current.zone;
         if (!z) {
-            navigate({ name: 'zones' }, true);
+            if (!waiting) navigate({ name: 'zones' }, true);
             return;
         }
+        if (entered.current === z.id) return;
+        entered.current = z.id;
         useUi.getState().resetForZone(z.lastScanAt !== null || riskCounts(z).mapped > 0);
-    }, [zoneId]);
+    }, [zoneId, present, waiting]);
+
+    useEffect(() => () => useLive.getState().setTool(null), [zoneId]);
+    useEffect(() => {
+        if (!viewer || !tool) return;
+        const canvas = viewer.scene.canvas;
+        canvas.style.cursor = 'crosshair';
+        return () => {
+            canvas.style.cursor = '';
+        };
+    }, [viewer, tool]);
 
     const flown = useRef<string | null>(null);
     useEffect(() => {
@@ -70,7 +100,7 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
             dive: !cameFromSetup,
             duration: cameFromSetup ? 1.2 : 2.1,
         });
-    }, [viewer, zoneId]);
+    }, [viewer, zoneId, present]);
 
     useEffect(() => {
         tweenSaturation(ui.mode === 'detection' ? 0 : 1);
@@ -95,7 +125,8 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
     useEffect(() => () => tweenSaturation(1), []);
 
     useMapInput(Boolean(zone), {
-        hoverable: (e) => picked(e.id) !== null,
+        cursor: tool ? 'crosshair' : undefined,
+        hoverable: (e) => picked(e.id) !== null || (tool === 'road' && e.id.startsWith('road:')),
         onMove: (_, entity, screen) => {
             const p = entity ? picked(entity.id) : null;
             const current = useUi.getState().hover;
@@ -106,7 +137,22 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
             useUi.getState().setHover({ ...p, x: screen.x, y: screen.y });
         },
         onLeave: () => useUi.getState().setHover(null),
-        onClick: (_, entity) => {
+        onClick: (point, entity) => {
+            const armed = live ? useLive.getState().tool : null;
+            if (armed === 'fire') {
+                if (point) void placeFire([point.lat, point.lon]);
+                useLive.getState().setTool(null);
+                return;
+            }
+            if (armed === 'road') {
+                const road = entity?.id.startsWith('road:')
+                    ? zone?.roads?.find((r) => r.id === entity.id.slice('road:'.length))
+                    : undefined;
+                if (!road) return;
+                void setRoadState(road.id, road.name, road.state === 'open' ? 'blocked' : 'open');
+                useLive.getState().setTool(null);
+                return;
+            }
             const p = entity ? picked(entity.id) : null;
             useUi.getState().select(p);
         },
@@ -114,7 +160,9 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !useUi.getState().blast && !useUi.getState().responderOpen)
+            if (e.key !== 'Escape') return;
+            if (useLive.getState().tool) useLive.getState().setTool(null);
+            else if (!useUi.getState().blast && !useUi.getState().responderOpen)
                 useUi.getState().select(null);
         };
         window.addEventListener('keydown', onKey);
@@ -139,6 +187,7 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                 safeZones={zone.safeZones}
                 visible={ui.suggestions}
             />
+            {live ? <RoadsLayer roads={zone.roads ?? []} picking={tool === 'road'} /> : null}
             <GapsLayer zone={zone} until={ui.gapsUntil} />
             <ServersLayer
                 servers={zone.servers}
@@ -201,25 +250,39 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                 </div>
 
                 <div className={styles.actions}>
-                    <Button icon="qr" onClick={() => ui.setResponderOpen(true)}>
-                        Connect responder
-                    </Button>
-                    <Button icon="megaphone" variant="primary" onClick={() => ui.openBlast()}>
-                        Event blast
-                    </Button>
+                    <span title={live ? LIVE_ONLY : undefined}>
+                        <Button icon="qr" disabled={live} onClick={() => ui.setResponderOpen(true)}>
+                            Connect responder
+                        </Button>
+                    </span>
+                    <span title={live ? LIVE_ONLY : undefined}>
+                        <Button
+                            icon="megaphone"
+                            variant="primary"
+                            disabled={live}
+                            onClick={() => ui.openBlast()}
+                        >
+                            Event blast
+                        </Button>
+                    </span>
                     <IconButton
                         icon="sparkle"
-                        label="Operator Agent"
-                        active={ui.agentOpen}
+                        label={
+                            live ? `Operator Agent: ${LIVE_ONLY.toLowerCase()}` : 'Operator Agent'
+                        }
+                        active={ui.agentOpen && !live}
+                        disabled={live}
                         onClick={() => ui.setAgentOpen(!ui.agentOpen)}
                     />
                     <NotificationsMenu />
                 </div>
             </motion.header>
 
-            <OperatorPanel zone={zone} />
+            {live ? <LivePanel zone={zone} /> : <OperatorPanel zone={zone} />}
+            {live ? <LiveStrip /> : null}
 
             <div className={styles.right}>
+                {live ? <ApprovalsPanel /> : null}
                 <AnimatePresence mode="wait">
                     {ui.selected ? (
                         <Inspector
@@ -230,7 +293,7 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                     ) : null}
                 </AnimatePresence>
                 <AnimatePresence>
-                    {ui.agentOpen ? <AgentPanel key="agent" zone={zone} /> : null}
+                    {ui.agentOpen && !live ? <AgentPanel key="agent" zone={zone} /> : null}
                 </AnimatePresence>
             </div>
 
@@ -238,12 +301,17 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                 <AnimatePresence>
                     {zone.scan ? <ScanHud key="scan" zone={zone} /> : null}
                 </AnimatePresence>
-                <Legend mode={ui.mode} suggestions={ui.suggestions} />
+                <Legend
+                    mode={ui.mode}
+                    suggestions={ui.suggestions}
+                    live={live}
+                    horizonMin={zone.civilianPlan?.spread.horizonMin}
+                />
             </div>
 
             <HoverCard zone={zone} />
-            <BlastDialog zone={zone} />
-            <ResponderDialog zone={zone} />
+            {live ? null : <BlastDialog zone={zone} />}
+            {live ? null : <ResponderDialog zone={zone} />}
         </div>
     );
 }

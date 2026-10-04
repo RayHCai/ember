@@ -4,9 +4,10 @@ The operator viewpoint: a Tauri desktop app where an operator sets up watch zone
 fleet map them, runs the civilian and responder planners, and sends event blasts. The product spec is
 the readme's "Operator Dashboard" section; this file is how the package is built.
 
-**It runs on built-in dummy data.** It talks to no Ember service yet: `src/sim/` stands in for the
-api, edge manager, drone info, planner and operator agent, and answers every action the UI takes. The
-only network traffic is map imagery and address search.
+**Every zone but one runs on built-in dummy data.** `src/sim/` stands in for the api, edge manager,
+drone info, planner and operator agent, and answers every action the UI takes on those zones. One
+live watch zone comes from the Ember api through the dev server (see Live mode); beyond that the only
+network traffic is map imagery and address search.
 
 ## Views
 
@@ -47,12 +48,15 @@ src/
   chrome/             notifications menu, account menu
   map/                Cesium viewer, camera, input, overlays (layers/) and the boundary tool (tools/)
   sim/                dummy backend: seeded zones, scan engine, planners, agent, operator actions
+  live/               the live zone: api client, poller, api-to-dashboard mapping, live panels
   store/              zustand stores: zones, ui, router, session, notifications
   ui/                 buttons, segmented control, toggle, modal, toasts, panel styles
   icons/              the Ember mark and the faceted icon set
 src-tauri/            Tauri 2 shell (Rust): window, app log, bundling
-tests/                Playwright browser tests, all on the dummy data
+tests/                Playwright browser tests, all on the dummy data (live mode off)
 ```
+
+Unit tests (`src/**/*.test.ts`, vitest) cover the api-to-dashboard mapping.
 
 Drone telemetry changes every frame, so it lives in `sim/live.ts` outside React; map layers read it
 through Cesium callback properties and panels poll it.
@@ -63,10 +67,52 @@ through Cesium callback properties and panels poll it.
 pnpm --filter @ember/dashboard app         # desktop app (dev server on :5173)
 pnpm --filter @ember/dashboard dev         # same UI in a browser
 pnpm --filter @ember/dashboard app:build   # installers under src-tauri/target/release/bundle
+pnpm --filter @ember/dashboard test        # vitest unit tests
 pnpm --filter @ember/dashboard test:e2e    # Playwright; add PW_CHANNEL=chrome to use installed Chrome
 ```
 
 Demo account: `operator@ember.dev` / `wildfire` (the sign-in page can fill it in).
+
+## Live mode
+
+```bash
+EMBER_OPERATOR_KEY=<key> pnpm --filter @ember/dashboard dev   # key from ~/.ember/secrets.env
+```
+
+The dev server proxies `/ember-api/*` to the api (`EMBER_API_URL`, default `http://localhost:4001`)
+and adds `Authorization: Bearer $EMBER_OPERATOR_KEY` itself, so the key never reaches the bundle.
+`EMBER_LIVE=0` turns the proxy off (the Playwright tests do). A build without the proxy (the Tauri
+bundle) shows "Live system unavailable" and the simulated zones work as before.
+
+The api's watch zone named `Lahaina` appears in the zone list as "Lahaina · Live". Its page polls the
+api every 3 s (the zone list every 15 s) and maps what it reads onto the same layers the simulated
+zones use:
+
+- **Operator**: the boundary, edge servers with their connectivity radii, and edge-manager's live
+  status in the inspector.
+- **Detection**: ground inside an edge server's radius shows as watched; detection outlines and risk
+  zones paint at-risk or on-fire cells. Dismissed detections and those of closed incidents are left out.
+  Roads draw thin; blocked ones red and dashed, uncertain ones amber.
+- **Suggestions**: the plan of the open incident, else the newest routine plan: fire arrival gradient,
+  isochrone contours and track cone, civilian impact by area, evacuation routes with their alternate
+  (dashed), and attack zones as drop sites with the crews assigned to them.
+
+A status strip shows the open incident, the age of the plan and how many alerts await approval;
+toasts announce a new incident, plan or alert. If the api stops answering, a banner says so and
+polling keeps retrying; the last data stays on the map.
+
+What the operator can do there:
+
+- **Start a fire here** arms a one-click placement: the click posts a simulated detection (150 m,
+  on fire). Ember's operator-agent verifies it, opens an incident, plans and drafts alerts within about
+  30 s.
+- **Block or reopen a road**: click a road to post an operator road observation; Ember replans.
+- **Alerts awaiting approval**: each pending civilian alert shows its area, severity, recipients and
+  first text. Hold to approve sends the decision with its confirmation code; operator-agent then texts
+  the civilians with a route map. Reject sends nothing.
+
+Simulator actions (scans, path planners, event blasts, responder pairing, the in-app agent) are off
+on the live zone; Ember runs those itself.
 
 ## Map
 

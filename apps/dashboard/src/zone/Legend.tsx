@@ -54,7 +54,18 @@ function Gradient({
 }
 
 /** What the colors on the map mean, for the overlay that is on. */
-export function Legend({ mode, suggestions }: { mode: OverlayMode; suggestions: boolean }) {
+export function Legend({
+    mode,
+    suggestions,
+    live = false,
+    horizonMin = 360,
+}: {
+    mode: OverlayMode;
+    suggestions: boolean;
+    live?: boolean;
+    /** How far ahead the fire forecast reaches. */
+    horizonMin?: number;
+}) {
     const key = suggestions ? 'suggestions' : mode;
     return (
         <motion.div
@@ -88,11 +99,26 @@ export function Legend({ mode, suggestions }: { mode: OverlayMode; suggestions: 
                             <Item mark={<Swatch color="#7CC69A" />} label="No risk" />
                             <Item mark={<Swatch color="#F2A900" />} label="At risk" />
                             <Item mark={<Swatch color="#E5321B" />} label="On fire" />
-                            <Item mark={<Icon name="camera" size={14} />} label="Civilian report" />
+                            {live ? (
+                                <Item
+                                    mark={<Swatch color="#E5321B" ring dashed />}
+                                    label="Blocked road"
+                                />
+                            ) : (
+                                <Item
+                                    mark={<Icon name="camera" size={14} />}
+                                    label="Civilian report"
+                                />
+                            )}
                         </>
                     ) : (
                         <>
-                            <Gradient from="#C41218" to="#FFDE78" left="Fire now" right="6h" />
+                            <Gradient
+                                from="#C41218"
+                                to="#FFDE78"
+                                left="Fire now"
+                                right={`${Math.round(horizonMin / 60)}h`}
+                            />
                             <Gradient
                                 from="#B5179E"
                                 to="#F7AEF8"
@@ -100,6 +126,12 @@ export function Legend({ mode, suggestions }: { mode: OverlayMode; suggestions: 
                                 right="later"
                             />
                             <Item mark={<Swatch color="#12A37A" />} label="Evacuation route" />
+                            {live ? (
+                                <Item
+                                    mark={<Swatch color="#12A37A" ring dashed />}
+                                    label="Alternate"
+                                />
+                            ) : null}
                             <Item mark={<Swatch color="#0E8FD8" ring dashed />} label="Drop site" />
                         </>
                     )}

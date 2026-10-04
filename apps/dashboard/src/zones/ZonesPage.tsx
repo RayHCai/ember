@@ -4,6 +4,8 @@ import { AccountMenu } from '../chrome/AccountMenu';
 import { NotificationsMenu } from '../chrome/NotificationsMenu';
 import { Icon } from '../icons/Icon';
 import { Logo, Wordmark } from '../icons/Logo';
+import { LiveNotice } from '../live/LiveStatus';
+import { LIVE_LIST_POLL_MS, useLivePolling } from '../live/poller';
 import { getTelemetry } from '../sim/live';
 import type { ZoneStatus } from '../sim/types';
 import { zoneStatus } from '../sim/world';
@@ -45,6 +47,7 @@ export function ZonesPage() {
     const name = useSession((s) => s.session?.name ?? '');
     const [query, setQuery] = useState('');
     const [filter, setFilter] = useState<Filter>('all');
+    useLivePolling(LIVE_LIST_POLL_MS);
 
     const all = useMemo(() => order.map((id) => zones[id]!).filter(Boolean), [order, zones]);
     const counts = useMemo(() => {
@@ -187,6 +190,8 @@ export function ZonesPage() {
                         New watch zone
                     </Button>
                 </motion.div>
+
+                <LiveNotice />
 
                 <motion.div className={styles.grid} layout>
                     <AnimatePresence mode="popLayout">
