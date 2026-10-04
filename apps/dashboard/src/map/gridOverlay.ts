@@ -55,7 +55,8 @@ export class GridOverlay {
             }),
             classificationType: ClassificationType.BOTH,
         });
-        viewer.scene.primitives.add(this.primitive);
+        // First in the ground collection, so routes and outlines draw on top of the paint.
+        viewer.scene.groundPrimitives.add(this.primitive, 0);
     }
 
     private blank(): string {
@@ -95,6 +96,6 @@ export class GridOverlay {
     }
 
     destroy(): void {
-        if (!this.viewer.isDestroyed()) this.viewer.scene.primitives.remove(this.primitive);
+        if (!this.viewer.isDestroyed()) this.viewer.scene.groundPrimitives.remove(this.primitive);
     }
 }

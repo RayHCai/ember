@@ -1,0 +1,49 @@
+.zoom {
+    display: flex;
+    flex-direction: column;
+    width: 36px;
+    border-radius: 8px;
+    background: var(--paper);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+.zoom button {
+    display: grid;
+    place-items: center;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    transition:
+        background-color var(--fast) var(--ease),
+        transform var(--fast) var(--ease);
+}
+
+.zoom button + button {
+    border-top: 1px solid var(--line);
+}
+
+.zoom button:hover {
+    background: var(--hover);
+}
+
+.zoom button:active {
+    background: var(--press);
+}
+
+.zoom button:active svg {
+    transform: scale(0.88);
+}
+
+.zoom svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    transition: transform var(--fast) var(--ease);
+}

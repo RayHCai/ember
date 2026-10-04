@@ -1,20 +1,26 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useRef } from 'react';
-import { NotificationsMenu } from '../chrome/NotificationsMenu';
+import { useEffect, useRef, useState } from 'react';
 import { tweenSaturation } from '../map/base';
 import { flyToPoints } from '../map/camera';
 import { useMapInput } from '../map/input';
 import { BoundaryLayer } from '../map/layers/BoundaryLayer';
 import { DetectionLayer } from '../map/layers/DetectionLayer';
 import { DronesLayer } from '../map/layers/DronesLayer';
-import { GapsLayer } from '../map/layers/GapsLayer';
 import { RiskLayer } from '../map/layers/RiskLayer';
-import { ServersLayer } from '../map/layers/ServersLayer';
+import { serverIdOf, ServersLayer } from '../map/layers/ServersLayer';
 import { SuggestionsLayer } from '../map/layers/SuggestionsLayer';
 import { useWatchedDrones } from '../live/droneInfo';
 import { useMap } from '../map/viewer';
-import type { LatLon } from '../model/types';
-import { isActiveScan, ll, setupStep, zoneStatus } from '../model/zone';
+import { ZoomControl } from '../map/ZoomControl';
+import type { LatLon, ZoneView } from '../model/types';
+import { deployed, isActiveScan, ll } from '../model/zone';
+import {
+    assignPlacement,
+    dragPlacement,
+    runPlanner,
+    savePlacement,
+    startScan,
+} from '../store/actions';
 import { navigate, useRouter } from '../store/router';
 import { useZoneSync } from '../store/sync';
 import { useUi, type Pickable } from '../store/ui';
@@ -23,14 +29,11 @@ import { Button, IconButton } from '../ui/Button';
 import { QUICK, SMOOTH } from '../ui/motion';
 import { Segmented } from '../ui/Segmented';
 import { Spinner } from '../ui/Spinner';
-import { StatusPill } from '../ui/StatusPill';
 import { Toggle } from '../ui/Toggle';
-import { AgentPanel } from './AgentPanel';
 import { BlastDialog } from './BlastDialog';
 import { HoverCard } from './HoverCard';
 import { Inspector } from './Inspector';
 import { Legend } from './Legend';
-import { OperatorPanel } from './OperatorPanel';
 import { ScanHud } from './ScanHud';
 import styles from './Zone.module.css';
 
@@ -49,21 +52,45 @@ function picked(id: string): { kind: Pickable; id: string } | null {
     return PICKABLE.has(kind) ? { kind: kind as Pickable, id: id.slice(kind.length + 1) } : null;
 }
 
-export const ZONE_FRAME = { left: 0.3, right: 0.2, top: 0.16, bottom: 0.18 };
+const ZONE_FRAME = { left: 0.14, right: 0.24, top: 0.16, bottom: 0.18 };
+
+/** An edge server the api reports online, and that no zone has yet, takes the next planned site. */
+function useAutoAssign(zone: ZoneView | undefined): void {
+    const unassigned = useZones((s) => s.unassigned);
+    const busy = useRef(false);
+    const refused = useRef(new Set<string>());
+    const site = zone?.servers.find((s) => s.status === 'pending');
+    const edge = unassigned.find((e) => e.live?.online && !refused.current.has(e.edgeServerId));
+    const zoneId = zone?.id;
+    const siteId = site?.id;
+    const edgeServerId = edge?.edgeServerId;
+
+    useEffect(() => {
+        if (!zoneId || !siteId || !edgeServerId || busy.current) return;
+        busy.current = true;
+        void assignPlacement(zoneId, siteId, edgeServerId).then((ok) => {
+            if (!ok) refused.current.add(edgeServerId);
+            busy.current = false;
+        });
+    }, [zoneId, siteId, edgeServerId]);
+}
 
 export function ZonePage({ zoneId }: { zoneId: string }) {
     const viewer = useMap((s) => s.viewer);
     useZoneSync(zoneId, { unassigned: true });
     const zone = useZoneView(zoneId);
+    useAutoAssign(zone);
     const missing = useZones((s) => s.missing[zoneId] === true);
     useWatchedDrones(zone?.drones.map((d) => d.id) ?? []);
     const previous = useRouter((s) => s.previous);
     const ui = useUi();
-    const hasPlans = Boolean(zone?.plan);
+    const [starting, setStarting] = useState(false);
+    // Suggestions were asked for before any plan existed: they turn on when the planner finishes.
+    const [awaitingPlan, setAwaitingPlan] = useState(false);
     const loaded = zone !== undefined;
     // Entry effects run once per zone; they read the latest values through this ref.
-    const latest = useRef({ zone, cameFromSetup: previous?.name === 'setup' });
-    latest.current = { zone, cameFromSetup: previous?.name === 'setup' };
+    const latest = useRef({ zone, cameFromDraw: previous?.name === 'new' });
+    latest.current = { zone, cameFromDraw: previous?.name === 'new' };
 
     useEffect(() => {
         if (missing) navigate({ name: 'zones' }, true);
@@ -79,13 +106,13 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
 
     const flown = useRef<string | null>(null);
     useEffect(() => {
-        const { zone: z, cameFromSetup } = latest.current;
+        const { zone: z, cameFromDraw } = latest.current;
         if (!viewer || !z || flown.current === z.id) return;
         flown.current = z.id;
         void flyToPoints(viewer, z.boundary, {
             frame: ZONE_FRAME,
-            dive: !cameFromSetup,
-            duration: cameFromSetup ? 1.2 : 2.1,
+            dive: !cameFromDraw,
+            duration: cameFromDraw ? 1.2 : 2.1,
         });
     }, [viewer, zoneId, loaded]);
 
@@ -115,6 +142,30 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
     }, [viewer, ui.suggestions]);
     useEffect(() => () => tweenSaturation(1), []);
 
+    const hasPlan = Boolean(zone?.plan);
+    const planFailed = zone?.planJob?.state === 'failed';
+    useEffect(() => {
+        if (!awaitingPlan) return;
+        if (hasPlan) useUi.getState().setSuggestions(true);
+        if (hasPlan || planFailed) setAwaitingPlan(false);
+    }, [awaitingPlan, hasPlan, planFailed]);
+
+    // A plan that lands while the zone is open (the operator-agent asks for one after a scan finds
+    // fire) shows itself; the plan the zone opened with does not.
+    const planJobId = zone?.plan?.jobId ?? null;
+    const seenPlan = useRef<{ zoneId: string; jobId: string | null } | null>(null);
+    useEffect(() => {
+        if (!loaded) return;
+        const seen = seenPlan.current;
+        seenPlan.current = { zoneId, jobId: planJobId };
+        if (seen?.zoneId === zoneId && planJobId && planJobId !== seen.jobId)
+            useUi.getState().setSuggestions(true);
+    }, [zoneId, loaded, planJobId]);
+
+    const moved = useRef(false);
+    const pendingSite = (id: string | null) =>
+        Boolean(id && zone?.servers.find((s) => s.id === id)?.status === 'pending');
+
     useMapInput(Boolean(zone), {
         hoverable: (e) => picked(e.id) !== null,
         onMove: (_, entity, screen) => {
@@ -130,6 +181,19 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
         onClick: (_, entity) => {
             const p = entity ? picked(entity.id) : null;
             useUi.getState().select(p);
+        },
+        // A planned site can be moved until an edge server takes it.
+        draggable: (e) => pendingSite(serverIdOf(e)),
+        onDrag: (e, point) => {
+            const id = serverIdOf(e);
+            if (!id) return;
+            moved.current = true;
+            dragPlacement(zoneId, id, [point.lat, point.lon]);
+        },
+        onDragEnd: (e) => {
+            const id = serverIdOf(e);
+            if (id && moved.current) void savePlacement(zoneId, id);
+            moved.current = false;
         },
     });
 
@@ -149,8 +213,29 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                 </div>
             </div>
         );
-    const status = zoneStatus(zone);
     const detection = ui.mode === 'detection';
+    const ready = deployed(zone).length > 0;
+    const review = zone.blasts.find((b) => b.state === 'pending_approval');
+
+    const scan = async () => {
+        setStarting(true);
+        const started = await startScan(zone.id);
+        setStarting(false);
+        if (started && started.state !== 'failed') ui.setMode('detection');
+    };
+
+    const setSuggestions = async (on: boolean) => {
+        if (!on) {
+            setAwaitingPlan(false);
+            ui.setSuggestions(false);
+            return;
+        }
+        const stale = zone.plan && (zone.lastScanAt ?? 0) > (zone.planAt ?? 0);
+        if (zone.plan) ui.setSuggestions(true);
+        else setAwaitingPlan(true);
+        if ((!zone.plan || stale) && !zone.planning && !(await runPlanner(zone.id)))
+            setAwaitingPlan(false);
+    };
 
     return (
         <div className={styles.page}>
@@ -171,7 +256,6 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                 visible={detection}
                 selectedId={ui.selected?.kind === 'risk' ? ui.selected.id : null}
             />
-            <GapsLayer zone={zone} until={ui.gapsUntil} />
             <ServersLayer
                 servers={zone.servers}
                 radii={!detection}
@@ -200,8 +284,11 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                     <motion.h1 layoutId={`zone-title-${zone.id}`} className={styles.title}>
                         {zone.name}
                     </motion.h1>
-                    <span className={styles.region}>{zone.region}</span>
-                    <StatusPill status={status} step={setupStep(zone)} />
+                    <IconButton
+                        icon="edit"
+                        label="Redraw boundary"
+                        onClick={() => navigate({ name: 'edit', zoneId: zone.id })}
+                    />
                 </div>
 
                 <div className={styles.barMode}>
@@ -214,37 +301,53 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                             { value: 'detection', label: 'Detection' },
                         ]}
                     />
-                    <label
-                        className={styles.suggestToggle}
-                        data-disabled={!hasPlans}
-                        title={hasPlans ? undefined : 'Run a planner first'}
-                    >
+                    <label className={styles.suggestToggle} data-disabled={!ready}>
                         Suggestions
+                        {awaitingPlan || (ui.suggestions && zone.planning) ? (
+                            <Spinner size={12} />
+                        ) : null}
                         <Toggle
-                            on={ui.suggestions}
-                            onChange={ui.setSuggestions}
+                            on={ui.suggestions || awaitingPlan}
+                            onChange={(on) => void setSuggestions(on)}
                             label="Suggestions overlay"
-                            disabled={!hasPlans}
+                            disabled={!ready}
                         />
                     </label>
                 </div>
 
                 <div className={styles.barActions}>
-                    <Button icon="megaphone" variant="primary" onClick={() => ui.openBlast()}>
-                        Event blast
-                    </Button>
-                    <IconButton
-                        icon="sparkle"
-                        label="Operator Agent"
-                        active={ui.agentOpen}
-                        tip={!ui.agentOpen}
-                        onClick={() => ui.setAgentOpen(!ui.agentOpen)}
-                    />
-                    <NotificationsMenu />
+                    {zone.scan ? null : (
+                        <Button
+                            icon="play"
+                            loading={starting}
+                            disabled={!ready}
+                            onClick={() => void scan()}
+                        >
+                            Scan
+                        </Button>
+                    )}
+                    {review ? (
+                        <Button
+                            variant="danger"
+                            onClick={() =>
+                                ui.openBlast(
+                                    {
+                                        audience: review.audience,
+                                        priority: review.priority,
+                                        title: review.title,
+                                        body: review.body,
+                                        area: review.area,
+                                    },
+                                    true,
+                                    review.blastId,
+                                )
+                            }
+                        >
+                            Review blast
+                        </Button>
+                    ) : null}
                 </div>
             </motion.header>
-
-            <OperatorPanel zone={zone} />
 
             <div className={styles.right}>
                 <AnimatePresence mode="wait">
@@ -256,9 +359,7 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                         />
                     ) : null}
                 </AnimatePresence>
-                <AnimatePresence>
-                    {ui.agentOpen ? <AgentPanel key="agent" zone={zone} /> : null}
-                </AnimatePresence>
+                <ZoomControl className={styles.zoom} />
             </div>
 
             <div className={styles.bottom}>

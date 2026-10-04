@@ -1,7 +1,6 @@
 import type {
     Blast,
     CreateBlastRequest,
-    EdgeServerPlacement,
     Scan,
     SuggestPlacementsResult,
     UpdateWatchZoneRequest,
@@ -29,16 +28,19 @@ function failed(title: string, err: unknown, zoneId?: string): null {
     return null;
 }
 
-export async function createZone(input: {
-    name: string;
-    region: string;
-    boundary: LatLon[];
-}): Promise<WatchZone | null> {
+/** The operator never names a zone: each takes the next free number. */
+function nextZoneName(): string {
+    const taken = new Set(useZones.getState().summaries?.map((z) => z.name));
+    let n = taken.size + 1;
+    while (taken.has(`Zone ${n}`)) n += 1;
+    return `Zone ${n}`;
+}
+
+export async function createZone(boundary: LatLon[]): Promise<WatchZone | null> {
     try {
         const zone = await api.createZone({
-            name: input.name,
-            region: input.region || null,
-            boundary: input.boundary.map(latLng),
+            name: nextZoneName(),
+            boundary: boundary.map(latLng),
         });
         useZones.setState((s) => ({
             summaries: s.summaries
@@ -89,23 +91,6 @@ export async function suggestPlacements(
     }
 }
 
-export async function addPlacement(
-    zoneId: string,
-    at: LatLon,
-    connectivityRadiusM: number,
-): Promise<EdgeServerPlacement | null> {
-    try {
-        const placement = await api.createPlacement(zoneId, {
-            location: latLng(at),
-            connectivityRadiusM,
-        });
-        useZones.getState().patch(zoneId, (r) => ({ placements: [...r.placements, placement] }));
-        return placement;
-    } catch (err) {
-        return failed('Site not added', err, zoneId);
-    }
-}
-
 /** Moves a placement on screen only; `savePlacement` stores where it ends up. */
 export function dragPlacement(zoneId: string, placementId: string, at: LatLon): void {
     useZones.getState().patch(zoneId, (r) => ({
@@ -142,15 +127,6 @@ export async function removePlacement(zoneId: string, placementId: string): Prom
     }
 }
 
-export async function clearPlacements(zoneId: string): Promise<void> {
-    try {
-        await api.clearPlacements(zoneId);
-        useZones.getState().patch(zoneId, { placements: [] });
-    } catch (err) {
-        failed('Sites not cleared', err, zoneId);
-    }
-}
-
 /** A registered connector takes over a planned site and becomes one of the zone's edge servers. */
 export async function assignPlacement(
     zoneId: string,
@@ -166,12 +142,7 @@ export async function assignPlacement(
         useZones.setState((s) => ({
             unassigned: s.unassigned.filter((e) => e.edgeServerId !== edgeServerId),
         }));
-        notify(
-            'success',
-            'Edge server deployed',
-            `${server.name ?? edgeServerId} joined the zone network.`,
-            zoneRef(zoneId),
-        );
+        notify('success', 'Edge server connected', '', zoneRef(zoneId));
         void refresh(zoneId, 'edgeServers', 'drones');
         return true;
     } catch (err) {
@@ -236,16 +207,14 @@ export async function stopScan(zoneId: string, runId: string): Promise<void> {
     }
 }
 
-export async function setSchedule(zoneId: string, everyHours: number | null): Promise<void> {
-    await updateZone(zoneId, { scanEveryHours: everyHours });
-}
-
-export async function runPlanner(zoneId: string): Promise<void> {
+export async function runPlanner(zoneId: string): Promise<boolean> {
     try {
         const job = await api.createPlannerJob(zoneId, {});
         useZones.getState().patch(zoneId, (r) => ({ planJobs: [job, ...r.planJobs] }));
+        return true;
     } catch (err) {
         failed('Planner not started', err, zoneId);
+        return false;
     }
 }
 

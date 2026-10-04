@@ -20,6 +20,10 @@ export interface MapInput {
     draggable?: (entity: Entity) => boolean;
     onDrag?: (entity: Entity, point: PickedPoint) => void;
     onDragEnd?: (entity: Entity) => void;
+    /** Press on empty map: return true to take the drag from the camera as a stroke. */
+    onStrokeStart?: (point: PickedPoint, screen: Cartesian2) => boolean;
+    onStroke?: (point: PickedPoint, screen: Cartesian2) => void;
+    onStrokeEnd?: () => void;
     /** Cursor over empty map, and over entities `hoverable` accepts. */
     cursor?: string;
     hoverable?: (entity: Entity) => boolean;
@@ -42,6 +46,7 @@ export function useMapInput(active: boolean, input: MapInput): void {
         const canvas = scene.canvas;
         const handler = new ScreenSpaceEventHandler(canvas);
         let dragging: Entity | null = null;
+        let stroking = false;
         let suppressClick = false;
 
         const setCursor = (hovered: Entity | undefined) => {
@@ -56,11 +61,18 @@ export function useMapInput(active: boolean, input: MapInput): void {
         };
 
         handler.setInputAction((e: ScreenSpaceEventHandler.PositionedEvent) => {
+            suppressClick = false;
             const entity = entityAt(viewer, e.position);
             if (entity && ref.current.draggable?.(entity)) {
                 dragging = entity;
                 scene.screenSpaceCameraController.enableInputs = false;
                 setCursor(entity);
+                return;
+            }
+            const point = entity ? null : pickPoint(viewer, e.position);
+            if (point && ref.current.onStrokeStart?.(point, e.position)) {
+                stroking = true;
+                scene.screenSpaceCameraController.enableInputs = false;
             }
         }, ScreenSpaceEventType.LEFT_DOWN);
 
@@ -71,12 +83,23 @@ export function useMapInput(active: boolean, input: MapInput): void {
                 suppressClick = true;
                 return;
             }
+            if (stroking) {
+                const point = pickPoint(viewer, e.endPosition);
+                if (point) ref.current.onStroke?.(point, e.endPosition);
+                return;
+            }
             const entity = entityAt(viewer, e.endPosition);
             ref.current.onMove?.(pickPoint(viewer, e.endPosition), entity, e.endPosition);
             setCursor(entity);
         }, ScreenSpaceEventType.MOUSE_MOVE);
 
         handler.setInputAction(() => {
+            if (stroking) {
+                stroking = false;
+                scene.screenSpaceCameraController.enableInputs = true;
+                ref.current.onStrokeEnd?.();
+                return;
+            }
             if (!dragging) return;
             const done = dragging;
             dragging = null;

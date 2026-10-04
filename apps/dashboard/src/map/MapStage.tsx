@@ -1,8 +1,8 @@
-import { Color, ScreenSpaceEventType, Viewer } from 'cesium';
+import { Cartesian2, Color, ScreenSpaceEventType, Viewer } from 'cesium';
 import { useEffect, useRef } from 'react';
 import { appLog } from '../shell';
 import { registerBase } from './base';
-import { setOverview } from './camera';
+import { pinchZoom, setOverview } from './camera';
 import { driveFrameClock } from './frameClock';
 import { loadMap } from './mapSource';
 import styles from './MapStage.module.css';
@@ -37,6 +37,8 @@ export function MapStage({ visible }: { visible: boolean }) {
             selectionIndicator: false,
             creditContainer: credits,
             showRenderLoopErrors: false,
+            // Draw at the screen's own pixel density, so lines and icons are not upscaled and soft.
+            useBrowserRecommendedResolution: false,
         });
         const { scene } = v;
         v.cesiumWidget.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);
@@ -54,6 +56,15 @@ export function MapStage({ visible }: { visible: boolean }) {
         // Top-down only: no tilting or free look.
         scene.screenSpaceCameraController.enableTilt = false;
         scene.screenSpaceCameraController.enableLook = false;
+        // A trackpad pinch arrives as a wheel event with Ctrl held: zoom the map, not the page.
+        const onPinch = (e: WheelEvent) => {
+            if (!e.ctrlKey) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const box = scene.canvas.getBoundingClientRect();
+            pinchZoom(v, e.deltaY, new Cartesian2(e.clientX - box.left, e.clientY - box.top));
+        };
+        container.addEventListener('wheel', onPinch, { passive: false, capture: true });
         setOverview(v, [37.5, -112]);
         const stopFrameClock = driveFrameClock(v);
         // A bad frame should cost one frame, not the map: log it and keep rendering.
@@ -82,6 +93,7 @@ export function MapStage({ visible }: { visible: boolean }) {
 
         // StrictMode mounts twice in dev, so always tear down the viewer.
         return () => {
+            container.removeEventListener('wheel', onPinch, { capture: true });
             stopFrameClock();
             stopErrorWatch();
             registerBase(null);

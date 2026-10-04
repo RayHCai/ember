@@ -71,14 +71,6 @@
     background: var(--fire);
 }
 
-.subhead {
-    color: var(--ink-2);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
 .actions {
     display: flex;
     gap: 8px;
@@ -91,33 +83,4 @@
 .battery .meter {
     height: 4px;
     margin-top: 8px;
-}
-
-.photo {
-    position: relative;
-    display: grid;
-    place-items: end start;
-    height: 150px;
-    padding: 10px;
-    border-radius: 8px;
-    overflow: hidden;
-    background:
-        radial-gradient(60% 50% at 70% 35%, rgba(255, 255, 255, 0.55), transparent 70%),
-        radial-gradient(80% 70% at 30% 60%, rgba(160, 150, 145, 0.75), transparent 70%),
-        linear-gradient(180deg, #d9c9bd 0%, #b49a87 55%, #5f6b4a 56%, #3e4a31 100%);
-}
-
-.photo span {
-    padding: 2px 7px;
-    border-radius: 4px;
-    background: rgba(17, 17, 16, 0.6);
-    color: #fff;
-    font-size: 11px;
-}
-
-.quote {
-    margin: 0;
-    font-family: var(--font-serif);
-    font-size: 19px;
-    line-height: 1.3;
 }

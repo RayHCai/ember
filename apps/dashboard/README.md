@@ -11,47 +11,52 @@ The only other traffic is map imagery and address search.
 
 ## Views
 
-| Route                     | View                                                                       |
-| ------------------------- | -------------------------------------------------------------------------- |
-| (signed out)              | Sign in, or create an account: name, email, password. Sessions last 7 days |
-| `#/zones`                 | Watch zone cards with totals, status tabs, search and "New watch zone"     |
-| `#/zones/new`             | Onboarding step 1: draw the boundary                                       |
-| `#/zones/:id/setup/:step` | Onboarding: `boundary` (also "Edit boundary"), `servers`, `drones`         |
-| `#/zones/:id`             | The zone: map, operator sidebar, inspector, agent, blasts                  |
+| Route              | View                                                                       |
+| ------------------ | -------------------------------------------------------------------------- |
+| (signed out)       | Sign in, or create an account: name, email, password. Sessions last 7 days |
+| `#/zones`          | Watch zone cards with status tabs and "New watch zone"                     |
+| `#/zones/new`      | Draw a zone on the bare map                                                |
+| `#/zones/:id/edit` | Redraw that zone's boundary                                                |
+| `#/zones/:id`      | The zone: map, top bar, and an inspector for whatever is clicked           |
 
-Onboarding follows the readme. A zone is complete once its boundary is drawn; edge servers and drones
-can come later, and the zone page asks for them.
+Setting up a zone takes one decision, its outline. Nothing is typed: the dashboard names zones
+`Zone 1`, `Zone 2` and so on.
 
-1. **Boundary**: find a place, click the outline, then "Auto-fit to forest" snaps it to the vegetated
-   land under it (the api's forest fit on OpenStreetMap). Saving a new boundary sends the operator
-   back to the edge servers.
-2. **Edge servers**: the api suggests sites (placements) that lift coverage past 90% for the chosen
-   connectivity radius; the operator can pinpoint more by clicking the map and drag them. A site
-   becomes an edge server when the operator assigns it a connector that has registered with
-   edge-manager. Planned sites flash; deployed ones hold still, grey while offline.
-3. **Drones**: a drone pairs by joining an edge server's network; this step lists them as
-   edge-manager reports them and shows them live on the map.
+1. **Draw**: drag on the map to trace the outline (it closes on release), or click point by point
+   and click the first point. Space held lets a drag move the map; Backspace steps back and Escape
+   starts over. A closed outline can be adjusted by its points.
+2. **Next** appears once the outline is closed. It stores the zone and has the api suggest edge
+   server sites (placements) that cover it, then opens the zone. Planned sites flash and can be
+   dragged.
+3. **Edge servers connect on their own**: while a zone with planned sites is open, an edge server
+   that edge-manager reports online and that no zone has yet is assigned to the next planned site.
+   It then holds still, grey while offline. Drones appear as they pair with it, and Scan turns on
+   once an edge server is connected.
 
 The zone page's map has two overlays and a toggle:
 
 - **Operator**: edge servers, pink connectivity radii, drones moving live (or beside their edge
-  server until drone-info hears from them), land outside the boundary washed out. Coverage under 90%
-  offers suggested placements.
+  server until drone-info hears from them), land outside the boundary washed out.
 - **Detection**: the base map turns black and white; ground any run has mapped fills in green (the
   running scan's cells brighter), the api's risk zones fill yellow (at risk) and red (on fire), each
   inside a labelled bounding box. While a scan runs, the boxes of the frames drone-info streams in are
   drawn as they land.
-- **Suggestions** (on top of Detection, once a planner job has succeeded): fire arrival gradient and
-  forecast perimeters, the civilian impact gradient around each civilian area, evacuation routes
-  (green clear, amber tight), safe zones, and attack zones with their drop sites and radii.
+- **Suggestions** (on top of Detection; turning it on runs the planners when there is no plan or
+  the plan is older than the last scan, and it turns itself on when a new plan lands while the zone
+  is open): one red-orange-yellow gradient for when the fire arrives
+  (red now, pale yellow at the horizon), each civilian area outlined in the color of its arrival
+  time, forecast perimeters, evacuation routes as thick lines (green clear, amber tight), safe
+  zones, and attack zones with their drop sites and radii.
 
-Scans start and stop through the api, which sends the tasks to edge-manager; repeat scans run on the
-api's schedule. Civilian alerts never leave without an approval record: the blast dialog ends in a
-hold-to-approve step and the api records the signed-in operator as the approver; blasts drafted
-elsewhere wait in the operator panel for that approval. Responder-only blasts are queued directly.
-
-The agent panel maps plain-language commands onto the same api actions the buttons take
-(`zone/agent.ts`) and only ever drafts civilian texts.
+There is no sidebar: the top bar holds the zone name, a redraw pencil, the overlay switch and Scan,
+and clicking an edge server, drone, risk zone or planned place opens its inspector. Blasts start from
+the inspector (a fire, a civilian area, an attack zone). The map zooms with the wheel, a trackpad
+pinch (which never zooms the page) or the +/- buttons at the bottom right. Scans start and stop
+through the api, which sends the tasks to edge-manager; repeat scans run on the api's schedule, which
+the dashboard no longer sets. Civilian alerts never leave without an approval record: the blast
+dialog ends in a hold-to-approve step and the api records the signed-in operator as the approver;
+blasts drafted elsewhere (the operator-agent service) show a "Review blast" button in the top bar
+until approved. Responder-only blasts are queued directly.
 
 ## Layout
 
@@ -63,8 +68,8 @@ src/
   model/              view of a zone built from the api's records, geometry, rasterising
   auth/               sign-in and sign-up page
   zones/              watch zone list and cards
-  setup/              onboarding wizard (boundary, edge servers, drones)
-  zone/               zone page: operator panel, inspector, agent and blast dialogs
+  setup/              the draw page for a new zone or a redrawn boundary
+  zone/               zone page: top bar, inspector and blast dialog
   chrome/             notifications menu, account menu
   map/                Cesium viewer, camera, input, overlays (layers/) and the boundary tool (tools/)
   store/              zustand stores: zones (records), sync (polling), actions, ui, router, session,
@@ -92,7 +97,7 @@ pnpm --filter @ember/dashboard app:build    # installers under src-tauri/target/
 pnpm --filter @ember/dashboard test:e2e     # Playwright against the stack; PW_CHANNEL=chrome for installed Chrome
 ```
 
-The compose stack flies three simulated drones over Lahaina (Demo Data's coverage), so draw the
+The compose stack flies two simulated drones over Lahaina (Demo Data's coverage), so draw the
 demo zone there and place its edge server near 20.884, -156.667.
 
 | Variable                    | Default                 | Meaning                              |
@@ -107,7 +112,9 @@ demo zone there and place its edge server near 20.884, -156.667.
 CesiumJS, always looked at from straight above (tilt and free look are off). Sources, best first:
 Google Photorealistic 3D Tiles, Cesium World Terrain with ion imagery, OpenStreetMap imagery.
 Keys go in `apps/dashboard/.env` (listed in `.env.example`). Attribution is always shown along the
-bottom edge.
+bottom edge. The map draws at the screen's pixel density, not Cesium's default of CSS pixels, so
+lines and badges stay crisp on high-density displays. Lines draped over the map take solid colors
+only: Cesium does not draw arrow materials on them.
 
 ## Design
 
@@ -129,13 +136,14 @@ shares its brand with the other Ember apps: the mark, the Gloock wordmark, Atkin
 - Type: Gloock for the wordmark, titles and large numbers; Atkinson Hyperlegible (400 and 700) for
   everything else; the system monospace for coordinates and IDs. Sentence case.
 - Icons: every glyph is built like the Ember mark (`assets/brand/icon.svg`): flat facets with seams
-  (`src/icons/glyphs.ts`). Map badges are drawn from the same glyphs. The app icon is the mark.
+  (`src/icons/glyphs.ts`). Map badges are drawn from the same glyphs without seams (`smooth`), so at
+  map size they read as one rounded silhouette. The app icon is the mark.
   A seam takes `--facet`, so any rule that changes a background also sets `--facet` to match.
-- Layout: a 56px top bar and a docked left sidebar on map pages; the inspector, agent, legend and
-  scan readout float over the map as white cards. No gradients, no glass.
+- Layout: a 56px top bar on the zone page and nothing docked beside the map; the inspector,
+  legend and scan readout float over the map as white cards. No gradients, no glass.
 - Motion: one language, in `src/ui/motion.ts` (`QUICK`, `SMOOTH`, `SNAP`) and the `--ease`, `--fast`
   and `--base` tokens. Pages fade and rise, panels slide from their edge, markers slide under the
   active tab or segment, every control eases on hover and presses in on click. Everything honours
   `prefers-reduced-motion`.
-- Copy: labels and plain verbs ("Run scan now", "Assign servers", "Hold to approve and send").
+- Copy: labels and plain verbs ("Scan", "Next", "Hold to approve and send").
   No explanatory paragraphs, no em dashes.

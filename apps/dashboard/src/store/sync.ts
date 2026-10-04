@@ -130,11 +130,10 @@ function announce(prev: ZoneRecords, next: ZoneRecords): void {
         const risk = fresh.filter((z) => z.risk === 'at_risk');
         if (fire.length) {
             const ha = fire.reduce((s, z) => s + z.areaM2, 0) / 10_000;
-            const at = fire[0]!.center;
             notify(
                 'critical',
                 'Fire detected',
-                `${hectares(ha)} ha burning near ${at.lat.toFixed(4)}, ${at.lng.toFixed(4)}.`,
+                `${hectares(ha)} ha burning in ${zone.name}.`,
                 zone,
             );
         }
@@ -149,13 +148,7 @@ function announce(prev: ZoneRecords, next: ZoneRecords): void {
     const job = next.planJobs[0];
     const jobBefore = job && prev.planJobs.find((j) => j.jobId === job.jobId);
     if (job && jobBefore && jobBefore.state !== job.state) {
-        if (job.state === 'succeeded')
-            notify(
-                'success',
-                'Path plans ready',
-                'Turn on Suggestions to see them on the map.',
-                zone,
-            );
+        if (job.state === 'succeeded') notify('success', 'Path plans ready', '', zone);
         else if (job.state === 'failed')
             notify('critical', 'Planner failed', job.message ?? '', zone);
     }
@@ -303,23 +296,12 @@ class ZoneSync {
 }
 
 let unassignedBusy = false;
-let unassignedLoaded = false;
 
 async function unassigned(signal: AbortSignal): Promise<void> {
     if (unassignedBusy) return;
     unassignedBusy = true;
     try {
         const list = await api.edgeServers({ unassigned: true }, signal);
-        const known = new Set(useZones.getState().unassigned.map((e) => e.edgeServerId));
-        if (unassignedLoaded)
-            for (const e of list)
-                if (!known.has(e.edgeServerId))
-                    notify(
-                        'info',
-                        'Edge server registered',
-                        `${e.edgeServerId} is ready to assign.`,
-                    );
-        unassignedLoaded = true;
         useZones.setState({ unassigned: list });
     } catch {
         // The zone's own polling reports an unreachable api.
@@ -348,20 +330,6 @@ export function useZoneSync(zoneId: string | null, opts: { unassigned?: boolean 
 /** Fetches these resources of an open zone now, after an action changed them. */
 export async function refresh(zoneId: string, ...resources: Resource[]): Promise<void> {
     await syncs.get(zoneId)?.fetch(resources);
-}
-
-/** Registered edge servers waiting for a zone, polled while `active`. */
-export function useUnassignedSync(active: boolean): void {
-    useEffect(() => {
-        if (!active) return;
-        const controller = new AbortController();
-        void unassigned(controller.signal);
-        const timer = window.setInterval(() => void unassigned(controller.signal), TICK_MS * 1.5);
-        return () => {
-            controller.abort();
-            window.clearInterval(timer);
-        };
-    }, [active]);
 }
 
 function announceList(prev: WatchZoneSummary[], next: WatchZoneSummary[]): void {

@@ -6,7 +6,6 @@ import {
     HorizontalOrigin,
     LabelStyle,
     NearFarScalar,
-    PolylineArrowMaterialProperty,
     PolylineDashMaterialProperty,
     VerticalOrigin,
     type CustomDataSource,
@@ -17,7 +16,7 @@ import { circle, distanceM, distinct, spaced } from '../../model/geo';
 import type { LatLon } from '../../model/types';
 import { ll } from '../../model/zone';
 import { minutes } from '../../ui/format';
-import { GridOverlay, type CellColor, type OverlayGrid } from '../gridOverlay';
+import { GridOverlay, type CellColor } from '../gridOverlay';
 import { ALWAYS_ON_TOP, C, ICONS, LABEL_FONT, toCartesian } from '../style';
 import { useDataSource } from '../useDataSource';
 import { useMap } from '../viewer';
@@ -28,15 +27,15 @@ function lerp(a: readonly number[], b: readonly number[], t: number): number[] {
     return a.map((v, i) => Math.round(v + (b[i]! - v) * t));
 }
 
-/** Soonest is deep red; the far edge of the forecast fades to pale yellow. */
-const HEAT = [
+/** Soonest is deep red; the far edge of the forecast fades to pale yellow. The legend matches. */
+export const HEAT = [
     [196, 18, 24],
     [238, 78, 22],
     [248, 160, 30],
     [255, 222, 120],
 ] as const;
 
-function heat(t: number): number[] {
+export function heat(t: number): number[] {
     const s = Math.min(0.999, Math.max(0, t)) * (HEAT.length - 1);
     const i = Math.floor(s);
     return lerp(HEAT[i]!, HEAT[i + 1]!, s - i);
@@ -64,41 +63,6 @@ const ground = {
     clampToGround: true,
     classificationType: ClassificationType.BOTH,
 } as const;
-
-function boxAround(
-    points: LatLon[],
-    cellM: number,
-    padM: number,
-): OverlayGrid & { dlat: number; dlon: number } {
-    const lats = points.map((p) => p[0]);
-    const lons = points.map((p) => p[1]);
-    const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-    const kLon = M_PER_DEG * Math.cos((midLat * Math.PI) / 180);
-    const dlat = cellM / M_PER_DEG;
-    const dlon = cellM / kLon;
-    const south = Math.min(...lats) - padM / M_PER_DEG;
-    const west = Math.min(...lons) - padM / kLon;
-    const rows = Math.ceil((Math.max(...lats) - south + padM / M_PER_DEG) / dlat) + 1;
-    const cols = Math.ceil((Math.max(...lons) - west + padM / kLon) / dlon) + 1;
-    return {
-        south,
-        west,
-        north: south + rows * dlat,
-        east: west + cols * dlon,
-        rows,
-        cols,
-        dlat,
-        dlon,
-    };
-}
-
-/** How far the civilian gradient reaches around an area. */
-function reachM(area: CivilianArea): number {
-    const own = area.polygon
-        ? Math.max(...area.polygon.map((p) => distanceM(ll(area.center), ll(p))))
-        : 0;
-    return Math.max(own, Math.min(2500, Math.max(400, Math.sqrt(area.population) * 12)));
-}
 
 const ring = (points: LatLon[]) => {
     const path = distinct(points);
@@ -157,10 +121,18 @@ function addSpread(ds: CustomDataSource, plan: PlannerResult) {
                 positions: path.map((p) => toCartesian(p)),
                 width: 3,
                 ...ground,
-                material: new PolylineArrowMaterialProperty(C.fire),
+                zIndex: 2,
+                material: C.fire.withAlpha(0.85),
             },
         });
     }
+}
+
+/** A civilian area takes the fire gradient's color for when the fire reaches it. */
+function arrivalColor(impactMin: number | null, horizonMin: number): Color {
+    if (impactMin === null) return C.ink;
+    const [r, g, b] = heat(Math.max(0, impactMin) / horizonMin);
+    return Color.fromBytes(r, g, b);
 }
 
 function addCivilians(ds: CustomDataSource, plan: PlannerResult, areas: Map<string, CivilianArea>) {
@@ -168,15 +140,16 @@ function addCivilians(ds: CustomDataSource, plan: PlannerResult, areas: Map<stri
         const area = areas.get(impact.civilianAreaId);
         if (!area) continue;
         const hit = impact.impactMin !== null;
+        const tone = arrivalColor(impact.impactMin, plan.horizonMin);
         const outline = area.polygon ? ring(area.polygon.map(ll)) : null;
         if (outline) {
             ds.entities.add({
                 id: `community-outline:${area.id}`,
                 polyline: {
                     positions: outline,
-                    width: 1.5,
+                    width: hit ? 2.5 : 1.5,
                     ...ground,
-                    material: (hit ? C.civilian : C.ink).withAlpha(0.6),
+                    material: tone.withAlpha(hit ? 0.9 : 0.6),
                 },
             });
         }
@@ -196,7 +169,7 @@ function addCivilians(ds: CustomDataSource, plan: PlannerResult, areas: Map<stri
                     : impact.impactMin <= 0
                       ? `${area.name} · burning`
                       : `${area.name} · fire in ${minutes(impact.impactMin)}`,
-                hit ? C.civilian : C.ink,
+                hit ? C.fire : C.ink,
             ),
         });
     }
@@ -216,16 +189,18 @@ function addCivilians(ds: CustomDataSource, plan: PlannerResult, areas: Map<stri
         const color = route.status === 'tight' ? C.risk : C.route;
         ds.entities.add({
             id: `route-halo:${route.civilianAreaId}`,
-            polyline: { positions, width: 13, ...ground, material: C.white.withAlpha(0.9) },
-        });
-        ds.entities.add({
-            id: `route:${route.civilianAreaId}`,
             polyline: {
                 positions,
-                width: 9,
+                width: 20,
                 ...ground,
-                material: new PolylineArrowMaterialProperty(color),
+                zIndex: 1,
+                material: C.white.withAlpha(0.95),
             },
+        });
+        // Solid, not an arrow material: arrows do not draw on lines draped over the map.
+        ds.entities.add({
+            id: `route:${route.civilianAreaId}`,
+            polyline: { positions, width: 12, ...ground, zIndex: 2, material: color },
         });
         const mid = path[Math.floor(path.length / 2)]!;
         ds.entities.add({
@@ -348,7 +323,7 @@ interface Props {
 
 /**
  * The planner's answer over the detection map: when fire reaches each cell and its isochrones (the
- * hurricane-style forecast), which civilian areas it reaches first as a gradient, their way out, and
+ * hurricane-style forecast), civilian areas colored by when it reaches them, their way out, and
  * where responders should work it.
  */
 export function SuggestionsLayer({ plan, surroundings, visible }: Props) {
@@ -388,40 +363,6 @@ export function SuggestionsLayer({ plan, surroundings, visible }: Props) {
         });
         return () => overlay.destroy();
     }, [viewer, plan, visible]);
-
-    useEffect(() => {
-        if (!viewer || !plan || !visible) return;
-        const hit = plan.civilianImpacts
-            .filter((c) => c.gradient > 0)
-            .map((c) => ({ impact: c, area: areas.get(c.civilianAreaId) }))
-            .filter((x): x is { impact: typeof x.impact; area: CivilianArea } => Boolean(x.area));
-        if (hit.length === 0) return;
-        const reaches = hit.map((x) => reachM(x.area));
-        const g = boxAround(
-            hit.map((x) => ll(x.area.center)),
-            60,
-            Math.max(...reaches),
-        );
-        const overlay = new GridOverlay(viewer, g, 3, true);
-        const low = [247, 174, 248];
-        const high = [181, 23, 158];
-        overlay.paint((i): CellColor => {
-            const at: LatLon = [
-                g.south + (Math.floor(i / g.cols) + 0.5) * g.dlat,
-                g.west + ((i % g.cols) + 0.5) * g.dlon,
-            ];
-            let best = 0;
-            hit.forEach(({ impact, area }, k) => {
-                const d = distanceM(at, ll(area.center));
-                const R = reaches[k]!;
-                if (d < R) best = Math.max(best, impact.gradient * (1 - d / R) ** 1.4);
-            });
-            if (best < 0.02) return null;
-            const [r, gg, b] = lerp(low, high, Math.min(1, best * 1.1));
-            return [r!, gg!, b!, Math.round(40 + 175 * Math.min(1, best * 1.2))];
-        });
-        return () => overlay.destroy();
-    }, [viewer, plan, areas, visible]);
 
     useEffect(() => {
         if (!ds) return;

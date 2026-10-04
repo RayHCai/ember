@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Icon } from '../icons/Icon';
 import type { GlyphName } from '../icons/glyphs';
 import { getTelemetry, isAirborne, MODE_LABEL } from '../live/telemetry';
@@ -7,14 +7,12 @@ import { flyToPoint } from '../map/camera';
 import { useMap } from '../map/viewer';
 import type { ZoneView } from '../model/types';
 import { hectares, ll } from '../model/zone';
-import { assignPlacement, releaseServer, removePlacement, stopScan } from '../store/actions';
+import { releaseServer, removePlacement, stopScan } from '../store/actions';
 import { useUi, type Picked } from '../store/ui';
-import { useZones } from '../store/zones';
 import { Button, IconButton } from '../ui/Button';
 import { ago, minutes } from '../ui/format';
 import { QUICK, SMOOTH, SNAP } from '../ui/motion';
 import panel from '../ui/panel.module.css';
-import ui from '../ui/ui.module.css';
 import { useNow } from '../ui/useNow';
 import styles from './Inspector.module.css';
 
@@ -40,7 +38,7 @@ function Shell({
     icon: GlyphName;
     tone?: 'ink' | 'pink' | 'fire';
     title: string;
-    subtitle: string;
+    subtitle?: string;
     tag?: ReactNode;
     children: ReactNode;
 }) {
@@ -60,7 +58,7 @@ function Shell({
                 </span>
                 <div className={styles.headText}>
                     <strong>{title}</strong>
-                    <span>{subtitle}</span>
+                    {subtitle ? <span>{subtitle}</span> : null}
                 </div>
                 {tag}
                 <IconButton
@@ -78,76 +76,29 @@ function Shell({
 const km = (m: number) => (m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`);
 
 function PendingSite({ zone, id }: { zone: ZoneView; id: string }) {
-    const site = zone.servers.find((s) => s.id === id);
-    const unassigned = useZones((s) => s.unassigned);
     const select = useUi((s) => s.select);
-    const [choice, setChoice] = useState('');
-    const [busy, setBusy] = useState(false);
-    if (!site) return null;
     return (
         <Shell
             icon="server"
             tone="pink"
-            title={`Site ${site.name}`}
-            subtitle={`${site.lat.toFixed(4)}, ${site.lon.toFixed(4)}`}
+            title="Planned edge server"
             tag={
                 <span className={panel.tag} data-tone="pink">
-                    Planned
+                    Waiting
                 </span>
             }
         >
-            <dl className={panel.kv}>
-                <div>
-                    <dt>Radius</dt>
-                    <dd>{km(site.radiusM)}</dd>
-                </div>
-                <div>
-                    <dt>Waiting servers</dt>
-                    <dd>{unassigned.length}</dd>
-                </div>
-            </dl>
             <div className={styles.actions}>
-                <select
-                    className={ui.input}
-                    aria-label="Edge server for this site"
-                    value={choice}
-                    onChange={(e) => setChoice(e.target.value)}
-                    disabled={unassigned.length === 0}
-                >
-                    <option value="">
-                        {unassigned.length ? 'Choose an edge server' : 'No edge servers waiting'}
-                    </option>
-                    {unassigned.map((e) => (
-                        <option key={e.edgeServerId} value={e.edgeServerId}>
-                            {e.edgeServerId}
-                            {e.live?.online ? '' : ' (offline)'}
-                        </option>
-                    ))}
-                </select>
-                <Button
-                    variant="primary"
-                    block
-                    loading={busy}
-                    disabled={!choice}
-                    onClick={async () => {
-                        setBusy(true);
-                        const ok = await assignPlacement(zone.id, site.id, choice);
-                        setBusy(false);
-                        select(ok ? { kind: 'server', id: choice } : null);
-                    }}
-                >
-                    Deploy here
-                </Button>
                 <Button
                     size="sm"
                     variant="ghost"
                     icon="trash"
                     onClick={() => {
-                        void removePlacement(zone.id, site.id);
+                        void removePlacement(zone.id, id);
                         select(null);
                     }}
                 >
-                    Remove site
+                    Remove
                 </Button>
             </div>
         </Shell>
@@ -169,7 +120,6 @@ function ServerInfo({ zone, id }: { zone: ZoneView; id: string }) {
             icon="server"
             tone="ink"
             title={`Edge server ${server.name}`}
-            subtitle={`${server.lat.toFixed(4)}, ${server.lon.toFixed(4)}`}
             tag={
                 <span className={panel.tag} data-tone={server.online ? 'ok' : undefined}>
                     {server.online ? 'Online' : server.online === false ? 'Offline' : 'Unknown'}
@@ -188,28 +138,7 @@ function ServerInfo({ zone, id }: { zone: ZoneView; id: string }) {
                     <dt>Last update</dt>
                     <dd>{seenS === null ? '—' : seenS < 2 ? 'just now' : `${seenS}s ago`}</dd>
                 </div>
-                <div>
-                    <dt>Radius</dt>
-                    <dd>{km(server.radiusM)}</dd>
-                </div>
-                <div>
-                    <dt>Run</dt>
-                    <dd>{live?.run ? live.run.state : 'idle'}</dd>
-                </div>
-                <div>
-                    <dt>Connected since</dt>
-                    <dd>{live ? ago(Date.parse(live.connectedAt), now) : '—'}</dd>
-                </div>
-                <div>
-                    <dt>Address</dt>
-                    <dd className="mono">{server.edge?.url.replace(/^https?:\/\//, '')}</dd>
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                    <dt>Edge server ID</dt>
-                    <dd className="mono">{server.id}</dd>
-                </div>
             </dl>
-            <div className={styles.subhead}>Paired drones · {drones.length}</div>
             <ul className={panel.list}>
                 {drones.map((d) => {
                     const t = getTelemetry(d.id);
@@ -254,7 +183,7 @@ function ServerInfo({ zone, id }: { zone: ZoneView; id: string }) {
 }
 
 function DroneInfo({ zone, id }: { zone: ZoneView; id: string }) {
-    const now = useNow(250);
+    useNow(250);
     const viewer = useMap((s) => s.viewer);
     const select = useUi((s) => s.select);
     const drone = zone.drones.find((d) => d.id === id);
@@ -268,7 +197,6 @@ function DroneInfo({ zone, id }: { zone: ZoneView; id: string }) {
             icon="drone"
             tone={flying ? 'fire' : undefined}
             title={drone.name}
-            subtitle={drone.kind === 'simulated' ? 'Simulated drone' : 'Drone'}
             tag={
                 <span className={panel.tag} data-tone={flying ? 'fire' : t ? 'ok' : undefined}>
                     {t ? MODE_LABEL[t.mode] : 'No position'}
@@ -296,31 +224,9 @@ function DroneInfo({ zone, id }: { zone: ZoneView; id: string }) {
                             <dt>Speed</dt>
                             <dd>{t.speedMs.toFixed(1)} m/s</dd>
                         </div>
-                        <div>
-                            <dt>Heading</dt>
-                            <dd>{Math.round(t.headingDeg)}°</dd>
-                        </div>
-                        <div>
-                            <dt>Last seen</dt>
-                            <dd>{Math.max(0, Math.round((now - t.lastSeenAt) / 1000))}s ago</dd>
-                        </div>
-                        <div style={{ gridColumn: 'span 2' }}>
-                            <dt>Last reported position</dt>
-                            <dd>
-                                {t.lat.toFixed(5)}, {t.lon.toFixed(5)}
-                            </dd>
-                        </div>
                     </dl>
                 </>
-            ) : (
-                <p className={panel.muted}>drone-info has no report from this drone yet.</p>
-            )}
-            <dl className={panel.kv}>
-                <div style={{ gridColumn: 'span 2' }}>
-                    <dt>Device ID</dt>
-                    <dd className="mono">{drone.id}</dd>
-                </div>
-            </dl>
+            ) : null}
             {server ? (
                 <button
                     type="button"
@@ -332,7 +238,6 @@ function DroneInfo({ zone, id }: { zone: ZoneView; id: string }) {
                     </span>
                     <span className={panel.itemText}>
                         <strong>Edge server {server.name}</strong>
-                        <span>Paired {ago(drone.registeredAt, now)}</span>
                     </span>
                     <Icon name="chevronRight" size={12} />
                 </button>
@@ -367,13 +272,11 @@ function RiskInfo({ zone, id }: { zone: ZoneView; id: string }) {
     const z = zone.riskZones.find((x) => x.id === id);
     if (!z) return null;
     const fire = z.risk === 'on_fire';
-    const names = z.droneIds.map((d) => zone.drones.find((x) => x.id === d)?.name ?? d);
     return (
         <Shell
             icon={fire ? 'alert' : 'tree'}
             tone="fire"
             title={fire ? 'Active fire' : 'At-risk vegetation'}
-            subtitle={`${z.center.lat.toFixed(4)}, ${z.center.lng.toFixed(4)}`}
             tag={
                 <span className={panel.tag} data-tone={fire ? 'fire' : 'risk'}>
                     {Math.round(z.confidence * 100)}% sure
@@ -386,20 +289,8 @@ function RiskInfo({ zone, id }: { zone: ZoneView; id: string }) {
                     <dd>{hectares(z.areaM2 / 10_000)} ha</dd>
                 </div>
                 <div>
-                    <dt>Detections</dt>
-                    <dd>{z.detections}</dd>
-                </div>
-                <div>
                     <dt>First seen</dt>
                     <dd>{ago(Date.parse(z.firstSeenAt))}</dd>
-                </div>
-                <div>
-                    <dt>Last seen</dt>
-                    <dd>{ago(Date.parse(z.observedAt))}</dd>
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                    <dt>Seen by</dt>
-                    <dd>{names.join(', ')}</dd>
                 </div>
             </dl>
             {fire ? (
@@ -528,11 +419,7 @@ function AttackZoneInfo({ zone, id }: { zone: ZoneView; id: string }) {
     const a = zone.plan?.attackZones.find((x) => x.id === id);
     if (!a) return null;
     return (
-        <Shell
-            icon="target"
-            title={`Attack zone #${a.rank}`}
-            subtitle={`${a.tactic} attack · score ${Math.round(a.score * 100)}`}
-        >
+        <Shell icon="target" title={`Attack zone #${a.rank}`} subtitle={`${a.tactic} attack`}>
             <dl className={panel.kv}>
                 <div>
                     <dt>Working radius</dt>
@@ -551,22 +438,12 @@ function AttackZoneInfo({ zone, id }: { zone: ZoneView; id: string }) {
                     </dd>
                 </div>
                 <div>
-                    <dt>Spread rate</dt>
-                    <dd>{a.spreadRateMpm.toFixed(1)} m/min</dd>
-                </div>
-                <div>
                     <dt>Protects</dt>
                     <dd>{a.protectedPopulation.toLocaleString()} people</dd>
                 </div>
                 <div>
                     <dt>Land protected</dt>
                     <dd>{hectares(a.protectedAreaHa)} ha</dd>
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                    <dt>Drop site</dt>
-                    <dd>
-                        {a.dropSite.lat.toFixed(5)}, {a.dropSite.lng.toFixed(5)}
-                    </dd>
                 </div>
             </dl>
             <Button
@@ -609,20 +486,14 @@ function PlaceInfo({ zone, id, kind }: { zone: ZoneView; id: string; kind: 'safe
             title={place.name}
             subtitle={kind === 'safe' ? 'Safe zone' : 'Responder station'}
         >
-            <dl className={panel.kv}>
-                {kind === 'safe' ? (
-                    <div>
+            {kind === 'safe' && capacity !== null ? (
+                <dl className={panel.kv}>
+                    <div style={{ gridColumn: 'span 2' }}>
                         <dt>Capacity</dt>
-                        <dd>{capacity ?? 'Unknown'}</dd>
+                        <dd>{capacity}</dd>
                     </div>
-                ) : null}
-                <div style={{ gridColumn: kind === 'safe' ? undefined : 'span 2' }}>
-                    <dt>Position</dt>
-                    <dd>
-                        {place.location.lat.toFixed(4)}, {place.location.lng.toFixed(4)}
-                    </dd>
-                </div>
-            </dl>
+                </dl>
+            ) : null}
             {kind === 'safe' ? (
                 <p className={panel.muted}>
                     {areas.length

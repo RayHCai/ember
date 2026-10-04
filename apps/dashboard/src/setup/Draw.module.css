@@ -1,0 +1,91 @@
+.page {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+}
+
+.top {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    pointer-events: auto;
+}
+
+/* Clear the native window controls. */
+html[data-shell='desktop'] .top {
+    top: 44px;
+}
+
+.card {
+    --facet: var(--paper);
+    display: inline-flex;
+    padding: 3px;
+    border-radius: 8px;
+    background: var(--paper);
+    box-shadow: var(--shadow-md);
+}
+
+.search {
+    --facet: var(--paper);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 260px;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: var(--paper);
+    box-shadow: var(--shadow-md);
+    color: var(--ink-3);
+    transition: border-color var(--fast) var(--ease);
+}
+
+.search:focus-within {
+    border-color: var(--ink);
+}
+
+.search[data-invalid='true'] {
+    border-color: var(--fire);
+}
+
+.search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-size: 13.5px;
+}
+
+.search input::placeholder {
+    color: var(--ink-3);
+}
+
+.corner {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+    pointer-events: auto;
+}
+
+.bottom {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.bottom button {
+    box-shadow: var(--shadow-md);
+}
+
+.card button {
+    box-shadow: none;
+}

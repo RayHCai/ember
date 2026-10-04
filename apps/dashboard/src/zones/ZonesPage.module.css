@@ -49,49 +49,6 @@ html[data-shell='desktop'] .top {
     line-height: 1.05;
 }
 
-.stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    margin: 0;
-    border-bottom: 1px solid var(--line);
-}
-
-.stats > div {
-    padding: 16px 20px;
-}
-
-.stats > div:first-child {
-    padding-left: 0;
-}
-
-.stats > div + div {
-    border-left: 1px solid var(--line);
-}
-
-.stats dt {
-    color: var(--ink-3);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.stats dd {
-    margin: 4px 0 0;
-    font-family: var(--font-serif);
-    font-size: 34px;
-    line-height: 1.1;
-    transition: color var(--base) var(--ease);
-}
-
-.stats [data-tone='fire'] dd {
-    color: var(--fire);
-}
-
-.stats [data-tone='risk'] dd {
-    color: var(--risk-ink);
-}
-
 .controls {
     display: flex;
     flex-wrap: wrap;
@@ -100,74 +57,6 @@ html[data-shell='desktop'] .top {
     justify-content: space-between;
     margin: 20px 0 24px;
     border-bottom: 1px solid var(--line);
-}
-
-.search {
-    --facet: var(--wash);
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    width: 240px;
-    height: 28px;
-    margin-bottom: 10px;
-    padding: 0 7px 0 9px;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    background: var(--wash);
-    color: var(--ink-3);
-    transition:
-        background-color var(--fast) var(--ease),
-        border-color var(--fast) var(--ease),
-        width var(--base) var(--ease);
-}
-
-.search:hover {
-    --facet: var(--hover);
-    background: var(--hover);
-}
-
-.search:focus-within {
-    --facet: var(--paper);
-    width: 300px;
-    border-color: var(--ink);
-    background: var(--paper);
-    color: var(--ink);
-}
-
-.search input {
-    flex: 1;
-    min-width: 0;
-    border: 0;
-    background: transparent;
-    color: var(--ink);
-    font-size: 13px;
-}
-
-.search input::placeholder {
-    color: var(--ink-3);
-}
-
-.search button {
-    --facet: var(--line-strong);
-    display: grid;
-    flex-shrink: 0;
-    place-items: center;
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    border: 0;
-    border-radius: 999px;
-    background: var(--line-strong);
-    color: var(--ink);
-    transition:
-        background-color var(--fast) var(--ease),
-        color var(--fast) var(--ease);
-}
-
-.search button:hover {
-    --facet: var(--ink);
-    background: var(--ink);
-    color: #fff;
 }
 
 .grid {
@@ -222,7 +111,7 @@ html[data-shell='desktop'] .top {
 }
 
 .cardBody {
-    padding: 14px 16px 0;
+    padding: 14px 16px;
 }
 
 .cardStatus {
@@ -269,38 +158,6 @@ html[data-shell='desktop'] .top {
     transform: none;
 }
 
-.cardRegion {
-    margin-top: 2px;
-    color: var(--ink-3);
-    font-size: 12.5px;
-}
-
-.metrics {
-    display: grid;
-    grid-template-columns: repeat(4, auto);
-    justify-content: space-between;
-    margin: 14px 0 0;
-    padding: 12px 0;
-    border-top: 1px solid var(--line);
-}
-
-.metrics dt {
-    color: var(--ink-3);
-    font-size: 11px;
-}
-
-.metrics dd {
-    margin: 1px 0 0;
-    font-size: 14px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-.metrics dd[data-low='true'] {
-    color: var(--risk-ink);
-}
-
 .cardFoot {
     display: flex;
     gap: 8px;
@@ -322,34 +179,6 @@ html[data-shell='desktop'] .top {
     color: var(--risk-ink);
 }
 
-.setupCta {
-    display: inline-flex;
-    gap: 6px;
-    align-items: center;
-    margin-left: -8px;
-    padding: 5px 8px;
-    border: 0;
-    border-radius: 5px;
-    background: transparent;
-    color: var(--ink);
-    font-size: 12.5px;
-    font-weight: 700;
-    transition: background-color var(--fast) var(--ease);
-}
-
-.setupCta svg {
-    transition: transform var(--base) var(--ease);
-}
-
-.setupCta:hover {
-    --facet: var(--hover);
-    background: var(--hover);
-}
-
-.setupCta:hover svg {
-    transform: translateX(3px);
-}
-
 .emptyState {
     display: grid;
     gap: 12px;
@@ -362,19 +191,4 @@ html[data-shell='desktop'] .top {
     font-family: var(--font-serif);
     font-size: 22px;
     font-weight: 400;
-}
-
-@media (max-width: 760px) {
-    .stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .stats > div:nth-child(3) {
-        padding-left: 0;
-        border-left: 0;
-    }
-
-    .stats > div:nth-child(n + 3) {
-        border-top: 1px solid var(--line);
-    }
 }

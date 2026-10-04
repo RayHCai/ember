@@ -13,7 +13,7 @@ function describe(zone: ZoneView, hover: Hover): { title: string; detail: string
             const s = zone.servers.find((x) => x.id === hover.id);
             if (!s) return null;
             if (s.status === 'pending')
-                return { title: `Site ${s.name}`, detail: 'Planned · no server yet' };
+                return { title: 'Planned edge server', detail: 'Waiting to connect' };
             const live = s.edge?.live;
             return {
                 title: `Edge server ${s.name}`,

@@ -205,3 +205,34 @@ export function spaced(anchors: LatLon[], minM: number): boolean[] {
         return true;
     });
 }
+
+/** Drops points of an open path that sit within `toleranceM` of the line through their neighbours. */
+export function simplify(path: LatLon[], toleranceM: number): LatLon[] {
+    if (path.length < 3) return path;
+    const to = projector(path[0]!);
+    const xy = path.map((p) => to(p));
+    const keep = path.map(() => false);
+    keep[0] = keep[path.length - 1] = true;
+    const stack: [number, number][] = [[0, path.length - 1]];
+    while (stack.length) {
+        const [a, b] = stack.pop()!;
+        const [ax, ay] = xy[a]!;
+        const [bx, by] = xy[b]!;
+        const len = Math.hypot(bx - ax, by - ay) || 1;
+        let worst = 0;
+        let at = -1;
+        for (let i = a + 1; i < b; i++) {
+            const [x, y] = xy[i]!;
+            const d = Math.abs((bx - ax) * (ay - y) - (ax - x) * (by - ay)) / len;
+            if (d > worst) {
+                worst = d;
+                at = i;
+            }
+        }
+        if (at !== -1 && worst > toleranceM) {
+            keep[at] = true;
+            stack.push([a, at], [at, b]);
+        }
+    }
+    return path.filter((_, i) => keep[i]);
+}

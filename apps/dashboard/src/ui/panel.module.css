@@ -9,30 +9,6 @@
     pointer-events: auto;
 }
 
-.section {
-    padding: 16px 18px;
-}
-
-.section + .section {
-    border-top: 1px solid var(--line);
-}
-
-.sectionHead {
-    display: flex;
-    gap: 8px;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.sectionTitle {
-    color: var(--ink-2);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
 .muted {
     color: var(--ink-3);
     font-size: 12.5px;
@@ -51,53 +27,6 @@
 .stack {
     display: grid;
     gap: 12px;
-}
-
-.big {
-    font-family: var(--font-serif);
-    font-size: 34px;
-    line-height: 1;
-}
-
-.bar {
-    position: relative;
-    height: 4px;
-    border-radius: 999px;
-    background: var(--line);
-}
-
-.barFill {
-    position: absolute;
-    inset: 0 auto 0 0;
-    border-radius: inherit;
-    background: var(--ink);
-}
-
-.barFill[data-tone='ok'] {
-    background: var(--ok);
-}
-
-.barFill[data-tone='fire'] {
-    background: var(--fire);
-}
-
-.barMark {
-    position: absolute;
-    top: -3px;
-    bottom: -3px;
-    width: 1.5px;
-    background: var(--ink);
-}
-
-.barMark::after {
-    content: attr(data-label);
-    position: absolute;
-    top: calc(100% + 3px);
-    left: 50%;
-    color: var(--ink-3);
-    font-size: 10.5px;
-    white-space: nowrap;
-    transform: translateX(-50%);
 }
 
 /* Rows bleed 8px past the section padding so their hover fill lines up with the text. */
@@ -230,26 +159,6 @@ button.item:active {
     --facet: var(--risk-soft);
     background: var(--risk-soft);
     color: var(--risk-ink);
-}
-
-.callout {
-    --facet: var(--wash);
-    display: flex;
-    gap: 10px;
-    padding: 12px;
-    border-radius: 8px;
-    background: var(--wash);
-    font-size: 12.5px;
-}
-
-.callout strong {
-    display: block;
-    font-size: 13px;
-}
-
-.callout[data-tone='pink'] {
-    --facet: var(--radius-pink-soft);
-    background: var(--radius-pink-soft);
 }
 
 .kv {

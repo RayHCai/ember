@@ -13,7 +13,6 @@ export const HEX = {
     fire: '#E5321F',
     route: '#12A37A',
     responder: '#0E8FD8',
-    civilian: '#B5179E',
     forest: '#2E9E5B',
     muted: '#8A877F',
 } as const;
@@ -35,6 +34,10 @@ function url(svg: string): string {
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+// Map badges are drawn 24-34 px wide; rasterising them near that size in device pixels keeps
+// their edges from aliasing when the texture is scaled down.
+const ICON_PX = Math.round(32 * Math.min(3, Math.max(1, window.devicePixelRatio || 1)));
+
 function badge(
     name: GlyphName,
     fill: string,
@@ -44,10 +47,11 @@ function badge(
 ): string {
     return url(
         glyphSvg(name, {
-            size: 64,
+            size: ICON_PX,
             fill: glyph,
             seam: fill,
-            seamWidth: 1.1,
+            seamWidth: 1.4,
+            smooth: true,
             badge: { shape, fill, stroke },
         }),
     );

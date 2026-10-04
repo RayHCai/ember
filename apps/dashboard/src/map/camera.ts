@@ -1,5 +1,13 @@
-import { Cartesian3, EasingFunction, Math as CesiumMath, Rectangle, type Viewer } from 'cesium';
+import {
+    Cartesian3,
+    EasingFunction,
+    Math as CesiumMath,
+    Rectangle,
+    type Cartesian2,
+    type Viewer,
+} from 'cesium';
 import type { LatLon } from '../model/types';
+import { pickPoint } from './pick';
 
 // The map is always looked at from straight above.
 
@@ -84,6 +92,44 @@ export function flyToPoint(
             complete: () => resolve(),
             cancel: () => resolve(),
         });
+    });
+}
+
+const MIN_HEIGHT_M = 150;
+const MAX_HEIGHT_M = 20_000_000;
+
+/** Moves the camera straight down (factor < 1) or up, keeping the point under the centre. */
+export function zoomBy(viewer: Viewer, factor: number): void {
+    const at = viewer.camera.positionCartographic;
+    const height = Math.min(MAX_HEIGHT_M, Math.max(MIN_HEIGHT_M, at.height * factor));
+    viewer.camera.flyTo({
+        destination: Cartesian3.fromRadians(at.longitude, at.latitude, height),
+        orientation: TOP_DOWN,
+        duration: prefersReducedMotion() ? 0 : 0.35,
+        easingFunction: EasingFunction.QUADRATIC_OUT,
+    });
+}
+
+/**
+ * One step of a trackpad pinch (`deltaY` of a Ctrl+wheel event), keeping the ground under the
+ * pointer where it is. Pinching apart a little zooms in a little.
+ */
+export function pinchZoom(viewer: Viewer, deltaY: number, pointer: Cartesian2): void {
+    const camera = viewer.camera;
+    const at = camera.positionCartographic;
+    const step = Math.exp(Math.max(-50, Math.min(50, deltaY)) * 0.008);
+    const height = Math.min(MAX_HEIGHT_M, Math.max(MIN_HEIGHT_M, at.height * step));
+    const k = height / at.height;
+    const under = pickPoint(viewer, pointer);
+    const lon = CesiumMath.toDegrees(at.longitude);
+    const lat = CesiumMath.toDegrees(at.latitude);
+    const [toLon, toLat] = under
+        ? [under.lon + (lon - under.lon) * k, under.lat + (lat - under.lat) * k]
+        : [lon, lat];
+    camera.cancelFlight();
+    camera.setView({
+        destination: Cartesian3.fromDegrees(toLon, Math.max(-85, Math.min(85, toLat)), height),
+        orientation: TOP_DOWN,
     });
 }
 

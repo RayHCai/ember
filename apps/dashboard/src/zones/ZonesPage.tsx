@@ -2,15 +2,13 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { AccountMenu } from '../chrome/AccountMenu';
 import { NotificationsMenu } from '../chrome/NotificationsMenu';
-import { Icon } from '../icons/Icon';
 import { Wordmark } from '../icons/Logo';
 import type { ZoneStatus } from '../model/types';
-import { areaKm2, summaryStatus } from '../model/zone';
+import { summaryStatus } from '../model/zone';
 import { navigate } from '../store/router';
 import { useZoneList } from '../store/sync';
 import { useZones } from '../store/zones';
 import { Button } from '../ui/Button';
-import { CountUp } from '../ui/CountUp';
 import { QUICK, SMOOTH, SNAP } from '../ui/motion';
 import { Segmented } from '../ui/Segmented';
 import { ZoneCard } from './ZoneCard';
@@ -23,7 +21,7 @@ const FILTERS: { value: Filter; label: string }[] = [
     { value: 'on_fire', label: 'Active fire' },
     { value: 'at_risk', label: 'At risk' },
     { value: 'healthy', label: 'Healthy' },
-    { value: 'setup', label: 'Setup' },
+    { value: 'setup', label: 'Waiting' },
 ];
 
 const RANK: Record<ZoneStatus, number> = {
@@ -38,7 +36,6 @@ export function ZonesPage() {
     useZoneList();
     const summaries = useZones((s) => s.summaries);
     const listError = useZones((s) => s.listError);
-    const [query, setQuery] = useState('');
     const [filter, setFilter] = useState<Filter>('all');
 
     const all = useMemo(() => summaries ?? [], [summaries]);
@@ -54,29 +51,18 @@ export function ZonesPage() {
         for (const z of all) c[summaryStatus(z)] += 1;
         return c;
     }, [all]);
-    const shown = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        return all
-            .filter(
-                (z) =>
-                    filter === 'all' ||
-                    summaryStatus(z) === filter ||
-                    (filter === 'healthy' && summaryStatus(z) === 'awaiting'),
-            )
-            .filter(
-                (z) =>
-                    !q ||
-                    z.name.toLowerCase().includes(q) ||
-                    (z.region ?? '').toLowerCase().includes(q),
-            )
-            .sort((a, b) => RANK[summaryStatus(a)] - RANK[summaryStatus(b)]);
-    }, [all, filter, query]);
-
-    const drones = all.reduce((s, z) => s + z.summary.drones, 0);
-    const scanning = all.filter((z) =>
-        ['starting', 'mapping', 'stopping'].includes(z.summary.lastScan?.state ?? ''),
-    ).length;
-    const watchedKm2 = all.reduce((s, z) => s + areaKm2(z.boundary), 0);
+    const shown = useMemo(
+        () =>
+            all
+                .filter(
+                    (z) =>
+                        filter === 'all' ||
+                        summaryStatus(z) === filter ||
+                        (filter === 'healthy' && summaryStatus(z) === 'awaiting'),
+                )
+                .sort((a, b) => RANK[summaryStatus(a)] - RANK[summaryStatus(b)]),
+        [all, filter],
+    );
 
     return (
         <div className={styles.page}>
@@ -96,37 +82,6 @@ export function ZonesPage() {
                     </Button>
                 </div>
 
-                <dl className={styles.stats}>
-                    <div data-tone={counts.on_fire ? 'fire' : undefined}>
-                        <dt>Active fires</dt>
-                        <dd>
-                            <CountUp value={counts.on_fire} />
-                        </dd>
-                    </div>
-                    <div data-tone={counts.at_risk ? 'risk' : undefined}>
-                        <dt>Zones at risk</dt>
-                        <dd>
-                            <CountUp value={counts.at_risk} />
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>
-                            {scanning
-                                ? `Drones, ${scanning} zone${scanning === 1 ? '' : 's'} scanning`
-                                : 'Drones'}
-                        </dt>
-                        <dd>
-                            <CountUp value={drones} />
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>km² watched</dt>
-                        <dd>
-                            <CountUp value={watchedKm2} decimals={1} />
-                        </dd>
-                    </div>
-                </dl>
-
                 <div className={styles.controls}>
                     <Segmented<Filter>
                         variant="tabs"
@@ -135,30 +90,6 @@ export function ZonesPage() {
                         onChange={setFilter}
                         options={FILTERS.map((f) => ({ ...f, count: counts[f.value] }))}
                     />
-                    <label className={styles.search}>
-                        <Icon name="search" size={14} />
-                        <input
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search"
-                            aria-label="Search watch zones"
-                        />
-                        <AnimatePresence>
-                            {query ? (
-                                <motion.button
-                                    type="button"
-                                    aria-label="Clear search"
-                                    onClick={() => setQuery('')}
-                                    initial={{ opacity: 0, scale: 0.6 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.6 }}
-                                    transition={QUICK}
-                                >
-                                    <Icon name="close" size={10} />
-                                </motion.button>
-                            ) : null}
-                        </AnimatePresence>
-                    </label>
                 </div>
 
                 <div className={styles.grid}>
@@ -197,13 +128,7 @@ export function ZonesPage() {
                             </strong>
                             {summaries === null ? <span>{listError}</span> : null}
                             {all.length ? (
-                                <Button
-                                    size="sm"
-                                    onClick={() => {
-                                        setQuery('');
-                                        setFilter('all');
-                                    }}
-                                >
+                                <Button size="sm" onClick={() => setFilter('all')}>
                                     Show all zones
                                 </Button>
                             ) : null}

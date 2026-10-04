@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { Icon } from '../icons/Icon';
+import { HEAT } from '../map/layers/SuggestionsLayer';
 import type { OverlayMode } from '../store/ui';
 import { QUICK, SNAP } from '../ui/motion';
 import styles from './Overlay.module.css';
@@ -31,24 +32,13 @@ function Item({ mark, label }: { mark: ReactNode; label: string }) {
     );
 }
 
-function Gradient({
-    from,
-    to,
-    left,
-    right,
-}: {
-    from: string;
-    to: string;
-    left: string;
-    right: string;
-}) {
+const HEAT_CSS = `linear-gradient(90deg, ${HEAT.map(([r, g, b]) => `rgb(${r} ${g} ${b})`).join(', ')})`;
+
+function Gradient({ left, right }: { left: string; right: string }) {
     return (
         <span className={styles.legendItem}>
             <span className={styles.gradLabel}>{left}</span>
-            <span
-                className={styles.gradient}
-                style={{ background: `linear-gradient(90deg, ${from}, ${to})` }}
-            />
+            <span className={styles.gradient} style={{ background: HEAT_CSS }} />
             <span className={styles.gradLabel}>{right}</span>
         </span>
     );
@@ -89,13 +79,7 @@ export function Legend({ mode, suggestions }: { mode: OverlayMode; suggestions: 
                         </>
                     ) : (
                         <>
-                            <Gradient from="#C41218" to="#FFDE78" left="Fire now" right="Horizon" />
-                            <Gradient
-                                from="#B5179E"
-                                to="#F7AEF8"
-                                left="Civilians soonest"
-                                right="later"
-                            />
+                            <Gradient left="Fire now" right="Later" />
                             <Item mark={<Swatch color="#12A37A" />} label="Evacuation route" />
                             <Item
                                 mark={<Swatch color="#0E8FD8" ring dashed />}

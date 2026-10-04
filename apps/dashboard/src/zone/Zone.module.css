@@ -1,5 +1,4 @@
 .page {
-    --side: 332px;
     --inspect: 348px;
     position: fixed;
     inset: 0;
@@ -42,15 +41,6 @@ html[data-shell='desktop'] .bar {
     font-size: 22px;
     font-weight: 400;
     line-height: 1.2;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.region {
-    overflow: hidden;
-    padding-right: 4px;
-    color: var(--ink-3);
-    font-size: 12.5px;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
@@ -102,7 +92,7 @@ html[data-shell='desktop'] .bar {
 
 .bottom {
     position: absolute;
-    left: calc(var(--side) + 16px);
+    left: calc(var(--inspect) + 28px);
     right: calc(var(--inspect) + 28px);
     bottom: 22px;
     display: flex;
@@ -114,12 +104,6 @@ html[data-shell='desktop'] .bar {
 
 .bottom > * {
     pointer-events: auto;
-}
-
-@media (max-width: 1280px) {
-    .region {
-        display: none;
-    }
 }
 
 .loading {
@@ -134,4 +118,10 @@ html[data-shell='desktop'] .bar {
     background: var(--paper);
     box-shadow: var(--shadow-2, 0 8px 24px -12px rgba(17, 17, 16, 0.3));
     transform: translate(-50%, -50%);
+}
+
+.zoom {
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-top: auto;
 }

@@ -2,7 +2,7 @@ import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'motion/react
 import { useEffect } from 'react';
 import { LoginPage } from './auth/LoginPage';
 import { MapStage } from './map/MapStage';
-import { SetupPage } from './setup/SetupPage';
+import { DrawPage } from './setup/DrawPage';
 import { connectDroneInfo } from './live/droneInfo';
 import { pageKey, useRouter, type Route } from './store/router';
 import { checkSession, useSession, watchSessionExpiry } from './store/session';
@@ -17,9 +17,9 @@ function Page({ route }: { route: Route }) {
         case 'zones':
             return <ZonesPage />;
         case 'new':
-            return <SetupPage zoneId={null} step="boundary" />;
-        case 'setup':
-            return <SetupPage zoneId={route.zoneId} step={route.step} />;
+            return <DrawPage zoneId={null} />;
+        case 'edit':
+            return <DrawPage zoneId={route.zoneId} />;
         case 'zone':
             return <ZonePage zoneId={route.zoneId} />;
     }

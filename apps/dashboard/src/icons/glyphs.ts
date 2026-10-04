@@ -343,6 +343,8 @@ export interface SvgOptions {
     badge?: { shape: 'square' | 'circle'; fill: string; stroke?: string };
     rotateDeg?: number;
     opacity?: number;
+    /** No seams: facets merge into one silhouette and corners round off (map badges). */
+    smooth?: boolean;
 }
 
 /** A glyph as a standalone SVG string (map billboards, favicons). */
@@ -350,8 +352,14 @@ export function glyphSvg(name: GlyphName, o: SvgOptions): string {
     const badge = o.badge;
     const inset = badge ? 5 : 0;
     const scale = (24 - inset * 2) / 24;
+    const hole = o.smooth ? (badge?.fill ?? o.seam) : o.seam;
+    const line = o.smooth ? o.fill : o.seam;
     const facets = GLYPHS[name]
-        .map((x) => `<polygon points="${x.points}" fill="${x.cut ? o.seam : o.fill}"/>`)
+        .map((x) =>
+            x.cut && o.smooth
+                ? `<polygon points="${x.points}" fill="${hole}" stroke="${hole}"/>`
+                : `<polygon points="${x.points}" fill="${x.cut ? o.seam : o.fill}"/>`,
+        )
         .join('');
     const badgeShape = !badge
         ? ''
@@ -359,5 +367,5 @@ export function glyphSvg(name: GlyphName, o: SvgOptions): string {
           ? `<circle cx="12" cy="12" r="11.2" fill="${badge.fill}" stroke="${badge.stroke ?? 'none'}" stroke-width="1"/>`
           : `<rect x="0.8" y="0.8" width="22.4" height="22.4" rx="6" fill="${badge.fill}" stroke="${badge.stroke ?? 'none'}" stroke-width="1"/>`;
     const rotate = o.rotateDeg ? ` rotate(${o.rotateDeg} 12 12)` : '';
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${o.size}" height="${o.size}" viewBox="0 0 24 24" opacity="${o.opacity ?? 1}">${badgeShape}<g transform="translate(${inset} ${inset}) scale(${scale})${rotate}" stroke="${o.seam}" stroke-width="${o.seamWidth ?? 0.9}" stroke-linejoin="round">${facets}</g></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${o.size}" height="${o.size}" viewBox="0 0 24 24" opacity="${o.opacity ?? 1}">${badgeShape}<g transform="translate(${inset} ${inset}) scale(${scale})${rotate}" stroke="${line}" stroke-width="${o.seamWidth ?? 0.9}" stroke-linejoin="round">${facets}</g></svg>`;
 }

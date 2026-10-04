@@ -173,10 +173,6 @@ export function summaryStatus(z: WatchZoneSummary): ZoneStatus {
     return scan === null || (scan.state !== 'done' && !isActiveScan(scan)) ? 'awaiting' : 'healthy';
 }
 
-export function areaKm2(boundary: LatLng[]): number {
-    return shape(boundary).areaKm2;
-}
-
 /** `ha` with sensible precision. */
 export function hectares(ha: number): string {
     if (ha === 0) return '0';
