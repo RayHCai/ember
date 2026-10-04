@@ -54,10 +54,15 @@ export type ResponderSessionRecord = {
 
 export class DuplicateError extends Error {}
 
-export type CivilianFilter = { zoneId?: string; civilianAreaId?: string; email?: string };
+export type CivilianFilter = {
+    zoneId?: string;
+    civilianAreaId?: string;
+    email?: string;
+    phone?: string;
+};
 
 export type CivilianPatch = Partial<
-    Pick<Civilian, 'civilianAreaId' | 'zoneId' | 'location' | 'notes'>
+    Pick<Civilian, 'civilianAreaId' | 'zoneId' | 'location' | 'notes' | 'phone'>
 >;
 
 /** Civilians keep their own table: contact-collector's unique email lives there. */
@@ -139,6 +144,7 @@ export class MemoryCivilians implements CivilianStore {
             id: crypto.randomUUID(),
             number: ++this.number,
             email: data.email,
+            phone: null,
             zipCode: data.zipCode,
             civilianAreaId: null,
             zoneId: null,
@@ -158,6 +164,12 @@ export class MemoryCivilians implements CivilianStore {
     async update(id: string, patch: CivilianPatch) {
         const row = this.rows.get(id);
         if (!row) return null;
+        if (
+            patch.phone &&
+            [...this.rows.values()].some((c) => c.id !== id && c.phone === patch.phone)
+        ) {
+            throw new DuplicateError(patch.phone);
+        }
         Object.assign(row, patch);
         return structuredClone(row);
     }
@@ -169,7 +181,8 @@ export class MemoryCivilians implements CivilianStore {
                     (filter.zoneId === undefined || c.zoneId === filter.zoneId) &&
                     (filter.civilianAreaId === undefined ||
                         c.civilianAreaId === filter.civilianAreaId) &&
-                    (filter.email === undefined || c.email === filter.email),
+                    (filter.email === undefined || c.email === filter.email) &&
+                    (filter.phone === undefined || c.phone === filter.phone),
             )
             .toSorted((a, b) => a.number - b.number)
             .map((c) => structuredClone(c));

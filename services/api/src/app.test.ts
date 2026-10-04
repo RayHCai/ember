@@ -141,6 +141,32 @@ describe('civilians', () => {
     });
 });
 
+describe('civilian phones', () => {
+    test('a phone is E.164, unique, and matches inbound texts however it is written', async () => {
+        const h = harness();
+        const a = await civilian(h, 'a@example.com');
+        const b = await civilian(h, 'b@example.com');
+        const patch = (id: string, phone: string) =>
+            h.app.inject({ method: 'PATCH', url: `/v1/civilians/${id}`, payload: { phone } });
+        expect((await patch(a.id, '808-555-0123')).statusCode).toBe(400);
+        expect((await patch(a.id, '+18085550123')).json<Civilian>().phone).toBe('+18085550123');
+        expect((await patch(b.id, '+18085550123')).statusCode).toBe(409);
+        for (const handle of ['+18085550123', '+1 (808) 555-0123']) {
+            const res = await h.app.inject({
+                method: 'POST',
+                url: '/v1/civilian-messages/inbound',
+                payload: {
+                    handle,
+                    channel: 'imessage',
+                    body: 'Do I need to evacuate?',
+                    attachments: [],
+                },
+            });
+            expect(res.json().civilian.id).toBe(a.id);
+        }
+    });
+});
+
 describe('watch zones and roads', () => {
     test('a zone from a center and radius gets a ring, centroid and area', async () => {
         const h = harness();

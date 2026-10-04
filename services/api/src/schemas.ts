@@ -261,7 +261,12 @@ export const createReport = z.object({
 
 export const processReport = z.object({ note: text(2000) });
 
+export const phone = z
+    .string()
+    .regex(/^\+[1-9]\d{6,14}$/, 'a phone number in E.164, e.g. +18085550123');
+
 export const updateCivilian = z.object({
+    phone: phone.nullable().optional(),
     civilianAreaId: id.nullable().optional(),
     location: latLng.nullable().optional(),
     notes: z.string().max(2000).nullable().optional(),

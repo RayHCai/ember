@@ -22,3 +22,7 @@ uv run --package ember-seed-data ember-seed-data lahaina --out lahaina.json   # 
 
 Re-running is safe: the zone is found by name, existing edge servers, responders and civilians are
 reused, and geography and civilian details are replaced with the same values.
+
+`--phone +18085550123` gives one seeded civilian a real phone number (civilian 4 by default,
+`--phone-civilian N` for another), so alerts and replies for that civilian reach a real phone over
+iMessage. The ASI:One supervisor passes `EMBER_DEMO_PHONE` here.

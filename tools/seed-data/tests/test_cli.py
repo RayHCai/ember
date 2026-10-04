@@ -17,6 +17,7 @@ class FakeApi:
         self.calls: list[tuple[str, str]] = []
         self.auth: set[str | None] = set()
         self.edge_posts = 0
+        self.phones: dict[str, str] = {}
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         path, method = request.url.path, request.method
@@ -48,7 +49,9 @@ class FakeApi:
             email = request.url.params["email"]
             return httpx.Response(200, json=[{"id": self.civilians[email]}])
         if method == "PATCH" and path.startswith("/v1/civilians/"):
-            assert set(body) == {"civilianAreaId", "location", "notes"}
+            assert set(body) - {"phone"} == {"civilianAreaId", "location", "notes"}
+            if "phone" in body:
+                self.phones[path.rsplit("/", 1)[1]] = body["phone"]
             return httpx.Response(200, json={})
         return httpx.Response(500, text="unexpected")
 
@@ -97,3 +100,12 @@ def test_out_writes_camel_case_json(tmp_path: Path) -> None:
     assert "civilianAreas" in data["geography"] and data["geography"]["terrain"] is None
     assert data["edgeServers"][0]["connectivityRadiusM"] == 1500
     assert data["civilians"][0]["zipCode"] == "96761"
+
+
+def test_phone_goes_to_the_chosen_civilian_only() -> None:
+    api = FakeApi()
+    assert run(api, "--phone", "+18085550123") == 0
+    assert api.phones == {"c-3": "+18085550123"}
+    other = FakeApi()
+    assert run(other, "--phone", "+18085550123", "--phone-civilian", "2") == 0
+    assert other.phones == {"c-1": "+18085550123"}

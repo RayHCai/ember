@@ -9,6 +9,7 @@ import type {
     WatchZone,
 } from '@ember/contracts';
 import { ApiError } from '../api.js';
+import { handleOf } from '../channels.js';
 import { decide, describeError, EMBER, geography, runPlanner, type Ctx } from '../context.js';
 import { diffPlans, type PlanDiff } from '../diff.js';
 import { usesOfRoads, type Geography } from '../views.js';
@@ -255,7 +256,7 @@ export async function sendApproved(ctx: Ctx): Promise<number> {
                 });
                 queued += 1;
                 try {
-                    await ctx.transport.send(civilian.email, r.body);
+                    await ctx.transport.send(handleOf(civilian), r.body);
                     await ctx.api.reportDelivery(message.id, 'sent');
                     sent += 1;
                 } catch (err) {
@@ -267,7 +268,7 @@ export async function sendApproved(ctx: Ctx): Promise<number> {
                     map = await alertMap(ctx, approval.zoneId, draft).catch(() => null);
                 if (map) {
                     await ctx.transport
-                        .sendImage(civilian.email, map.data, map.mimeType)
+                        .sendImage(handleOf(civilian), map.data, map.mimeType)
                         .catch((err: unknown) =>
                             ctx.log.warn({ err: describeError(err) }, 'map image not delivered'),
                         );

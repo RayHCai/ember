@@ -13,6 +13,8 @@ model Civilian {
   number         Int      @unique @default(autoincrement())
   /// Lowercased.
   email          String   @unique
+  /// E.164.
+  phone          String?  @unique
   zipCode        String   @map("zip_code")
   civilianAreaId String?  @map("civilian_area_id")
   zoneId         String?  @map("zone_id")

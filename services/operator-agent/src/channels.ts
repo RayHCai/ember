@@ -1,4 +1,7 @@
-import type { CivilianChannel } from '@ember/contracts';
+import type { Civilian, CivilianChannel } from '@ember/contracts';
+
+/** Where a civilian's texts go: their phone when known, else their Apple ID email. */
+export const handleOf = (c: Pick<Civilian, 'phone' | 'email'>) => c.phone ?? c.email;
 
 export type InboundText = {
     /** Email or phone the civilian wrote from. */

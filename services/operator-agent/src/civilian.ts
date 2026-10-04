@@ -1,4 +1,5 @@
 import type { Civilian, CivilianMessage, WatchZone } from '@ember/contracts';
+import { handleOf } from './channels.js';
 import { decide, describeError, EMBER, geography, type Ctx } from './context.js';
 import { unsupportedNumbers } from './llm/guard.js';
 import { parseObservation, type Observation } from './observations.js';
@@ -222,7 +223,7 @@ export async function handleInbound(ctx: Ctx, message: CivilianMessage): Promise
         inReplyTo: message.id,
     });
     try {
-        await ctx.transport.send(civilian.email, reply);
+        await ctx.transport.send(handleOf(civilian), reply);
         await ctx.api.reportDelivery(queued.id, 'sent');
     } catch (err) {
         await ctx.api.reportDelivery(queued.id, 'failed', describeError(err));

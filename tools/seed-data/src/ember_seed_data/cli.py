@@ -16,6 +16,13 @@ def main(argv: list[str] | None = None, transport: httpx.BaseTransport | None = 
     cmd.add_argument("--api", help="api base URL, e.g. http://localhost:4001")
     cmd.add_argument("--key", help="operator key sent as a bearer token")
     cmd.add_argument("--out", type=Path, help="write the fixture JSON here instead of posting")
+    cmd.add_argument("--phone", help="E.164 number texts for one seeded civilian go to")
+    cmd.add_argument(
+        "--phone-civilian",
+        type=int,
+        default=4,
+        help="which seeded civilian (1-8) gets --phone; default 4, in Lahaina Bypass Homes",
+    )
     args = parser.parse_args(argv)
 
     seed = lahaina()
@@ -31,7 +38,7 @@ def main(argv: list[str] | None = None, transport: httpx.BaseTransport | None = 
         with httpx.Client(
             base_url=args.api, headers=headers, transport=transport, timeout=30
         ) as client:
-            summary = seed_lahaina(client, seed)
+            summary = seed_lahaina(client, seed, args.phone, args.phone_civilian)
     except (SeedError, httpx.HTTPError) as error:
         print(f"seed failed: {error}", file=sys.stderr)
         return 1

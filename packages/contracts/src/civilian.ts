@@ -11,8 +11,10 @@ export type Civilian = {
     id: string;
     /** Sequential across Ember: "Civilian 4". */
     number: number;
-    /** Lowercased. Also the iMessage handle. */
+    /** Lowercased. The iMessage handle when there is no phone. */
     email: string;
+    /** E.164, e.g. `+18085550123`. Texts go here when set. */
+    phone: string | null;
     /** US 5-digit ZIP. */
     zipCode: string;
     /** The planner `CivilianArea` they live in, once known. */
@@ -27,7 +29,7 @@ export type Civilian = {
 export type CreateCivilianRequest = Pick<Civilian, 'email' | 'zipCode'>;
 
 export type UpdateCivilianRequest = Partial<
-    Pick<Civilian, 'civilianAreaId' | 'location' | 'notes'>
+    Pick<Civilian, 'civilianAreaId' | 'location' | 'notes' | 'phone'>
 >;
 
 export type CivilianChannel = 'imessage' | 'sms' | 'asi1';
@@ -52,7 +54,7 @@ export type CivilianMessage = {
     sentAt: string | null;
 };
 
-/** A transport -> api. `handle` is the email or phone the civilian wrote from. */
+/** A transport -> api. `handle` is the email or phone the civilian wrote from; phones match in E.164. */
 export type InboundCivilianMessageRequest = {
     handle: string;
     channel: CivilianChannel;

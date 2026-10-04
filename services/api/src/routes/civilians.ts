@@ -86,7 +86,15 @@ export function civilianRoutes(app: FastifyInstance, deps: Deps) {
                 patch.zoneId = geo.zoneId;
             }
         }
-        const civilian = await store.civilians.update(req.params.civilianId, patch);
+        let civilian;
+        try {
+            civilian = await store.civilians.update(req.params.civilianId, patch);
+        } catch (err) {
+            if (err instanceof DuplicateError) {
+                throw new HttpError(409, `phone ${body.phone} belongs to another civilian`);
+            }
+            throw err;
+        }
         if (!civilian) throw notFound(`civilian ${req.params.civilianId}`);
         return civilian;
     });
@@ -98,7 +106,14 @@ export function civilianRoutes(app: FastifyInstance, deps: Deps) {
 
     app.post(CIVILIAN_INBOUND_PATH, staff, async (req, reply) => {
         const body = parse(s.inboundCivilianMessage, req.body);
-        const [civilian] = await store.civilians.list({ email: body.handle.toLowerCase() });
+        const handle = body.handle.trim();
+        // iMessage hands over a phone as E.164 or an Apple ID email.
+        const digits = handle.replace(/[^\d+]/g, '');
+        const [civilian] = await store.civilians.list(
+            handle.includes('@')
+                ? { email: handle.toLowerCase() }
+                : { phone: digits.startsWith('+') ? digits : `+${digits}` },
+        );
         if (!civilian) throw new HttpError(404, `no civilian with handle ${body.handle}`);
         const now = iso(deps.now());
         const message: CivilianMessage = {

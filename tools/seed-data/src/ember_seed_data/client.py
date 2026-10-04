@@ -51,7 +51,9 @@ def _ensure_civilian(client: httpx.Client, email: str, zip_code: str) -> str:
     return str(_expect(response, 201)["id"])
 
 
-def seed_lahaina(client: httpx.Client, seed: Seed) -> Summary:
+def seed_lahaina(
+    client: httpx.Client, seed: Seed, phone: str | None = None, phone_civilian: int = 4
+) -> Summary:
     data = seed.to_json()
     zone_id = _ensure_zone(client, seed)
     base = f"/v1/watch-zones/{zone_id}"
@@ -69,9 +71,11 @@ def seed_lahaina(client: httpx.Client, seed: Seed) -> Summary:
         _expect(client.post(f"{base}/responders", json=responder), 201)
         created += 1
 
-    for civilian in data["civilians"]:
+    for number, civilian in enumerate(data["civilians"], start=1):
         civilian_id = _ensure_civilian(client, civilian["email"], civilian["zipCode"])
         patch = {k: civilian[k] for k in ("civilianAreaId", "location", "notes")}
+        if phone and number == phone_civilian:
+            patch["phone"] = phone
         _expect(client.patch(f"/v1/civilians/{civilian_id}", json=patch), 200)
 
     return Summary(zone_id, len(data["edgeServers"]), created, len(data["civilians"]))

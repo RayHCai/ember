@@ -17,6 +17,7 @@ function toCivilian(row: CivilianRow): Civilian {
         id: row.id,
         number: row.number,
         email: row.email,
+        phone: row.phone,
         zipCode: row.zipCode,
         civilianAreaId: row.civilianAreaId,
         zoneId: row.zoneId as WatchZoneId | null,
@@ -61,6 +62,9 @@ export class PrismaCivilians implements CivilianStore {
         } catch (err) {
             if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
                 return null;
+            }
+            if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+                throw new DuplicateError(patch.phone ?? id);
             }
             throw err;
         }
