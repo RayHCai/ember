@@ -5,10 +5,10 @@ import type { Db } from '../db.js';
 
 const createBody = {
     type: 'object',
-    required: ['email', 'zipCode'],
+    required: ['phone', 'zipCode'],
     additionalProperties: false,
     properties: {
-        email: { type: 'string', maxLength: 254, pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$' },
+        phone: { type: 'string', pattern: '^\\+[1-9][0-9]{7,14}$' },
         zipCode: { type: 'string', pattern: '^[0-9]{5}$' },
     },
 } as const;
@@ -19,19 +19,17 @@ export function civilianRoutes(app: FastifyInstance, db: Db) {
         { schema: { body: createBody } },
         async (req, reply) => {
             try {
-                const row = await db.civilian.create({
-                    data: { email: req.body.email.toLowerCase(), zipCode: req.body.zipCode },
-                });
+                const row = await db.civilian.create({ data: req.body });
                 const civilian: Civilian = {
                     id: row.id,
-                    email: row.email,
+                    phone: row.phone,
                     zipCode: row.zipCode,
                     createdAt: row.createdAt.toISOString(),
                 };
                 return reply.code(201).send(civilian);
             } catch (err) {
                 if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-                    return reply.code(409).send({ error: 'email already registered' });
+                    return reply.code(409).send({ error: 'phone already registered' });
                 }
                 throw err;
             }

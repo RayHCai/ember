@@ -1,55 +1,38 @@
-const SUCCESS_MESSAGE = "You're on the list. We'll email you if a wildfire threatens your area.";
+const SUCCESS_MESSAGE = "You're on the list. We'll text you if a wildfire threatens your area.";
 
-interface Env {
-    API_URL: string;
-}
-
-export default {
-    async fetch(request: Request, env: Env): Promise<Response> {
-        const url = new URL(request.url);
-
-        if (url.pathname !== '/api/subscribe') {
-            return new Response('Not found', { status: 404 });
-        }
-
-        if (request.method !== 'POST') {
-            return json({ error: 'Use the form to sign up.' }, 405);
-        }
-
-        return subscribe(request, env);
-    },
-};
-
-async function subscribe(request: Request, env: Env): Promise<Response> {
+export async function POST(request: Request): Promise<Response> {
     let submission: Submission;
     try {
         submission = await readSubmission(request);
     } catch (error) {
         if (error instanceof Response) return error;
-        return json({ error: 'Enter an email address and ZIP code.' }, 400);
+        return json({ error: 'Enter a phone number and ZIP code.' }, 400);
     }
 
     if (submission.website) {
         return respond(submission.html, 200);
     }
 
-    const email = normalizeEmail(submission.email);
+    const phone = normalizePhone(submission.phone);
     const zipCode = normalizeZip(submission.zip);
-    if (!email || !zipCode) {
+    if (!phone || !zipCode) {
         return respond(
             submission.html,
             400,
-            !email ? 'Enter a valid email address.' : 'Enter a 5-digit ZIP code.',
+            !phone ? 'Enter a 10-digit US phone number.' : 'Enter a 5-digit ZIP code.',
         );
     }
 
-    const apiUrl = env.API_URL.replace(/\/$/, '');
+    const apiUrl = process.env.API_URL?.replace(/\/$/, '');
+    if (!apiUrl) {
+        return respond(submission.html, 500, 'Something went wrong. Try again.');
+    }
     let response: Response;
     try {
         response = await fetch(`${apiUrl}/civilians`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ email, zipCode }),
+            body: JSON.stringify({ phone, zipCode }),
         });
     } catch {
         return respond(submission.html, 500, 'Something went wrong. Try again.');
@@ -63,7 +46,7 @@ async function subscribe(request: Request, env: Env): Promise<Response> {
 }
 
 type Submission = {
-    email: unknown;
+    phone: unknown;
     zip: unknown;
     website: unknown;
     html: boolean;
@@ -81,14 +64,14 @@ async function readSubmission(request: Request): Promise<Submission> {
         try {
             body = JSON.parse(text);
         } catch {
-            throw json({ error: 'Enter an email address and ZIP code.' }, 400);
+            throw json({ error: 'Enter a phone number and ZIP code.' }, 400);
         }
         if (!body || typeof body !== 'object') {
-            throw json({ error: 'Enter an email address and ZIP code.' }, 400);
+            throw json({ error: 'Enter a phone number and ZIP code.' }, 400);
         }
         const record = body as Record<string, unknown>;
         return {
-            email: record.email,
+            phone: record.phone,
             zip: record.zip,
             website: record.website,
             html: false,
@@ -97,18 +80,19 @@ async function readSubmission(request: Request): Promise<Submission> {
 
     const form = await request.formData();
     return {
-        email: form.get('email'),
+        phone: form.get('phone'),
         zip: form.get('zip'),
         website: form.get('website'),
         html: true,
     };
 }
 
-function normalizeEmail(value: unknown): string | null {
+function normalizePhone(value: unknown): string | null {
     if (typeof value !== 'string') return null;
-    const email = value.trim().toLowerCase();
-    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return null;
-    return email;
+    const digits = value.replace(/\D/g, '');
+    const national = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
+    if (!/^[2-9]\d{9}$/.test(national)) return null;
+    return `+1${national}`;
 }
 
 function normalizeZip(value: unknown): string | null {
@@ -139,7 +123,7 @@ function respond(html: boolean, status: number, error?: string): Response {
 </head>
 <body>
   <main>
-    <h1>Ember</h1>
+    <h1>ember</h1>
     ${body}
   </main>
 </body>

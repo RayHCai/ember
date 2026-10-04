@@ -1,43 +1,43 @@
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PHONE = /^[2-9]\d{9}$/;
 const ZIP = /^\d{5}$/;
-const ORDER = ['email', 'zip', 'done'];
+const ORDER = ['phone', 'zip', 'done'];
 
 const form = document.querySelector('#signup');
 const status = document.querySelector('#status');
 const back = document.querySelector('#back');
 const again = document.querySelector('#again');
-const doneDetail = document.querySelector('#done-detail');
 const flash = document.querySelector('#flash');
-const steps = Object.fromEntries(
+const slides = Object.fromEntries(
     ORDER.map((name) => [name, form.querySelector(`[data-step="${name}"]`)]),
 );
-const emailInput = form.elements.namedItem('email');
+const phoneInput = form.elements.namedItem('phone');
 const zipInput = form.elements.namedItem('zip');
 const next = form.querySelector('.next');
 const submit = form.querySelector('.submit');
 const submitLabel = submit.textContent;
 
-let current = 'email';
+let current = 'phone';
 let sending = false;
 
 form.noValidate = true;
-show('email', false);
+show('phone', false);
 arm();
 intro();
 
-emailInput.addEventListener('input', () => {
-    status.textContent = '';
+phoneInput.addEventListener('input', () => {
+    phoneInput.value = formatPhone(phoneInput.value);
+    clear();
     arm();
 });
 
 zipInput.addEventListener('input', () => {
     zipInput.value = zipInput.value.replace(/\D/g, '').slice(0, 5);
-    status.textContent = '';
+    clear();
     arm();
 });
 
 // A disabled submit button blocks implicit submission, so Enter is handled here.
-for (const input of [emailInput, zipInput]) {
+for (const input of [phoneInput, zipInput]) {
     input.addEventListener('keydown', (event) => {
         if (event.key !== 'Enter') return;
         event.preventDefault();
@@ -46,11 +46,11 @@ for (const input of [emailInput, zipInput]) {
 }
 
 next.addEventListener('click', advance);
-back.addEventListener('click', () => show('email'));
+back.addEventListener('click', () => show('phone'));
 again.addEventListener('click', () => {
     form.reset();
     arm();
-    show('email');
+    show('phone');
 });
 
 form.addEventListener('submit', (event) => {
@@ -60,9 +60,10 @@ form.addEventListener('submit', (event) => {
 
 function advance() {
     if (sending) return;
-    if (current === 'email') {
-        emailInput.value = emailInput.value.trim();
-        if (!EMAIL.test(emailInput.value)) return reject('email', 'Enter a valid email address.');
+    if (current === 'phone') {
+        if (!PHONE.test(digits(phoneInput.value))) {
+            return reject('phone', 'Enter a 10-digit US phone number.');
+        }
         show('zip');
         return;
     }
@@ -76,28 +77,28 @@ async function send() {
     sending = true;
     submit.disabled = true;
     submit.textContent = 'Sending…';
-    status.textContent = '';
+    clear();
 
     try {
         const response = await fetch('/api/subscribe', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-                email: emailInput.value,
+                phone: phoneInput.value,
                 zip: zipInput.value,
                 website: form.elements.namedItem('website').value,
             }),
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-            status.textContent = payload.error || 'Something went wrong. Try again.';
+            reject('zip', payload.error || 'Something went wrong. Try again.');
             return;
         }
-        doneDetail.textContent = `We'll email ${emailInput.value} if a wildfire threatens ${zipInput.value}.`;
         show('done');
+        status.textContent = "You're on the list.";
         burst();
     } catch {
-        status.textContent = 'Check your connection and try again.';
+        reject('zip', 'Check your connection and try again.');
     } finally {
         sending = false;
         submit.textContent = submitLabel;
@@ -106,11 +107,11 @@ async function send() {
 }
 
 function arm() {
-    const emailReady = EMAIL.test(emailInput.value.trim());
+    const phoneReady = PHONE.test(digits(phoneInput.value));
     const zipReady = ZIP.test(zipInput.value);
-    steps.email.classList.toggle('armed', emailReady);
-    steps.zip.classList.toggle('armed', zipReady);
-    next.disabled = !emailReady;
+    slides.phone.classList.toggle('armed', phoneReady);
+    slides.zip.classList.toggle('armed', zipReady);
+    next.disabled = !phoneReady;
     submit.disabled = !zipReady || sending;
 }
 
@@ -118,24 +119,42 @@ function show(name, focus = true) {
     current = name;
     const at = ORDER.indexOf(name);
     for (const [index, step] of ORDER.entries()) {
-        const element = steps[step];
-        element.dataset.state = index < at ? 'past' : index > at ? 'ahead' : 'active';
-        element.inert = index !== at;
+        const slide = slides[step];
+        slide.dataset.state = index < at ? 'past' : index > at ? 'ahead' : 'active';
+        slide.inert = index !== at;
     }
-    status.textContent = '';
-    back.hidden = name !== 'zip';
-    back.textContent = name === 'zip' ? `${emailInput.value} · Change` : '';
+    clear();
     if (!focus) return;
-    const target = name === 'email' ? emailInput : name === 'zip' ? zipInput : steps.done;
+    const target = name === 'phone' ? phoneInput : name === 'zip' ? zipInput : again;
     target.focus({ preventScroll: true });
 }
 
 function reject(name, message) {
     status.textContent = message;
-    const element = steps[name];
-    element.classList.remove('shake');
-    void element.offsetWidth;
-    element.classList.add('shake');
+    status.className = 'error';
+    const slide = slides[name];
+    slide.classList.remove('shake');
+    void slide.offsetWidth;
+    slide.classList.add('shake', 'invalid');
+}
+
+function clear() {
+    status.textContent = '';
+    status.className = 'sr-only';
+    for (const slide of Object.values(slides)) slide.classList.remove('invalid');
+}
+
+// A leading country code 1 is dropped so "+1 555..." and "555..." read the same.
+function digits(value) {
+    const all = value.replace(/\D/g, '');
+    return (all.length === 11 && all.startsWith('1') ? all.slice(1) : all).slice(0, 10);
+}
+
+function formatPhone(value) {
+    const d = digits(value);
+    if (d.length < 4) return d;
+    if (d.length < 7) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
 }
 
 function burst() {
@@ -158,7 +177,7 @@ function intro() {
             document.body.classList.add('lit');
             window.dispatchEvent(new Event('ember:ignite'));
             if (window.matchMedia('(pointer: fine)').matches) {
-                setTimeout(() => emailInput.focus({ preventScroll: true }), 1500);
+                setTimeout(() => phoneInput.focus({ preventScroll: true }), 1500);
             }
         }, wait);
     }

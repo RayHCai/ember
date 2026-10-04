@@ -18,6 +18,6 @@ pnpm --filter @ember/api db:migrate   # create a migration after editing prisma/
 | Method | Path         | Body                    | Result                                     |
 | ------ | ------------ | ----------------------- | ------------------------------------------ |
 | GET    | `/healthz`   |                         | `{ service, ok }`                          |
-| POST   | `/civilians` | `CreateCivilianRequest` | 201 `Civilian`; 400 invalid; 409 dup email |
+| POST   | `/civilians` | `CreateCivilianRequest` | 201 `Civilian`; 400 invalid; 409 dup phone |
 
-`email` is stored lowercased, `zipCode` is a 5-digit US ZIP.
+`phone` is E.164 (`+15551234567`), `zipCode` is a 5-digit US ZIP.

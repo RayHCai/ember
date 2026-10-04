@@ -3,8 +3,8 @@
     "compilerOptions": {
         "module": "ES2022",
         "moduleResolution": "bundler",
-        "types": ["@cloudflare/workers-types"],
+        "types": ["node"],
         "noEmit": true
     },
-    "include": ["src"]
+    "include": ["api"]
 }

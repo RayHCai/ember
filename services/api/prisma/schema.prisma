@@ -10,8 +10,8 @@ datasource db {
 
 model Civilian {
   id        String   @id @default(uuid()) @db.Uuid
-  /// Lowercased.
-  email     String   @unique
+  /// E.164, e.g. +15551234567.
+  phone     String   @unique
   zipCode   String   @map("zip_code")
   createdAt DateTime @default(now()) @map("created_at")
 

@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 
-const PAPER = 0xfff6ef;
+const GROUND = 0x0b0706;
 const RELIEF = 3.4;
 const BURN_SECONDS = 1.8;
 const SWOOP_SECONDS = 2.8;
@@ -82,7 +82,7 @@ function start(surface) {
         powerPreference: 'high-performance',
     });
     const small = window.innerWidth < 700;
-    renderer.setClearColor(PAPER, 1);
+    renderer.setClearColor(GROUND, 1);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 1.75));
 
     const scene = new THREE.Scene();
@@ -103,8 +103,8 @@ function start(surface) {
     const curtain = makeCurtain(shared);
     scene.add(curtain.mesh);
 
-    const from = { position: new THREE.Vector3(0, 15, 2.5), target: new THREE.Vector3(0, 0, 0) };
-    const to = { position: new THREE.Vector3(0, 7.5, 11), target: new THREE.Vector3(0, 0, -2) };
+    const from = { position: new THREE.Vector3(0, 18, 3), target: new THREE.Vector3(0, 0, 0) };
+    const to = { position: new THREE.Vector3(0, 9, 13.6), target: new THREE.Vector3(0, 0, -2) };
     const position = new THREE.Vector3();
     const target = new THREE.Vector3();
 
@@ -219,7 +219,7 @@ function makeMap(shared) {
         ...shared,
         uFlare: { value: 0 },
         // Shaders here write sRGB directly, so the fog is given as sRGB too.
-        uFog: { value: new THREE.Vector3(1.0, 0.965, 0.937) },
+        uFog: { value: new THREE.Vector3(0.043, 0.027, 0.024) },
     };
 
     const material = new THREE.ShaderMaterial({
@@ -264,17 +264,18 @@ function makeMap(shared) {
 
             void main() {
                 float h = terrain(vWorld);
-                vec3 color = mix(vec3(0.995, 0.925, 0.875), vec3(1.0, 0.985, 0.97), smoothstep(0.25, 0.75, h));
-                color *= 0.93 + 0.09 * vShade;
+                vec3 color = mix(vec3(0.040, 0.024, 0.021), vec3(0.120, 0.064, 0.050), smoothstep(0.25, 0.75, h));
+                color *= 0.7 + 0.5 * vShade;
 
-                float lines = contour(h * 26.0) * 0.3 + contour(h * 5.2) * 0.45;
-                color = mix(color, vec3(0.80, 0.40, 0.30), lines);
+                float lines = contour(h * 26.0) * 0.3 + contour(h * 5.2) * 0.5;
+                color = mix(color, vec3(0.66, 0.23, 0.12), lines);
 
                 vec3 f = fire(vWorld, uTime);
-                float ash = 0.4 + 0.25 * noise(vWorld * 6.0);
-                color = mix(color, vec3(0.94, 0.38, 0.27), f.y * ash);
-                color = mix(color, vec3(0.62, 0.13, 0.08), f.y * lines * 0.8);
-                color = mix(color, vec3(1.0, 0.56, 0.14), min(f.z * (0.34 + uFlare * 0.5), 1.0));
+                float coals = noise(vWorld * 6.0);
+                vec3 scorched = mix(vec3(0.13, 0.022, 0.014), vec3(0.62, 0.11, 0.035), coals * coals);
+                color = mix(color, scorched, f.y * 0.8);
+                color = mix(color, vec3(1.0, 0.36, 0.12), f.y * lines * 0.7);
+                color += vec3(1.0, 0.36, 0.07) * f.z * (0.3 + uFlare * 0.5);
 
                 float flicker = 0.7 + 0.6 * noise(vWorld * 3.5 + vec2(0.0, uTime * 2.5));
                 float front = min(f.x * flicker * (1.0 + uFlare), 1.0);
@@ -282,7 +283,7 @@ function makeMap(shared) {
                 flame = mix(flame, vec3(1.0, 0.88, 0.45), smoothstep(0.75, 1.0, front));
                 color = mix(color, flame, smoothstep(0.05, 0.5, front));
 
-                color = mix(color, uFog, smoothstep(16.0, 33.0, vDistance));
+                color = mix(color, uFog, smoothstep(19.0, 39.0, vDistance));
                 gl_FragColor = vec4(color, 1.0);
             }
         `,
@@ -329,7 +330,7 @@ function makeEmbers(shared, count, pixelRatio) {
                 gl_Position = projectionMatrix * view;
                 vHeat = 1.0 - phase;
                 vAlpha = strength * vHeat * smoothstep(0.0, 0.08, phase);
-                vAlpha *= 1.0 - smoothstep(16.0, 30.0, -view.z);
+                vAlpha *= 1.0 - smoothstep(19.0, 36.0, -view.z);
                 float size = (0.35 + 0.9 * fract(aSeed * 13.7)) * mix(1.0, 0.3, phase);
                 gl_PointSize = uPixel * size * (150.0 / -view.z) * step(0.03, vAlpha);
             }
@@ -339,12 +340,13 @@ function makeEmbers(shared, count, pixelRatio) {
             varying float vHeat;
             void main() {
                 float soft = 1.0 - smoothstep(0.0, 0.5, length(gl_PointCoord - 0.5));
-                vec3 color = mix(vec3(0.88, 0.14, 0.08), vec3(1.0, 0.72, 0.2), vHeat * vHeat);
+                vec3 color = mix(vec3(1.0, 0.22, 0.06), vec3(1.0, 0.78, 0.3), vHeat * vHeat);
                 gl_FragColor = vec4(color, min(soft * vAlpha * 1.5, 1.0));
             }
         `,
         transparent: true,
         depthWrite: false,
+        blending: THREE.AdditiveBlending,
     });
 
     const points = new THREE.Points(geometry, material);
@@ -401,6 +403,6 @@ if (canvas) {
     try {
         start(canvas);
     } catch {
-        // No WebGL: the page keeps its plain paper background.
+        // No WebGL: the page keeps its plain dark background.
     }
 }
