@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Icon } from '../icons/Icon';
 import type { GlyphName } from '../icons/glyphs';
 import { useNotices, type Severity } from '../store/notifications';
+import { QUICK, SMOOTH } from './motion';
 import styles from './ui.module.css';
 
 export const SEVERITY_ICON: Record<Severity, GlyphName> = {
@@ -32,38 +33,19 @@ export function Toasts() {
                         className={styles.toast}
                         data-severity={n.severity}
                         role={n.severity === 'critical' ? 'alert' : 'status'}
-                        initial={{ opacity: 0, x: 60, scale: 0.94 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: 40, scale: 0.96, transition: { duration: 0.2 } }}
-                        transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                        initial={{ opacity: 0, x: 24 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 16, transition: QUICK }}
+                        transition={SMOOTH}
                     >
-                        <motion.span
-                            className={styles.toastIcon}
-                            initial={{ scale: 0.4, rotate: -30 }}
-                            animate={
-                                n.severity === 'critical'
-                                    ? { scale: [1, 1.12, 1], rotate: 0 }
-                                    : { scale: 1, rotate: 0 }
-                            }
-                            transition={
-                                n.severity === 'critical'
-                                    ? {
-                                          scale: { duration: 0.9, repeat: Infinity },
-                                          rotate: { type: 'spring' },
-                                      }
-                                    : { type: 'spring', stiffness: 400, damping: 14 }
-                            }
-                        >
-                            <Icon name={SEVERITY_ICON[n.severity]} size={17} />
-                        </motion.span>
+                        <span className={styles.toastIcon}>
+                            <Icon name={SEVERITY_ICON[n.severity]} size={16} />
+                        </span>
                         <div>
                             <div className={styles.toastTitle}>
                                 {n.title}
                                 {n.zoneName ? (
-                                    <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>
-                                        {' '}
-                                        · {n.zoneName}
-                                    </span>
+                                    <span className={styles.toastZone}> · {n.zoneName}</span>
                                 ) : null}
                             </div>
                             {n.body ? <div className={styles.toastBody}>{n.body}</div> : null}
@@ -77,15 +59,10 @@ export function Toasts() {
                         <button
                             type="button"
                             aria-label="Dismiss"
+                            className={styles.toastClose}
                             onClick={() => dismiss(n.id)}
-                            style={{
-                                border: 0,
-                                background: 'none',
-                                color: 'var(--ink-3)',
-                                padding: 2,
-                            }}
                         >
-                            <Icon name="close" size={14} />
+                            <Icon name="close" size={12} />
                         </button>
                         <motion.span
                             className={styles.toastTimer}

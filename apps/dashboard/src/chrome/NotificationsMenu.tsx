@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { useState } from 'react';
 import { Icon } from '../icons/Icon';
 import { useNotices } from '../store/notifications';
@@ -22,13 +21,14 @@ export function NotificationsMenu() {
                 setOpen(false);
                 markAllRead();
             }}
-            width={380}
+            width={360}
             anchor={
                 <IconButton
                     icon="bell"
                     label="Notifications"
                     count={unread}
                     active={open}
+                    tip={!open}
                     onClick={() => {
                         if (open) markAllRead();
                         setOpen(!open);
@@ -38,7 +38,7 @@ export function NotificationsMenu() {
         >
             <div className={styles.menuHead}>
                 <strong>Notifications</strong>
-                {notices.length ? (
+                {unread ? (
                     <button type="button" className={styles.link} onClick={markAllRead}>
                         Mark all read
                     </button>
@@ -46,23 +46,15 @@ export function NotificationsMenu() {
             </div>
             <div className={styles.noticeList}>
                 {notices.length === 0 ? (
-                    <div className={styles.empty}>
-                        <Icon name="bell" size={22} />
-                        <span>
-                            Scan results, detections and sent blasts show up here as they happen.
-                        </span>
-                    </div>
+                    <p className={styles.empty}>No notifications</p>
                 ) : (
-                    notices.map((n, i) => (
-                        <motion.button
+                    notices.map((n) => (
+                        <button
                             key={n.id}
                             type="button"
                             className={styles.notice}
                             data-severity={n.severity}
                             data-read={n.read}
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: Math.min(i, 8) * 0.03 }}
                             onClick={() => {
                                 setOpen(false);
                                 markAllRead();
@@ -81,7 +73,7 @@ export function NotificationsMenu() {
                                     {n.pushed ? ` · pushed to ${n.pushed} phones` : ''}
                                 </em>
                             </span>
-                        </motion.button>
+                        </button>
                     ))
                 )}
             </div>

@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Icon } from '../icons/Icon';
-import { respond, type ToolCall } from '../sim/agent';
-import type { WatchZone } from '../sim/types';
+import type { ZoneView } from '../model/types';
+import { respond, type ToolCall } from './agent';
 import { useUi, type BlastDraft } from '../store/ui';
 import { IconButton } from '../ui/Button';
+import { QUICK, SMOOTH, SNAP } from '../ui/motion';
 import panel from '../ui/panel.module.css';
 import styles from './AgentPanel.module.css';
 
@@ -46,7 +47,7 @@ function recognition(): (new () => Recognition) | undefined {
     return w.SpeechRecognition ?? w.webkitSpeechRecognition;
 }
 
-export function AgentPanel({ zone }: { zone: WatchZone }) {
+export function AgentPanel({ zone }: { zone: ZoneView }) {
     const setOpen = useUi((s) => s.setAgentOpen);
     const openBlast = useUi((s) => s.openBlast);
     const [messages, setMessages] = useState<Message[]>(() => history.get(zone.id) ?? []);
@@ -87,8 +88,7 @@ export function AgentPanel({ zone }: { zone: WatchZone }) {
             { id: nextId++, role: 'operator', text: trimmed, shown: trimmed.length, tools: [] },
         ]);
         setThinking(true);
-        window.setTimeout(() => {
-            const reply = respond(zone.id, trimmed);
+        void respond(zone.id, trimmed).then((reply) => {
             setThinking(false);
             setMessages((list) => [
                 ...list,
@@ -105,7 +105,7 @@ export function AgentPanel({ zone }: { zone: WatchZone }) {
                 window.speechSynthesis.cancel();
                 window.speechSynthesis.speak(new SpeechSynthesisUtterance(reply.text));
             }
-        }, 650);
+        });
     };
 
     const submit = (e: FormEvent) => {
@@ -134,19 +134,14 @@ export function AgentPanel({ zone }: { zone: WatchZone }) {
         <motion.section
             layout
             className={`${panel.panel} ${styles.agent}`}
-            initial={{ opacity: 0, y: 30, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.97, transition: { duration: 0.18 } }}
-            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16, transition: QUICK }}
+            transition={{ ...SMOOTH, layout: SNAP }}
         >
             <header className={styles.head}>
-                <span className={styles.mark}>
-                    <Icon name="sparkle" size={18} />
-                </span>
-                <div className={styles.headText}>
-                    <strong>Operator Agent</strong>
-                    <span>Calls the same actions you do. Civilian texts need your approval.</span>
-                </div>
+                <Icon name="sparkle" size={16} />
+                <strong>Operator Agent</strong>
                 <IconButton
                     icon="live"
                     label={speak ? 'Stop reading replies aloud' : 'Read replies aloud'}
@@ -164,14 +159,14 @@ export function AgentPanel({ zone }: { zone: WatchZone }) {
 
             <div ref={scroller} className={styles.messages}>
                 {messages.length === 0 ? (
-                    <motion.div
+                    <motion.p
                         className={styles.welcome}
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
+                        transition={SMOOTH}
                     >
-                        <strong>What should I do for {zone.name}?</strong>
-                        <span>Ask in plain words, or start with one of these.</span>
-                    </motion.div>
+                        What should I do for {zone.name}?
+                    </motion.p>
                 ) : null}
                 <AnimatePresence initial={false}>
                     {messages.map((m) => (
@@ -179,9 +174,9 @@ export function AgentPanel({ zone }: { zone: WatchZone }) {
                             key={m.id}
                             className={styles.message}
                             data-role={m.role}
-                            initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={SMOOTH}
                         >
                             {m.tools.length ? (
                                 <div className={styles.tools}>
@@ -209,10 +204,10 @@ export function AgentPanel({ zone }: { zone: WatchZone }) {
                                     className={styles.draft}
                                     initial={{ opacity: 0, y: 6 }}
                                     animate={{ opacity: 1, y: 0 }}
+                                    transition={SMOOTH}
                                 >
                                     <span className={styles.draftHead}>
-                                        <Icon name="megaphone" size={14} /> Draft ·{' '}
-                                        {m.draft.audience} · {m.draft.priority}
+                                        Draft · {m.draft.audience} · {m.draft.priority}
                                     </span>
                                     <strong>{m.draft.title}</strong>
                                     <span>{m.draft.body}</span>
@@ -226,7 +221,7 @@ export function AgentPanel({ zone }: { zone: WatchZone }) {
                                         {m.draft.audience === 'responders'
                                             ? 'Review and send'
                                             : 'Review and approve'}
-                                        <Icon name="arrowRight" size={13} />
+                                        <Icon name="arrowRight" size={12} />
                                     </button>
                                 </motion.div>
                             ) : null}
@@ -274,7 +269,7 @@ export function AgentPanel({ zone }: { zone: WatchZone }) {
                     }
                     onClick={listen}
                 >
-                    <Icon name="mic" size={16} />
+                    <Icon name="mic" size={15} />
                 </button>
                 <button
                     type="submit"
@@ -282,7 +277,7 @@ export function AgentPanel({ zone }: { zone: WatchZone }) {
                     disabled={!input.trim() || thinking}
                     aria-label="Send"
                 >
-                    <Icon name="send" size={16} />
+                    <Icon name="arrowRight" size={14} />
                 </button>
             </form>
         </motion.section>

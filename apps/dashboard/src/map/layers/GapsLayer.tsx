@@ -1,13 +1,19 @@
-import { useEffect, useState } from 'react';
-import { computeCoverage } from '../../sim/geo';
-import type { WatchZone } from '../../sim/types';
+import { useEffect, useRef, useState } from 'react';
+import { computeCoverage } from '../../model/geo';
+import type { ZoneView } from '../../model/types';
+import { deployed } from '../../model/zone';
 import { GridOverlay } from '../gridOverlay';
 import { useMap } from '../viewer';
 
 /** Hatches the ground no deployed edge server reaches, until the given time. */
-export function GapsLayer({ zone, until }: { zone: WatchZone; until: number }) {
+export function GapsLayer({ zone, until }: { zone: ZoneView; until: number }) {
     const viewer = useMap((s) => s.viewer);
     const [active, setActive] = useState(false);
+    const latest = useRef(zone);
+    latest.current = zone;
+    const signature = deployed(zone)
+        .map((s) => `${s.lat},${s.lon},${s.radiusM}`)
+        .join('|');
 
     useEffect(() => {
         const left = until - Date.now();
@@ -19,19 +25,16 @@ export function GapsLayer({ zone, until }: { zone: WatchZone; until: number }) {
 
     useEffect(() => {
         if (!viewer || !active) return;
-        const overlay = new GridOverlay(viewer, zone.grid);
-        const { covered } = computeCoverage(
-            zone.grid,
-            zone.servers.filter((s) => s.status === 'deployed'),
-        );
-        const { cols } = zone.grid;
+        const { grid } = latest.current;
+        const overlay = new GridOverlay(viewer, grid);
+        const { covered } = computeCoverage(grid, deployed(latest.current));
         overlay.paint((i) => {
-            if (!zone.grid.inZone[i] || covered[i]) return null;
-            const stripe = (Math.floor(i / cols) + (i % cols)) % 3 === 0;
+            if (!grid.inZone[i] || covered[i]) return null;
+            const stripe = (Math.floor(i / grid.cols) + (i % grid.cols)) % 3 === 0;
             return stripe ? [196, 33, 112, 170] : [255, 79, 163, 90];
         });
         return () => overlay.destroy();
-    }, [viewer, active, zone.grid, zone.servers]);
+    }, [viewer, active, zone.grid, signature]);
 
     return null;
 }

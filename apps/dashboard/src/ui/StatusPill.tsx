@@ -1,4 +1,4 @@
-import type { ZoneStatus } from '../sim/types';
+import type { ZoneStatus } from '../model/types';
 import styles from './ui.module.css';
 
 const LABEL: Record<ZoneStatus, string> = {

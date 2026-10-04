@@ -9,7 +9,7 @@ import {
     type Cartesian3,
 } from 'cesium';
 import { useEffect, useRef } from 'react';
-import type { LatLon } from '../../sim/types';
+import type { LatLon } from '../../model/types';
 import { useMapInput } from '../input';
 import { ALWAYS_ON_TOP, C, toCartesian } from '../style';
 import { useDataSource } from '../useDataSource';

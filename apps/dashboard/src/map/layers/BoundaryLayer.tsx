@@ -5,7 +5,7 @@ import {
     PolygonHierarchy,
 } from 'cesium';
 import { useEffect, useRef } from 'react';
-import type { LatLon } from '../../sim/types';
+import type { LatLon } from '../../model/types';
 import { C, toCartesian } from '../style';
 import { useDataSource } from '../useDataSource';
 

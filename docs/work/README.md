@@ -25,3 +25,7 @@ decisions and status live, so design docs can stay present-tense.
 | 0009 | Monorepo audit        | in-progress |
 | 0010 | Dashboard redesign    | done        |
 | 0011 | Fire segmentation     | in-progress |
+| 0012 | Dashboard revamp      | done        |
+| 0013 | Edge discovery        | in-progress |
+| 0014 | API records           | in-progress |
+| 0015 | Dashboard on the api  | done        |

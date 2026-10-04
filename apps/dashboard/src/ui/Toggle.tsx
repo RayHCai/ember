@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { SNAP } from './motion';
 import styles from './ui.module.css';
 
 interface Props {
@@ -20,11 +21,7 @@ export function Toggle({ on, onChange, label, disabled }: Props) {
             className={styles.toggle}
             onClick={() => onChange(!on)}
         >
-            <motion.span
-                layout
-                className={styles.knob}
-                transition={{ type: 'spring', stiffness: 700, damping: 32 }}
-            />
+            <motion.span layout className={styles.knob} transition={SNAP} />
         </button>
     );
 }

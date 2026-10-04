@@ -1,14 +1,15 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '../icons/Icon';
-import { sendBlast, subscribedCivilians } from '../sim/actions';
-import type { Blast, BlastAudience, BlastPriority, WatchZone } from '../sim/types';
-import { notify } from '../store/notifications';
+import type { Blast, BlastAudience, BlastPriority } from '@ember/contracts';
+import type { ZoneView } from '../model/types';
+import { approveBlast, createBlast } from '../store/actions';
 import { useSession } from '../store/session';
 import { useUi, type BlastDraft } from '../store/ui';
 import { Button } from '../ui/Button';
 import { ago, clock } from '../ui/format';
 import { Modal } from '../ui/Modal';
+import { QUICK, SMOOTH, SNAP } from '../ui/motion';
 import panel from '../ui/panel.module.css';
 import { Segmented } from '../ui/Segmented';
 import ui from '../ui/ui.module.css';
@@ -61,57 +62,22 @@ const EMPTY: BlastDraft = {
     area: 'zone',
 };
 
-function Burst() {
-    const pieces = useMemo(
-        () =>
-            Array.from({ length: 16 }, (_, i) => ({
-                angle: (i / 16) * Math.PI * 2,
-                dist: 70 + (i % 3) * 22,
-                color: ['#FFB347', '#FF6A2B', '#E2341D', '#1F9D6B'][i % 4]!,
-            })),
-        [],
-    );
-    return (
-        <div className={styles.burst} aria-hidden>
-            {pieces.map((p, i) => (
-                <motion.svg
-                    key={i}
-                    width="12"
-                    height="12"
-                    viewBox="0 0 10 10"
-                    initial={{ x: 0, y: 0, opacity: 1, scale: 0.4, rotate: 0 }}
-                    animate={{
-                        x: Math.cos(p.angle) * p.dist,
-                        y: Math.sin(p.angle) * p.dist,
-                        opacity: 0,
-                        scale: 1,
-                        rotate: 260,
-                    }}
-                    transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-                >
-                    <polygon points="5,0 10,8 0,9" fill={p.color} />
-                </motion.svg>
-            ))}
-        </div>
-    );
-}
-
-export function BlastDialog({ zone }: { zone: WatchZone }) {
+export function BlastDialog({ zone }: { zone: ZoneView }) {
     const state = useUi((s) => s.blast);
     const close = useUi((s) => s.closeBlast);
     const operator = useSession((s) => s.session?.name ?? 'Operator');
     const [draft, setDraft] = useState<BlastDraft>(EMPTY);
     const [step, setStep] = useState<Step>('compose');
     const [sent, setSent] = useState<Blast | null>(null);
-    const [approvedAt, setApprovedAt] = useState<number | null>(null);
+    const [sending, setSending] = useState(false);
     const now = useNow(10_000);
+    const pendingId = state?.pendingId ?? null;
 
     useEffect(() => {
         if (!state) return;
         const initial = state.draft ?? EMPTY;
         setDraft(initial);
         setSent(null);
-        setApprovedAt(null);
         setStep(
             state.approve && initial.audience !== 'responders' && initial.body
                 ? 'approve'
@@ -121,24 +87,30 @@ export function BlastDialog({ zone }: { zone: WatchZone }) {
 
     const civilians = draft.audience !== 'responders';
     const responders = draft.audience !== 'civilians';
-    const civilianCount = civilians ? subscribedCivilians(zone.id, draft.area) : 0;
-    const responderCount = responders ? zone.responders.length : 0;
     const segments = Math.max(1, Math.ceil(draft.body.length / 160));
     const ready = draft.title.trim() && draft.body.trim();
     const patch = (p: Partial<BlastDraft>) => setDraft((d) => ({ ...d, ...p }));
 
-    const deliver = (approval: { approvedBy: string; approvedAt: number } | null) => {
-        try {
-            setSent(sendBlast(zone.id, draft, approval));
-            setStep('sent');
-        } catch (err) {
-            notify(
-                'critical',
-                'Blast not sent',
-                err instanceof Error ? err.message : String(err),
-                zone,
-            );
-        }
+    const lastBlast = zone.blasts[0];
+
+    // Approval happens on the api: `approve` from this signed-in operator is the approval record.
+    const deliver = async (approve: boolean) => {
+        setSending(true);
+        const blast =
+            pendingId && approve
+                ? await approveBlast(zone.id, pendingId)
+                : await createBlast(zone.id, {
+                      audience: draft.audience,
+                      priority: draft.priority,
+                      area: draft.area,
+                      title: draft.title.trim(),
+                      body: draft.body.trim(),
+                      approve,
+                  });
+        setSending(false);
+        if (!blast) return;
+        setSent(blast);
+        setStep('sent');
     };
 
     return (
@@ -152,22 +124,17 @@ export function BlastDialog({ zone }: { zone: WatchZone }) {
                       ? 'Blast sent'
                       : 'Event blast'
             }
-            subtitle={
-                step === 'compose'
-                    ? `Send status to civilians, responders, or both in ${zone.name}.`
-                    : undefined
-            }
-            icon={step === 'approve' ? 'shield' : 'megaphone'}
-            width={step === 'compose' ? 760 : 560}
+            width={step === 'compose' ? 760 : 520}
         >
             <AnimatePresence mode="wait" initial={false}>
                 {step === 'compose' ? (
                     <motion.div
                         key="compose"
                         className={styles.compose}
-                        initial={{ opacity: 0, x: -16 }}
+                        initial={{ opacity: 0, x: -12 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -16 }}
+                        exit={{ opacity: 0, x: -12, transition: QUICK }}
+                        transition={SMOOTH}
                     >
                         <div className={styles.form}>
                             <div className={ui.field}>
@@ -177,13 +144,9 @@ export function BlastDialog({ zone }: { zone: WatchZone }) {
                                     value={draft.audience}
                                     onChange={(audience) => patch({ audience })}
                                     options={[
-                                        { value: 'civilians', label: 'Civilians', icon: 'users' },
-                                        {
-                                            value: 'responders',
-                                            label: 'Responders',
-                                            icon: 'shield',
-                                        },
-                                        { value: 'both', label: 'Both', icon: 'megaphone' },
+                                        { value: 'civilians', label: 'Civilians' },
+                                        { value: 'responders', label: 'Responders' },
+                                        { value: 'both', label: 'Both' },
                                     ]}
                                 />
                             </div>
@@ -263,6 +226,7 @@ export function BlastDialog({ zone }: { zone: WatchZone }) {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0 }}
+                                            transition={{ ...SMOOTH, layout: SNAP }}
                                         >
                                             <span className={styles.from}>Ember · SMS</span>
                                             <p>
@@ -279,10 +243,10 @@ export function BlastDialog({ zone }: { zone: WatchZone }) {
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0 }}
+                                            transition={{ ...SMOOTH, layout: SNAP }}
                                         >
                                             <span className={styles.from}>
-                                                <Icon name="flame" size={11} /> Ember Responder ·
-                                                now
+                                                Ember Responder · now
                                             </span>
                                             <b>{draft.title || 'Title'}</b>
                                             <span>{draft.body || 'Your message shows here.'}</span>
@@ -290,24 +254,21 @@ export function BlastDialog({ zone }: { zone: WatchZone }) {
                                     ) : null}
                                 </AnimatePresence>
                             </div>
-                            <div className={styles.recipients}>
-                                {civilians ? (
-                                    <span>
-                                        <Icon name="users" size={13} /> ~{civilianCount} civilians
-                                    </span>
-                                ) : null}
-                                {responders ? (
-                                    <span>
-                                        <Icon name="shield" size={13} /> {responderCount} responders
-                                    </span>
-                                ) : null}
-                            </div>
+                            <p className={styles.recipients}>
+                                {[
+                                    civilians ? 'Civilians by SMS' : '',
+                                    responders ? 'Responders by push' : '',
+                                ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                            </p>
                         </div>
 
                         <div className={styles.footer}>
-                            {zone.blasts[0] ? (
+                            {lastBlast ? (
                                 <span className={panel.muted}>
-                                    Last blast “{zone.blasts[0].title}” {ago(zone.blasts[0].sentAt)}
+                                    Last blast “{lastBlast.title}”{' '}
+                                    {ago(Date.parse(lastBlast.createdAt))}
                                 </span>
                             ) : (
                                 <span />
@@ -325,10 +286,11 @@ export function BlastDialog({ zone }: { zone: WatchZone }) {
                                 <Button
                                     variant="primary"
                                     icon="send"
-                                    disabled={!ready || responderCount === 0}
-                                    onClick={() => deliver(null)}
+                                    disabled={!ready}
+                                    loading={sending}
+                                    onClick={() => void deliver(false)}
                                 >
-                                    Send to {responderCount} responders
+                                    Send to responders
                                 </Button>
                             )}
                         </div>
@@ -337,9 +299,10 @@ export function BlastDialog({ zone }: { zone: WatchZone }) {
                     <motion.div
                         key="approve"
                         className={panel.stack}
-                        initial={{ opacity: 0, x: 16 }}
+                        initial={{ opacity: 0, x: 12 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -16 }}
+                        exit={{ opacity: 0, x: -12, transition: QUICK }}
+                        transition={SMOOTH}
                     >
                         <div className={styles.summary}>
                             <div className={panel.row} style={{ flexWrap: 'wrap' }}>
@@ -360,76 +323,62 @@ export function BlastDialog({ zone }: { zone: WatchZone }) {
                                         ? 'Within 2 mi of the fire'
                                         : 'Whole zone'}
                                 </span>
-                                <span className={panel.tag}>~{civilianCount} civilians</span>
-                                {responders ? (
-                                    <span className={panel.tag}>{responderCount} responders</span>
-                                ) : null}
+                                <span className={panel.tag}>Civilians</span>
+                                {responders ? <span className={panel.tag}>Responders</span> : null}
                             </div>
                             <strong>{draft.title}</strong>
                             <p>{draft.body}</p>
                         </div>
-                        <div className={panel.callout}>
-                            <Icon name="shield" size={18} />
-                            <span>
-                                <strong>Civilian alerts need an operator approval</strong>
-                                Nothing reaches a civilian's phone without this record. It is saved
-                                with the blast.
-                            </span>
-                        </div>
                         <div className={styles.record}>
-                            <span className={panel.muted}>Approval record</span>
-                            <span>
-                                {approvedAt ? 'Approved' : 'Will be signed'} by <b>{operator}</b> at{' '}
-                                {clock(approvedAt ?? now)}
+                            <strong>Civilian alerts need an operator approval</strong>
+                            <span className={panel.muted}>
+                                {sending ? 'Signing' : 'Will be signed'} by {operator} at{' '}
+                                {clock(now)}
                             </span>
                         </div>
                         <HoldButton
                             label="Hold to approve and send"
                             holdingLabel="Keep holding…"
-                            onComplete={() => {
-                                const at = Date.now();
-                                setApprovedAt(at);
-                                deliver({ approvedBy: operator, approvedAt: at });
-                            }}
+                            onComplete={() => void deliver(true)}
                         />
-                        <Button variant="ghost" icon="arrowLeft" onClick={() => setStep('compose')}>
-                            Edit message
-                        </Button>
+                        {pendingId ? null : (
+                            <Button
+                                variant="ghost"
+                                icon="arrowLeft"
+                                onClick={() => setStep('compose')}
+                            >
+                                Edit message
+                            </Button>
+                        )}
                     </motion.div>
                 ) : (
                     <motion.div
                         key="sent"
                         className={styles.sent}
-                        initial={{ opacity: 0, scale: 0.96 }}
-                        animate={{ opacity: 1, scale: 1 }}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={SMOOTH}
                     >
-                        <div className={styles.sentMark}>
-                            <Burst />
-                            <motion.span
-                                initial={{ scale: 0, rotate: -45 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 14 }}
-                            >
-                                <Icon name="check" size={34} />
-                            </motion.span>
-                        </div>
-                        <strong>“{sent?.title}” is on its way</strong>
+                        <motion.span
+                            className={styles.sentMark}
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ ...SNAP, delay: 0.08 }}
+                        >
+                            <Icon name="check" size={22} />
+                        </motion.span>
+                        <strong>“{sent?.title}” is queued for delivery</strong>
                         <span>
-                            {[
-                                sent?.recipients.civilians
-                                    ? `${sent.recipients.civilians} civilians by SMS and iMessage`
-                                    : '',
-                                sent?.recipients.responders
-                                    ? `${sent.recipients.responders} responders by push`
-                                    : '',
-                            ]
-                                .filter(Boolean)
-                                .join(' · ')}
+                            {sent?.audience === 'both'
+                                ? 'Civilians and responders'
+                                : sent?.audience === 'civilians'
+                                  ? 'Civilians'
+                                  : 'Responders'}
                         </span>
                         {sent?.approval ? (
                             <span className={panel.muted}>
-                                Approved by {sent.approval.approvedBy} at{' '}
-                                {clock(sent.approval.approvedAt)}
+                                Approved by {sent.approval.approverName} at{' '}
+                                {clock(Date.parse(sent.approval.approvedAt))}
                             </span>
                         ) : null}
                         <Button variant="primary" onClick={close}>

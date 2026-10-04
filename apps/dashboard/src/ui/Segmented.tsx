@@ -2,12 +2,14 @@ import { motion } from 'motion/react';
 import { useId } from 'react';
 import { Icon } from '../icons/Icon';
 import type { GlyphName } from '../icons/glyphs';
+import { SNAP } from './motion';
 import styles from './ui.module.css';
 
 export interface SegmentOption<T extends string> {
     value: T;
     label: string;
     icon?: GlyphName;
+    count?: number;
     disabled?: boolean;
     title?: string;
 }
@@ -17,15 +19,18 @@ interface Props<T extends string> {
     options: SegmentOption<T>[];
     onChange: (value: T) => void;
     label: string;
+    /** `tabs` drops the track and underlines the active choice. */
+    variant?: 'pill' | 'tabs';
     className?: string;
 }
 
-/** Choices with a pill that slides to the active one. */
+/** Choices with a marker that slides to the active one. */
 export function Segmented<T extends string>({
     value,
     options,
     onChange,
     label,
+    variant = 'pill',
     className,
 }: Props<T>) {
     const id = useId();
@@ -33,7 +38,7 @@ export function Segmented<T extends string>({
         <div
             role="radiogroup"
             aria-label={label}
-            className={`${styles.segmented} ${className ?? ''}`}
+            className={`${variant === 'tabs' ? styles.tabs : styles.segmented} ${className ?? ''}`}
         >
             {options.map((o) => {
                 const active = o.value === value;
@@ -53,12 +58,15 @@ export function Segmented<T extends string>({
                             <motion.span
                                 layoutId={`segment-${id}`}
                                 className={styles.segmentPill}
-                                transition={{ type: 'spring', stiffness: 480, damping: 38 }}
+                                transition={SNAP}
                             />
                         ) : null}
                         <span className={styles.segmentLabel}>
-                            {o.icon ? <Icon name={o.icon} size={15} /> : null}
+                            {o.icon ? <Icon name={o.icon} size={14} /> : null}
                             {o.label}
+                            {o.count ? (
+                                <span className={styles.segmentCount}>{o.count}</span>
+                            ) : null}
                         </span>
                     </button>
                 );

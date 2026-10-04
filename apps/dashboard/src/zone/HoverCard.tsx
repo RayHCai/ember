@@ -1,72 +1,83 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { Icon } from '../icons/Icon';
-import type { GlyphName } from '../icons/glyphs';
-import { getTelemetry } from '../sim/live';
-import type { WatchZone } from '../sim/types';
+import { getTelemetry, MODE_LABEL } from '../live/telemetry';
+import type { ZoneView } from '../model/types';
+import { hectares } from '../model/zone';
 import { useUi, type Hover } from '../store/ui';
 import { minutes } from '../ui/format';
+import { QUICK } from '../ui/motion';
 import styles from './Overlay.module.css';
 
-function describe(
-    zone: WatchZone,
-    hover: Hover,
-): { icon: GlyphName; title: string; detail: string } | null {
+function describe(zone: ZoneView, hover: Hover): { title: string; detail: string } | null {
     switch (hover.kind) {
         case 'server': {
             const s = zone.servers.find((x) => x.id === hover.id);
             if (!s) return null;
-            const drones = zone.drones.filter((d) => d.serverId === s.id).length;
+            if (s.status === 'pending')
+                return { title: `Site ${s.name}`, detail: 'Planned · no server yet' };
+            const live = s.edge?.live;
             return {
-                icon: 'server',
                 title: `Edge server ${s.name}`,
-                detail:
-                    s.status === 'pending'
-                        ? 'Suggested · not deployed'
-                        : `${drones} drones · ${s.health.latencyMs} ms · ${s.health.temperatureC} °C`,
+                detail: live
+                    ? `${live.online ? 'Online' : 'Offline'} · ${live.connectedDrones}/${live.drones} drones connected`
+                    : 'Status unknown',
             };
         }
         case 'drone': {
             const d = zone.drones.find((x) => x.id === hover.id);
             const t = getTelemetry(hover.id);
-            if (!d || !t) return null;
+            if (!d) return null;
             return {
-                icon: 'drone',
                 title: d.name,
-                detail: `${t.state} · ${t.batteryPct}% battery · ${Math.round(t.altM)} m`,
+                detail: t
+                    ? `${MODE_LABEL[t.mode]} · ${Math.round(t.batteryPct)}% battery · ${Math.round(t.altM)} m`
+                    : 'No position reported',
             };
         }
-        case 'report': {
-            const r = zone.reports.find((x) => x.id === hover.id);
-            return r ? { icon: 'camera', title: 'Civilian report', detail: r.text } : null;
-        }
-        case 'community': {
-            const c = zone.civilianPlan?.impacts.find((x) => x.communityId === hover.id);
-            return c
+        case 'risk': {
+            const z = zone.riskZones.find((x) => x.id === hover.id);
+            return z
                 ? {
-                      icon: 'home',
-                      title: c.name,
-                      detail:
-                          c.arrivalMin === null
-                              ? 'Not reached in 6h'
-                              : `Fire in ${minutes(c.arrivalMin)}`,
+                      title: z.risk === 'on_fire' ? 'Active fire' : 'At-risk vegetation',
+                      detail: `${Math.round(z.confidence * 100)}% confidence · ${hectares(z.areaM2 / 10_000)} ha`,
                   }
                 : null;
         }
+        case 'community': {
+            const area = zone.surroundings?.civilianAreas.find((a) => a.id === hover.id);
+            const impact = zone.plan?.civilianImpacts.find((c) => c.civilianAreaId === hover.id);
+            if (!area) return null;
+            return {
+                title: area.name,
+                detail:
+                    !impact || impact.impactMin === null
+                        ? `Not reached in ${minutes(zone.plan?.horizonMin ?? 0)}`
+                        : impact.impactMin <= 0
+                          ? 'Burning now'
+                          : `Fire in ${minutes(impact.impactMin)}`,
+            };
+        }
         case 'drop': {
-            const s = zone.responderPlan?.dropSites.find((x) => x.id === hover.id);
-            return s
-                ? { icon: 'target', title: s.name, detail: `${s.purpose} · ${s.crews} crews` }
+            const a = zone.plan?.attackZones.find((x) => x.id === hover.id);
+            return a
+                ? {
+                      title: `Attack zone #${a.rank}`,
+                      detail: `${a.tactic} · protects ${a.protectedPopulation.toLocaleString()} people`,
+                  }
                 : null;
         }
         case 'safe': {
-            const s = zone.safeZones.find((x) => x.id === hover.id);
-            return s ? { icon: 'shield', title: s.name, detail: 'Safe zone' } : null;
+            const s = zone.surroundings?.safeZones.find((x) => x.id === hover.id);
+            return s ? { title: s.name, detail: 'Safe zone' } : null;
+        }
+        case 'station': {
+            const s = zone.surroundings?.stations.find((x) => x.id === hover.id);
+            return s ? { title: s.name, detail: 'Responder station' } : null;
         }
     }
 }
 
 /** A small card that follows the pointer over map items; click for the inspector. */
-export function HoverCard({ zone }: { zone: WatchZone }) {
+export function HoverCard({ zone }: { zone: ZoneView }) {
     const hover = useUi((s) => s.hover);
     const info = hover ? describe(zone, hover) : null;
     return (
@@ -75,19 +86,14 @@ export function HoverCard({ zone }: { zone: WatchZone }) {
                 <motion.div
                     key={`${hover.kind}:${hover.id}`}
                     className={styles.hover}
-                    style={{ left: hover.x + 16, top: hover.y + 16 }}
-                    initial={{ opacity: 0, scale: 0.92, y: 4 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
-                    transition={{ type: 'spring', stiffness: 520, damping: 34 }}
+                    style={{ left: hover.x + 14, top: hover.y + 14 }}
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, transition: { duration: 0.08 } }}
+                    transition={QUICK}
                 >
-                    <span className={styles.hoverIcon}>
-                        <Icon name={info.icon} size={14} />
-                    </span>
-                    <span>
-                        <strong>{info.title}</strong>
-                        <span>{info.detail}</span>
-                    </span>
+                    <strong>{info.title}</strong>
+                    <span>{info.detail}</span>
                 </motion.div>
             ) : null}
         </AnimatePresence>

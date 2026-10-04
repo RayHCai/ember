@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 import { NotificationsMenu } from '../chrome/NotificationsMenu';
-import { Icon } from '../icons/Icon';
 import { tweenSaturation } from '../map/base';
 import { flyToPoints } from '../map/camera';
 import { useMapInput } from '../map/input';
@@ -9,17 +8,21 @@ import { BoundaryLayer } from '../map/layers/BoundaryLayer';
 import { DetectionLayer } from '../map/layers/DetectionLayer';
 import { DronesLayer } from '../map/layers/DronesLayer';
 import { GapsLayer } from '../map/layers/GapsLayer';
-import { ReportsLayer } from '../map/layers/ReportsLayer';
+import { RiskLayer } from '../map/layers/RiskLayer';
 import { ServersLayer } from '../map/layers/ServersLayer';
 import { SuggestionsLayer } from '../map/layers/SuggestionsLayer';
+import { useWatchedDrones } from '../live/droneInfo';
 import { useMap } from '../map/viewer';
-import { riskCounts, setupStep, zoneStatus } from '../sim/world';
-import type { LatLon } from '../sim/types';
+import type { LatLon } from '../model/types';
+import { isActiveScan, ll, setupStep, zoneStatus } from '../model/zone';
 import { navigate, useRouter } from '../store/router';
+import { useZoneSync } from '../store/sync';
 import { useUi, type Pickable } from '../store/ui';
-import { useZones } from '../store/zones';
+import { useZones, useZoneView } from '../store/zones';
 import { Button, IconButton } from '../ui/Button';
+import { QUICK, SMOOTH } from '../ui/motion';
 import { Segmented } from '../ui/Segmented';
+import { Spinner } from '../ui/Spinner';
 import { StatusPill } from '../ui/StatusPill';
 import { Toggle } from '../ui/Toggle';
 import { AgentPanel } from './AgentPanel';
@@ -31,7 +34,15 @@ import { OperatorPanel } from './OperatorPanel';
 import { ScanHud } from './ScanHud';
 import styles from './Zone.module.css';
 
-const PICKABLE = new Set<string>(['server', 'drone', 'report', 'community', 'drop', 'safe']);
+const PICKABLE = new Set<string>([
+    'server',
+    'drone',
+    'risk',
+    'community',
+    'drop',
+    'safe',
+    'station',
+]);
 
 function picked(id: string): { kind: Pickable; id: string } | null {
     const kind = id.slice(0, id.indexOf(':'));
@@ -42,22 +53,29 @@ export const ZONE_FRAME = { left: 0.3, right: 0.2, top: 0.16, bottom: 0.18 };
 
 export function ZonePage({ zoneId }: { zoneId: string }) {
     const viewer = useMap((s) => s.viewer);
-    const zone = useZones((s) => s.zones[zoneId]);
+    useZoneSync(zoneId, { unassigned: true });
+    const zone = useZoneView(zoneId);
+    const missing = useZones((s) => s.missing[zoneId] === true);
+    useWatchedDrones(zone?.drones.map((d) => d.id) ?? []);
     const previous = useRouter((s) => s.previous);
     const ui = useUi();
-    const hasPlans = Boolean(zone?.civilianPlan || zone?.responderPlan);
+    const hasPlans = Boolean(zone?.plan);
+    const loaded = zone !== undefined;
     // Entry effects run once per zone; they read the latest values through this ref.
     const latest = useRef({ zone, cameFromSetup: previous?.name === 'setup' });
     latest.current = { zone, cameFromSetup: previous?.name === 'setup' };
 
     useEffect(() => {
+        if (missing) navigate({ name: 'zones' }, true);
+    }, [missing]);
+
+    useEffect(() => {
         const z = latest.current.zone;
-        if (!z) {
-            navigate({ name: 'zones' }, true);
-            return;
-        }
-        useUi.getState().resetForZone(z.lastScanAt !== null || riskCounts(z).mapped > 0);
-    }, [zoneId]);
+        if (!z) return;
+        useUi
+            .getState()
+            .resetForZone(z.lastScanAt !== null || z.runs.length > 0 || isActiveScan(z.scan));
+    }, [zoneId, loaded]);
 
     const flown = useRef<string | null>(null);
     useEffect(() => {
@@ -69,7 +87,7 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
             dive: !cameFromSetup,
             duration: cameFromSetup ? 1.2 : 2.1,
         });
-    }, [viewer, zoneId]);
+    }, [viewer, zoneId, loaded]);
 
     useEffect(() => {
         tweenSaturation(ui.mode === 'detection' ? 0 : 1);
@@ -83,11 +101,15 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
         if (shownSuggestions.current === ui.suggestions || !viewer || !z) return;
         shownSuggestions.current = ui.suggestions;
         const points: LatLon[] = [...z.boundary];
-        if (ui.suggestions) {
-            for (const c of z.civilianPlan?.impacts ?? [])
-                if (c.urgency > 0) points.push([c.lat, c.lon]);
-            for (const r of z.civilianPlan?.routes ?? []) points.push(r.path[r.path.length - 1]!);
-            for (const d of z.responderPlan?.dropSites ?? []) points.push([d.lat, d.lon]);
+        if (ui.suggestions && z.plan) {
+            const areas = new Map((z.surroundings?.civilianAreas ?? []).map((a) => [a.id, a]));
+            for (const c of z.plan.civilianImpacts) {
+                const area = areas.get(c.civilianAreaId);
+                if (c.gradient > 0 && area) points.push(ll(area.center));
+            }
+            for (const r of z.plan.evacuationRoutes)
+                if (r.path.length) points.push(ll(r.path[r.path.length - 1]!));
+            for (const a of z.plan.attackZones) points.push(ll(a.dropSite));
         }
         void flyToPoints(viewer, points, { frame: ZONE_FRAME, duration: 1.4 });
     }, [viewer, ui.suggestions]);
@@ -119,7 +141,14 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
         return () => window.removeEventListener('keydown', onKey);
     }, []);
 
-    if (!zone) return null;
+    if (!zone)
+        return (
+            <div className={styles.page}>
+                <div className={styles.loading}>
+                    <Spinner size={18} />
+                </div>
+            </div>
+        );
     const status = zoneStatus(zone);
     const detection = ui.mode === 'detection';
 
@@ -132,10 +161,15 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
             />
             <DetectionLayer zone={zone} visible={detection} />
             <SuggestionsLayer
-                civilian={zone.civilianPlan}
-                responder={zone.responderPlan}
-                safeZones={zone.safeZones}
+                plan={zone.plan}
+                surroundings={zone.surroundings}
                 visible={ui.suggestions}
+            />
+            <RiskLayer
+                zones={zone.riskZones}
+                live={zone.scan !== null}
+                visible={detection}
+                selectedId={ui.selected?.kind === 'risk' ? ui.selected.id : null}
             />
             <GapsLayer zone={zone} until={ui.gapsUntil} />
             <ServersLayer
@@ -143,43 +177,41 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                 radii={!detection}
                 selectedId={ui.selected?.kind === 'server' ? ui.selected.id : null}
             />
-            <ReportsLayer reports={zone.reports} />
             <DronesLayer
                 drones={zone.drones}
+                servers={zone.servers}
                 selectedId={ui.selected?.kind === 'drone' ? ui.selected.id : null}
             />
 
             <motion.header
-                className={styles.header}
-                initial={{ opacity: 0, y: -16 }}
+                className={styles.bar}
+                initial={{ opacity: 0, y: -12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -16 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                exit={{ opacity: 0, y: -12, transition: QUICK }}
+                transition={SMOOTH}
             >
-                <div className={styles.titleCard}>
+                <div className={styles.barTitle}>
                     <IconButton
                         icon="arrowLeft"
                         label="All watch zones"
                         tip={false}
                         onClick={() => navigate({ name: 'zones' })}
                     />
-                    <div className={styles.titleText}>
-                        <motion.h1 layoutId={`zone-title-${zone.id}`} className={styles.title}>
-                            {zone.name}
-                        </motion.h1>
-                        <span className={styles.region}>{zone.region}</span>
-                    </div>
+                    <motion.h1 layoutId={`zone-title-${zone.id}`} className={styles.title}>
+                        {zone.name}
+                    </motion.h1>
+                    <span className={styles.region}>{zone.region}</span>
                     <StatusPill status={status} step={setupStep(zone)} />
                 </div>
 
-                <div className={styles.modeCard}>
+                <div className={styles.barMode}>
                     <Segmented
                         label="Map overlay"
                         value={ui.mode}
                         onChange={ui.setMode}
                         options={[
-                            { value: 'operator', label: 'Operator', icon: 'server' },
-                            { value: 'detection', label: 'Detection', icon: 'radar' },
+                            { value: 'operator', label: 'Operator' },
+                            { value: 'detection', label: 'Detection' },
                         ]}
                     />
                     <label
@@ -187,7 +219,6 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                         data-disabled={!hasPlans}
                         title={hasPlans ? undefined : 'Run a planner first'}
                     >
-                        <Icon name="route" size={15} />
                         Suggestions
                         <Toggle
                             on={ui.suggestions}
@@ -198,7 +229,7 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                     </label>
                 </div>
 
-                <div className={styles.actions}>
+                <div className={styles.barActions}>
                     <Button icon="megaphone" variant="primary" onClick={() => ui.openBlast()}>
                         Event blast
                     </Button>
@@ -206,6 +237,7 @@ export function ZonePage({ zoneId }: { zoneId: string }) {
                         icon="sparkle"
                         label="Operator Agent"
                         active={ui.agentOpen}
+                        tip={!ui.agentOpen}
                         onClick={() => ui.setAgentOpen(!ui.agentOpen)}
                     />
                     <NotificationsMenu />

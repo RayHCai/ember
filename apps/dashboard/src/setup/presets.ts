@@ -1,4 +1,4 @@
-import type { LatLon } from '../sim/types';
+import type { LatLon } from '../model/types';
 
 export interface Preset {
     name: string;
@@ -9,6 +9,12 @@ export interface Preset {
 
 // Forested, fire-prone places to start a watch zone from.
 export const PRESETS: Preset[] = [
+    {
+        name: 'Lahaina',
+        region: 'Lahaina, Maui, HI',
+        at: [20.8838, -156.667],
+        heightM: 5_000,
+    },
     {
         name: 'Angeles NF',
         region: 'Angeles National Forest, CA',

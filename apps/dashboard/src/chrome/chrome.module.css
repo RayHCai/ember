@@ -3,94 +3,106 @@
 }
 
 .popover {
-    --facet: var(--surface);
+    --facet: var(--paper);
     position: absolute;
-    top: calc(100% + 10px);
+    top: calc(100% + 8px);
     z-index: 80;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    background: var(--surface);
+    border-radius: 10px;
+    background: var(--paper);
     box-shadow: var(--shadow-lg);
     overflow: hidden;
-    transform-origin: top right;
 }
 
 .menuHead {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
-    padding: 14px 16px 10px;
+    padding: 12px 14px 10px;
     border-bottom: 1px solid var(--line);
 }
 
+.menuHead strong {
+    font-size: 13.5px;
+}
+
 .link {
+    padding: 0;
     border: 0;
     background: none;
-    color: var(--flame);
+    color: var(--ink-2);
     font-size: 12.5px;
-    font-weight: 560;
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 3px;
+    transition:
+        color var(--fast) var(--ease),
+        text-decoration-color var(--fast) var(--ease);
 }
 
 .link:hover {
-    text-decoration: underline;
+    color: var(--ink);
+    text-decoration-color: var(--ink);
 }
 
 .noticeList {
-    max-height: 440px;
+    max-height: 420px;
     overflow: auto;
-    padding: 6px;
+    padding: 4px;
 }
 
 .notice {
-    --facet: var(--surface);
+    --facet: var(--paper);
+    position: relative;
     display: flex;
-    gap: 11px;
+    gap: 10px;
     width: 100%;
-    padding: 10px;
+    padding: 9px 22px 9px 10px;
     border: 0;
-    border-radius: 11px;
+    border-radius: 6px;
     background: transparent;
     text-align: left;
-    transition: background-color 0.15s;
+    transition: background-color var(--fast) var(--ease);
 }
 
 .notice:hover {
-    --facet: var(--surface-2);
-    background: var(--surface-2);
+    --facet: var(--hover);
+    background: var(--hover);
 }
 
-.notice[data-read='false'] {
-    --facet: #fff8f3;
-    background: #fff8f3;
+.notice:active {
+    --facet: var(--press);
+    background: var(--press);
+}
+
+/* Unread: a small fire dot at the right edge. */
+.notice[data-read='false']::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    right: 9px;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--fire);
 }
 
 .noticeIcon {
-    --facet: var(--surface-3);
     display: grid;
     flex-shrink: 0;
     place-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    background: var(--surface-3);
-    color: var(--ink-2);
+    height: 19px;
+    color: var(--ink-3);
 }
 
 .notice[data-severity='critical'] .noticeIcon {
-    --facet: var(--fire);
-    background: var(--fire);
-    color: #fff;
+    color: var(--fire);
 }
 
 .notice[data-severity='warning'] .noticeIcon {
-    --facet: var(--risk-soft);
-    background: var(--risk-soft);
-    color: #b07a00;
+    color: var(--risk-ink);
 }
 
 .notice[data-severity='success'] .noticeIcon {
-    --facet: var(--ok-soft);
-    background: var(--ok-soft);
     color: var(--ok);
 }
 
@@ -102,7 +114,11 @@
 
 .noticeText strong {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 400;
+}
+
+.notice[data-read='false'] .noticeText strong {
+    font-weight: 700;
 }
 
 .noticeText span {
@@ -117,11 +133,7 @@
 }
 
 .empty {
-    --facet: var(--surface);
-    display: grid;
-    gap: 10px;
-    justify-items: center;
-    padding: 30px 26px;
+    padding: 28px 16px;
     color: var(--ink-3);
     font-size: 13px;
     text-align: center;
@@ -130,71 +142,82 @@
 .avatar {
     display: grid;
     place-items: center;
-    width: 38px;
-    height: 38px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
     border: 0;
     border-radius: 999px;
-    background: var(--gradient-flame);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 650;
-    box-shadow: var(--shadow-flame);
-    transition: transform 0.25s var(--ease-spring);
+    background: var(--wash);
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+    color: var(--ink);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    transition:
+        background-color var(--fast) var(--ease),
+        box-shadow var(--fast) var(--ease),
+        color var(--fast) var(--ease),
+        transform var(--fast) var(--ease);
 }
 
 .avatar:hover {
-    transform: scale(1.07) rotate(-4deg);
+    background: var(--hover);
+    box-shadow: inset 0 0 0 1px var(--ink-3);
+}
+
+.avatar:active {
+    transform: scale(0.94);
+}
+
+.avatar[data-active='true'] {
+    background: var(--ink);
+    box-shadow: none;
+    color: #fff;
 }
 
 .account {
     display: grid;
-    gap: 2px;
-    justify-items: center;
-    padding: 20px 16px 16px;
+    gap: 1px;
+    padding: 12px 14px;
     border-bottom: 1px solid var(--line);
-    text-align: center;
+}
+
+.account strong {
+    font-size: 13.5px;
 }
 
 .account span {
-    color: var(--ink-2);
-    font-size: 12.5px;
-}
-
-.account em {
-    margin-top: 6px;
+    overflow: hidden;
     color: var(--ink-3);
-    font-size: 11.5px;
-    font-style: normal;
+    font-size: 12.5px;
+    text-overflow: ellipsis;
 }
 
-.avatarLarge {
-    display: grid;
-    place-items: center;
-    width: 52px;
-    height: 52px;
-    margin-bottom: 8px;
-    border-radius: 999px;
-    background: var(--gradient-flame);
-    color: #fff !important;
-    font-size: 18px !important;
-    font-weight: 650;
+.menu {
+    padding: 4px;
 }
 
 .menuItem {
-    --facet: var(--surface);
+    --facet: var(--paper);
     display: flex;
-    gap: 10px;
+    gap: 9px;
     align-items: center;
     width: 100%;
-    padding: 12px 16px;
+    padding: 7px 10px;
     border: 0;
+    border-radius: 6px;
     background: transparent;
     font-size: 13.5px;
     text-align: left;
+    transition: background-color var(--fast) var(--ease);
 }
 
 .menuItem:hover {
-    --facet: var(--surface-2);
-    background: var(--surface-2);
-    color: var(--flame-hot);
+    --facet: var(--hover);
+    background: var(--hover);
+}
+
+.menuItem:active {
+    --facet: var(--press);
+    background: var(--press);
 }

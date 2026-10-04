@@ -1,81 +1,49 @@
+import type { OperatorSession } from '@ember/contracts';
 import { create } from 'zustand';
+import { api } from '../api';
+import { onUnauthorized, setApiToken } from '../api/client';
 
-// Email and password sign-in, kept on this device until the api owns accounts.
-// A session lasts a week, then the operator signs in again.
+// Email and password accounts on the api. The session token is kept on this device and the api
+// ends it after a week, so the operator signs in again.
 
-export const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_KEY = 'ember.session';
-const ACCOUNTS_KEY = 'ember.accounts';
-
-export const DEMO_ACCOUNT = {
-    name: 'Demo operator',
-    email: 'operator@ember.dev',
-    password: 'wildfire',
-};
+const TIMED_OUT = 'Your session timed out after a week. Sign in again.';
 
 export interface Session {
+    token: string;
+    operatorId: string;
     name: string;
     email: string;
-    signedInAt: number;
     expiresAt: number;
 }
 
-interface Account {
-    name: string;
-    email: string;
-    passwordHash: string;
-}
-
-function read<T>(key: string): T | null {
+function read(): Session | null {
     try {
-        const raw = window.localStorage.getItem(key);
-        return raw ? (JSON.parse(raw) as T) : null;
+        const raw = window.localStorage.getItem(SESSION_KEY);
+        const s = raw ? (JSON.parse(raw) as Partial<Session>) : null;
+        return s?.token && s.operatorId && s.expiresAt ? (s as Session) : null;
     } catch {
         return null;
     }
 }
 
-function write(key: string, value: unknown): void {
+function write(session: Session | null): void {
     try {
-        if (value === null) window.localStorage.removeItem(key);
-        else window.localStorage.setItem(key, JSON.stringify(value));
+        if (session) window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        else window.localStorage.removeItem(SESSION_KEY);
     } catch {
         // Storage can be unavailable (private windows); the session then lasts this run only.
     }
 }
 
-async function hashPassword(email: string, password: string): Promise<string> {
-    const data = new TextEncoder().encode(`ember:${email}:${password}`);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function accounts(): Promise<Account[]> {
-    const stored = read<Account[]>(ACCOUNTS_KEY) ?? [];
-    if (stored.some((a) => a.email === DEMO_ACCOUNT.email)) return stored;
-    const demo: Account = {
-        name: DEMO_ACCOUNT.name,
-        email: DEMO_ACCOUNT.email,
-        passwordHash: await hashPassword(DEMO_ACCOUNT.email, DEMO_ACCOUNT.password),
+function fromApi(s: OperatorSession): Session {
+    return {
+        token: s.token,
+        operatorId: s.operator.operatorId,
+        name: s.operator.name,
+        email: s.operator.email,
+        expiresAt: Date.parse(s.expiresAt),
     };
-    return [demo, ...stored];
-}
-
-function startSession(account: Pick<Account, 'name' | 'email'>): Session {
-    const now = Date.now();
-    const session = {
-        name: account.name,
-        email: account.email,
-        signedInAt: now,
-        expiresAt: now + SESSION_MS,
-    };
-    write(SESSION_KEY, session);
-    return session;
-}
-
-function storedSession(): Session | null {
-    const s = read<Session>(SESSION_KEY);
-    return s && s.expiresAt > Date.now() ? s : null;
 }
 
 interface SessionState {
@@ -87,40 +55,50 @@ interface SessionState {
     signOut: (notice?: string) => void;
 }
 
-const initialNotice =
-    read<Session>(SESSION_KEY) && !storedSession()
-        ? 'Your session timed out after a week. Sign in again.'
-        : null;
+const stored = read();
+const initial = stored && stored.expiresAt > Date.now() ? stored : null;
+setApiToken(initial?.token ?? null);
 
-export const useSession = create<SessionState>()((set) => ({
-    session: storedSession(),
-    notice: initialNotice,
-    signIn: async (rawEmail, password) => {
-        const email = rawEmail.trim().toLowerCase();
-        const account = (await accounts()).find((a) => a.email === email);
-        if (!account) throw new Error('No account uses that email. Create one instead.');
-        if (account.passwordHash !== (await hashPassword(email, password)))
-            throw new Error('That password is not right.');
-        set({ session: startSession(account), notice: null });
-    },
-    signUp: async (name, rawEmail, password) => {
-        const email = rawEmail.trim().toLowerCase();
-        const all = await accounts();
-        if (all.some((a) => a.email === email))
-            throw new Error('An account already uses that email. Sign in instead.');
-        const account: Account = {
-            name: name.trim(),
-            email,
-            passwordHash: await hashPassword(email, password),
-        };
-        write(ACCOUNTS_KEY, [...all, account]);
-        set({ session: startSession(account), notice: null });
-    },
-    signOut: (notice) => {
-        write(SESSION_KEY, null);
-        set({ session: null, notice: notice ?? null });
-    },
-}));
+export const useSession = create<SessionState>()((set, get) => {
+    const start = (s: OperatorSession) => {
+        const session = fromApi(s);
+        write(session);
+        setApiToken(session.token);
+        set({ session, notice: null });
+    };
+    return {
+        session: initial,
+        notice: stored && !initial ? TIMED_OUT : null,
+        signIn: async (email, password) => {
+            start(await api.signIn({ email: email.trim().toLowerCase(), password }));
+        },
+        signUp: async (name, email, password) => {
+            start(
+                await api.signUp({
+                    name: name.trim(),
+                    email: email.trim().toLowerCase(),
+                    password,
+                }),
+            );
+        },
+        signOut: (notice) => {
+            if (get().session && !notice) void api.signOut().catch(() => {});
+            write(null);
+            setApiToken(null);
+            set({ session: null, notice: notice ?? null });
+        },
+    };
+});
+
+onUnauthorized(() => {
+    if (useSession.getState().session)
+        useSession.getState().signOut('Your session ended. Sign in again.');
+});
+
+/** Checks a stored session with the api once: a rejected one signs out, an unreachable api keeps it. */
+export async function checkSession(): Promise<void> {
+    if (useSession.getState().session) await api.session().catch(() => {});
+}
 
 /** Signs the operator out the moment the week is up, even mid-shift. */
 export function watchSessionExpiry(): () => void {
@@ -129,11 +107,8 @@ export function watchSessionExpiry(): () => void {
         window.clearTimeout(timer);
         if (!session) return;
         timer = window.setTimeout(
-            () =>
-                useSession
-                    .getState()
-                    .signOut('Your session timed out after a week. Sign in again.'),
-            Math.max(0, session.expiresAt - Date.now()),
+            () => useSession.getState().signOut(TIMED_OUT),
+            Math.min(2 ** 31 - 1, Math.max(0, session.expiresAt - Date.now())),
         );
     };
     arm(useSession.getState().session);

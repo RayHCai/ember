@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { QUICK } from '../ui/motion';
 import styles from './chrome.module.css';
 
 interface Props {
@@ -37,11 +38,11 @@ export function Popover({ open, onClose, anchor, width = 340, align = 'right', c
                 {open ? (
                     <motion.div
                         className={styles.popover}
-                        style={{ width, [align]: 0 }}
-                        initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                        style={{ width, [align]: 0, transformOrigin: `top ${align}` }}
+                        initial={{ opacity: 0, y: -4, scale: 0.97 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.14 } }}
-                        transition={{ type: 'spring', stiffness: 460, damping: 34 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={QUICK}
                     >
                         {children}
                     </motion.div>

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { Icon } from '../icons/Icon';
 import type { OverlayMode } from '../store/ui';
+import { QUICK, SNAP } from '../ui/motion';
 import styles from './Overlay.module.css';
 
 function Swatch({ color, ring, dashed }: { color: string; ring?: boolean; dashed?: boolean }) {
@@ -57,19 +58,15 @@ function Gradient({
 export function Legend({ mode, suggestions }: { mode: OverlayMode; suggestions: boolean }) {
     const key = suggestions ? 'suggestions' : mode;
     return (
-        <motion.div
-            layout
-            className={styles.legend}
-            transition={{ type: 'spring', stiffness: 400, damping: 36 }}
-        >
+        <motion.div layout className={styles.legend} transition={SNAP}>
             <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                     key={key}
                     className={styles.legendRow}
-                    initial={{ opacity: 0, y: 6 }}
+                    initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.18 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={QUICK}
                 >
                     {key === 'operator' ? (
                         <>
@@ -85,14 +82,14 @@ export function Legend({ mode, suggestions }: { mode: OverlayMode; suggestions: 
                     ) : key === 'detection' ? (
                         <>
                             <Item mark={<Swatch color="#C9C4BF" />} label="Not yet mapped" />
-                            <Item mark={<Swatch color="#7CC69A" />} label="No risk" />
+                            <Item mark={<Swatch color="#7CC69A" />} label="Mapped" />
                             <Item mark={<Swatch color="#F2A900" />} label="At risk" />
-                            <Item mark={<Swatch color="#E5321B" />} label="On fire" />
-                            <Item mark={<Icon name="camera" size={14} />} label="Civilian report" />
+                            <Item mark={<Swatch color="#E5321F" />} label="On fire" />
+                            <Item mark={<Swatch color="#E5321F" ring />} label="Detection box" />
                         </>
                     ) : (
                         <>
-                            <Gradient from="#C41218" to="#FFDE78" left="Fire now" right="6h" />
+                            <Gradient from="#C41218" to="#FFDE78" left="Fire now" right="Horizon" />
                             <Gradient
                                 from="#B5179E"
                                 to="#F7AEF8"
@@ -100,7 +97,14 @@ export function Legend({ mode, suggestions }: { mode: OverlayMode; suggestions: 
                                 right="later"
                             />
                             <Item mark={<Swatch color="#12A37A" />} label="Evacuation route" />
-                            <Item mark={<Swatch color="#0E8FD8" ring dashed />} label="Drop site" />
+                            <Item
+                                mark={<Swatch color="#0E8FD8" ring dashed />}
+                                label="Attack zone"
+                            />
+                            <Item
+                                mark={<Swatch color="#111110" ring dashed />}
+                                label="Forecast perimeter"
+                            />
                         </>
                     )}
                 </motion.div>

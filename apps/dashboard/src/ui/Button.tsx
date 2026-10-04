@@ -35,7 +35,7 @@ export function Button({
         block ? styles.block : '',
         className ?? '',
     ].join(' ');
-    const iconSize = size === 'sm' ? 15 : 17;
+    const iconSize = size === 'sm' ? 13 : 15;
     return (
         <button
             type="button"
@@ -88,7 +88,7 @@ export function IconButton({
             className={`${styles.iconButton} ${tip ? styles.tip : ''} ${className ?? ''}`}
             {...rest}
         >
-            <Icon name={icon} size={18} />
+            <Icon name={icon} size={17} />
             {count ? <span className={styles.badge}>{count > 9 ? '9+' : count}</span> : null}
         </button>
     );

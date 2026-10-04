@@ -9,11 +9,14 @@ export function useDataSource(name: string): CustomDataSource | null {
     useEffect(() => {
         if (!viewer) return;
         const ds = new CustomDataSource(name);
-        void viewer.dataSources.add(ds);
+        // `add` lands a microtask later; removing before then would leave this one on the map.
+        const added = viewer.dataSources.add(ds);
         setSource(ds);
         return () => {
             setSource(null);
-            if (!viewer.isDestroyed()) viewer.dataSources.remove(ds, true);
+            void added.then(() => {
+                if (!viewer.isDestroyed()) viewer.dataSources.remove(ds, true);
+            });
         };
     }, [viewer, name]);
     return source;

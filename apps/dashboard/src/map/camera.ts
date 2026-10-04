@@ -1,5 +1,5 @@
 import { Cartesian3, EasingFunction, Math as CesiumMath, Rectangle, type Viewer } from 'cesium';
-import type { LatLon } from '../sim/types';
+import type { LatLon } from '../model/types';
 
 // The map is always looked at from straight above.
 

@@ -1,8 +1,9 @@
 import { CallbackProperty, HeightReference } from 'cesium';
-import { useEffect, useRef } from 'react';
-import { cellCenter, centroid } from '../../sim/geo';
-import { freshCells } from '../../sim/scan';
-import type { LatLon, WatchZone } from '../../sim/types';
+import { useEffect, useMemo, useRef } from 'react';
+import { liveDetections, useDroneInfo } from '../../live/droneInfo';
+import { MAPPED_NOW, ON_FIRE, mappedCells, riskCells } from '../../model/raster';
+import type { ZoneView } from '../../model/types';
+import { ll } from '../../model/zone';
 import { prefersReducedMotion } from '../camera';
 import { GridOverlay, type CellColor } from '../gridOverlay';
 import { ALWAYS_ON_TOP, ICONS, toCartesian } from '../style';
@@ -13,52 +14,26 @@ import { frameMilliseconds } from '../frameClock';
 const MAPPED: CellColor = [46, 158, 91, 100];
 const MAPPED_STALE: CellColor = [46, 158, 91, 30];
 const AT_RISK: CellColor = [242, 169, 0, 178];
-const ON_FIRE: CellColor = [229, 50, 27, 220];
-
-/** Groups burning cells into fires (4-connected), returning each fire's centre. */
-export function fireCentres(zone: WatchZone): LatLon[] {
-    const { grid, risk } = zone;
-    const seen = new Uint8Array(risk.length);
-    const out: LatLon[] = [];
-    for (let i = 0; i < risk.length; i++) {
-        if (risk[i] !== 3 || seen[i]) continue;
-        const stack = [i];
-        const cells: LatLon[] = [];
-        seen[i] = 1;
-        while (stack.length) {
-            const c = stack.pop()!;
-            cells.push(cellCenter(grid, c));
-            const row = Math.floor(c / grid.cols);
-            const col = c % grid.cols;
-            for (const [r, k] of [
-                [row + 1, col],
-                [row - 1, col],
-                [row, col + 1],
-                [row, col - 1],
-            ] as const) {
-                if (r < 0 || r >= grid.rows || k < 0 || k >= grid.cols) continue;
-                const n = r * grid.cols + k;
-                if (risk[n] === 3 && !seen[n]) {
-                    seen[n] = 1;
-                    stack.push(n);
-                }
-            }
-        }
-        if (cells.length >= 3) out.push(centroid(cells));
-    }
-    return out;
-}
+const FIRE: CellColor = [229, 50, 27, 220];
 
 /**
- * What the drones have seen: mapped ground fills in with color over the black and white
- * base, yellow where vegetation is at risk, red where it burns.
+ * What the drones have seen: ground mapped by any run fills in green over the black and white
+ * base (the running scan's cells brighter), yellow where vegetation is at risk, red where it
+ * burns. Risk comes from the api's risk zones plus the frames drone-info just streamed.
  */
-export function DetectionLayer({ zone, visible }: { zone: WatchZone; visible: boolean }) {
+export function DetectionLayer({ zone, visible }: { zone: ZoneView; visible: boolean }) {
     const viewer = useMap((s) => s.viewer);
     const ds = useDataSource('detection');
     const overlay = useRef<GridOverlay | null>(null);
     const frame = useRef(0);
+    const detectionsVersion = useDroneInfo((s) => s.detectionsVersion);
     const { grid } = zone;
+    const currentRun = zone.scan?.runId ?? null;
+
+    const mapped = useMemo(
+        () => mappedCells(grid, zone.runs, currentRun),
+        [grid, zone.runs, currentRun],
+    );
 
     useEffect(() => {
         if (!viewer) return;
@@ -76,27 +51,30 @@ export function DetectionLayer({ zone, visible }: { zone: WatchZone; visible: bo
         if (!visible) return;
         cancelAnimationFrame(frame.current);
         frame.current = requestAnimationFrame(() => {
-            const fresh = freshCells(zone.id);
-            const scanning = zone.scan !== null;
+            const risk = riskCells(grid, zone.riskZones, currentRun ? liveDetections() : []);
+            const scanning = currentRun !== null;
             o.paint((i) => {
-                const r = zone.risk[i];
-                if (r === 3) return ON_FIRE;
-                if (r === 2) return AT_RISK;
-                if (r === 1) return scanning && !fresh?.[i] ? MAPPED_STALE : MAPPED;
-                return null;
+                const r = risk[i];
+                if (r === ON_FIRE) return FIRE;
+                if (r) return AT_RISK;
+                const m = mapped[i];
+                if (!m) return null;
+                return scanning && m !== MAPPED_NOW ? MAPPED_STALE : MAPPED;
             });
         });
-    }, [zone, zone.riskVersion, visible, viewer]);
+        return () => cancelAnimationFrame(frame.current);
+    }, [grid, mapped, zone.riskZones, currentRun, detectionsVersion, visible, viewer]);
 
     useEffect(() => {
         if (!ds) return;
         ds.entities.removeAll();
         if (!visible) return;
         const reduced = prefersReducedMotion();
-        fireCentres(zone).forEach((at, i) => {
+        for (const z of zone.riskZones) {
+            if (z.risk !== 'on_fire') continue;
             ds.entities.add({
-                id: `fire:${i}`,
-                position: toCartesian(at),
+                id: `fire:${z.id}`,
+                position: toCartesian(ll(z.center)),
                 billboard: {
                     image: ICONS.fire,
                     width: 34,
@@ -111,8 +89,8 @@ export function DetectionLayer({ zone, visible }: { zone: WatchZone; visible: bo
                     disableDepthTestDistance: ALWAYS_ON_TOP,
                 },
             });
-        });
-    }, [ds, zone, zone.riskVersion, visible]);
+        }
+    }, [ds, zone.riskZones, visible]);
 
     return null;
 }

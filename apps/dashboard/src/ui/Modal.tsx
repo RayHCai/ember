@@ -1,21 +1,18 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, type ReactNode } from 'react';
-import { Icon } from '../icons/Icon';
-import type { GlyphName } from '../icons/glyphs';
 import { IconButton } from './Button';
+import { QUICK, SMOOTH } from './motion';
 import styles from './ui.module.css';
 
 interface Props {
     open: boolean;
     onClose: () => void;
     title: string;
-    subtitle?: string;
-    icon?: GlyphName;
     width?: number;
     children: ReactNode;
 }
 
-export function Modal({ open, onClose, title, subtitle, icon, width = 560, children }: Props) {
+export function Modal({ open, onClose, title, width = 560, children }: Props) {
     useEffect(() => {
         if (!open) return;
         const onKey = (e: KeyboardEvent) => {
@@ -33,7 +30,7 @@ export function Modal({ open, onClose, title, subtitle, icon, width = 560, child
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    transition={QUICK}
                     onMouseDown={(e) => {
                         if (e.target === e.currentTarget) onClose();
                     }}
@@ -44,33 +41,13 @@ export function Modal({ open, onClose, title, subtitle, icon, width = 560, child
                         aria-label={title}
                         className={styles.dialog}
                         style={{ width: `min(${width}px, 100%)` }}
-                        initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                        initial={{ opacity: 0, y: 12, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 12, scale: 0.97 }}
-                        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                        exit={{ opacity: 0, y: 6, scale: 0.99, transition: QUICK }}
+                        transition={SMOOTH}
                     >
                         <div className={styles.dialogHeader}>
-                            {icon ? (
-                                <motion.span
-                                    className={styles.dialogIcon}
-                                    initial={{ rotate: -20, scale: 0.6 }}
-                                    animate={{ rotate: 0, scale: 1 }}
-                                    transition={{
-                                        type: 'spring',
-                                        stiffness: 300,
-                                        damping: 14,
-                                        delay: 0.08,
-                                    }}
-                                >
-                                    <Icon name={icon} size={22} />
-                                </motion.span>
-                            ) : null}
-                            <div>
-                                <h2 className={styles.dialogTitle}>{title}</h2>
-                                {subtitle ? (
-                                    <p className={styles.dialogSubtitle}>{subtitle}</p>
-                                ) : null}
-                            </div>
+                            <h2 className={styles.dialogTitle}>{title}</h2>
                             <IconButton
                                 icon="close"
                                 label="Close"

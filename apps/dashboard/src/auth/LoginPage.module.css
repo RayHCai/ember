@@ -1,277 +1,130 @@
 .page {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(420px, 1fr);
+    place-items: center;
     height: 100%;
-    background: var(--bg);
-}
-
-.hero {
-    --facet: #ffe3d0;
-    position: relative;
-    display: flex;
-    align-items: center;
-    padding: 64px clamp(40px, 6vw, 96px);
-    overflow: hidden;
-    background: var(--gradient-ember);
-}
-
-.heroGlow {
-    position: absolute;
-    left: -10%;
-    bottom: -40%;
-    width: 120%;
-    height: 90%;
-    background: radial-gradient(closest-side, rgba(255, 106, 43, 0.35), rgba(255, 106, 43, 0));
-    filter: blur(20px);
-    animation: breathe 6s ease-in-out infinite;
-}
-
-@keyframes breathe {
-    50% {
-        transform: scale(1.08) translateY(-3%);
-        opacity: 0.8;
-    }
-}
-
-.heroInner {
-    position: relative;
-    max-width: 520px;
-}
-
-.heroTitle {
-    margin-top: 36px;
-    font-size: clamp(38px, 4.4vw, 58px);
-    font-weight: 700;
-    line-height: 1.02;
-    letter-spacing: -0.04em;
-}
-
-.heroAccent {
-    background: var(--gradient-flame);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
-
-.heroLead {
-    margin-top: 18px;
-    max-width: 440px;
-    color: var(--ink-2);
-    font-size: 16px;
-    line-height: 1.55;
-}
-
-.features {
-    display: grid;
-    gap: 14px;
-    margin: 34px 0 0;
-    padding: 0;
-    list-style: none;
-}
-
-.features li {
-    display: flex;
-    gap: 13px;
-    align-items: center;
-}
-
-.features strong {
-    display: block;
-    font-size: 14px;
-    font-weight: 620;
-}
-
-.features li span span {
-    color: var(--ink-2);
-    font-size: 13px;
-}
-
-.featureIcon {
-    --facet: rgba(255, 255, 255, 0.7);
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    width: 38px;
-    height: 38px;
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.7);
-    color: var(--flame);
-    box-shadow: var(--shadow-sm);
-}
-
-.embers {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-}
-
-.ember {
-    position: absolute;
-    bottom: -20px;
-    opacity: 0;
-    animation: rise linear infinite;
-}
-
-@keyframes rise {
-    0% {
-        transform: translate(0, 0) rotate(0);
-        opacity: 0;
-    }
-    12% {
-        opacity: 0.9;
-    }
-    70% {
-        opacity: 0.6;
-    }
-    100% {
-        transform: translate(var(--drift), -105vh) rotate(var(--spin));
-        opacity: 0;
-    }
-}
-
-.formSide {
-    display: grid;
-    place-items: center;
-    padding: 40px;
+    padding: 24px;
     overflow: auto;
+    background: var(--paper);
 }
 
-.card {
-    width: min(400px, 100%);
+.form {
+    position: relative;
+    width: min(280px, 100%);
 }
 
-.cardHead {
+/* The same wordmark as the other Ember apps: it arrives wide and blurred, then settles. */
+.brand {
     display: flex;
-    gap: 14px;
     align-items: center;
-    margin-bottom: 26px;
-}
-
-.cardHead h2 {
-    font-size: 22px;
-    font-weight: 680;
-    letter-spacing: -0.025em;
-}
-
-.cardHead p {
-    color: var(--ink-2);
-    font-size: 13.5px;
-}
-
-.tabs {
-    display: flex;
-    width: 100%;
-    margin-bottom: 18px;
-}
-
-.tabs > button {
-    flex: 1;
     justify-content: center;
+    gap: 0.3em;
+    /* Tracking adds space after the last letter; pull it back so the mark stays centred. */
+    margin: 0 -0.16em 32px 0;
+    font-family: var(--font-serif);
+    font-size: 44px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0.16em;
+    animation: arrive 0.9s var(--ease) backwards;
 }
 
-.notice {
-    --facet: var(--risk-soft);
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 14px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--risk-soft);
-    color: #8a6100;
-    font-size: 13px;
-    overflow: hidden;
+@keyframes arrive {
+    from {
+        opacity: 0;
+        letter-spacing: 0.5em;
+        filter: blur(14px);
+    }
 }
 
 .fields {
     display: grid;
-    gap: 14px;
-    margin-bottom: 14px;
+    gap: 10px;
 }
 
-.passwordWrap {
-    position: relative;
-    display: block;
+.fields > * {
+    animation: rise 0.6s var(--ease) backwards;
 }
 
-.passwordWrap input {
-    padding-right: 44px;
+.fields > :nth-child(1) {
+    animation-delay: 0.3s;
 }
 
-.reveal {
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    display: grid;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--ink-3);
-    transform: translateY(-50%);
-    transition:
-        color 0.2s,
-        background-color 0.2s;
+.fields > :nth-child(2) {
+    animation-delay: 0.36s;
 }
 
-.reveal:hover {
-    background: var(--surface-3);
-    color: var(--ink);
+.fields > :nth-child(3) {
+    animation-delay: 0.42s;
 }
 
-.error {
-    --facet: var(--fire-soft);
-    display: flex;
-    gap: 7px;
-    align-items: center;
-    margin-bottom: 14px;
-    color: var(--fire);
-    font-size: 13px;
-    font-weight: 500;
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
 }
 
-.demo {
-    --facet: var(--bg);
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    justify-content: center;
+.input {
     width: 100%;
-    margin-top: 14px;
-    padding: 8px;
-    border: 1px dashed var(--line-strong);
-    border-radius: 10px;
-    background: transparent;
+    height: 36px;
+    padding: 0 11px;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--paper);
+    font-size: 14px;
+    transition: border-color var(--fast) var(--ease);
+}
+
+.input::placeholder {
+    color: var(--ink-3);
+}
+
+.input:hover {
+    border-color: var(--ink-3);
+}
+
+.input:focus {
+    border-color: var(--ink);
+}
+
+.input[aria-invalid='true'] {
+    border-color: var(--fire);
+}
+
+/* Out of flow so a message does not nudge the centred column. */
+.messageSlot {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    right: 0;
+}
+
+.message {
     color: var(--ink-2);
     font-size: 13px;
-    transition:
-        border-color 0.2s,
-        color 0.2s,
-        background-color 0.2s;
-}
-
-.demo:hover {
-    border-color: var(--flame);
-    background: var(--flame-soft);
-    color: var(--flame-hot);
-}
-
-.footnote {
-    margin-top: 18px;
-    color: var(--ink-3);
-    font-size: 12px;
     text-align: center;
 }
 
-@media (max-width: 900px) {
-    .page {
-        grid-template-columns: 1fr;
-    }
+.message[data-error='true'] {
+    color: var(--fire);
+}
 
-    .hero {
-        display: none;
-    }
+.switch {
+    display: block;
+    margin: 14px auto 0;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--ink-3);
+    font-size: 13px;
+    cursor: pointer;
+    transition:
+        color var(--fast) var(--ease),
+        background var(--fast) var(--ease);
+}
+
+.switch:hover {
+    color: var(--ink);
+    background: var(--wash);
 }

@@ -1,144 +1,49 @@
+import type { EdgeServer, WatchZoneSummary } from '@ember/contracts';
 import { create } from 'zustand';
-import { dockFleet } from '../sim/fleet';
-import { makeGrid, polygonAreaKm2 } from '../sim/geo';
-import { seedZones } from '../sim/seed';
-import type {
-    Blast,
-    CivilianPlan,
-    CivilianReport,
-    Drone,
-    EdgeServer,
-    LatLon,
-    ResponderPlan,
-    Schedule,
-    WatchZone,
-} from '../sim/types';
-import { buildZone, newId, renameServer } from '../sim/world';
+import type { ZoneRecords, ZoneView } from '../model/types';
+import { zoneView } from '../model/zone';
 
-// Watch zones and every operator action on them, answered by built-in dummy data.
+// The api's records as last fetched: the zone list, and every resource of the zones opened.
+// `store/sync.ts` keeps them fresh; `store/actions.ts` changes them.
 
-type Patch = Partial<WatchZone> | ((zone: WatchZone) => Partial<WatchZone>);
+type Patch = Partial<ZoneRecords> | ((records: ZoneRecords) => Partial<ZoneRecords>);
 
 interface ZonesState {
-    zones: Record<string, WatchZone>;
-    order: string[];
-    update: (id: string, patch: Patch) => void;
-    createZone: (input: { name: string; region: string; boundary: LatLon[] }) => string;
-    setBoundary: (id: string, boundary: LatLon[]) => void;
-    rename: (id: string, name: string) => void;
-    setPendingServers: (id: string, servers: EdgeServer[]) => void;
-    clearPending: (id: string) => void;
-    moveServer: (id: string, serverId: string, at: LatLon) => void;
-    deployServer: (id: string, serverId: string) => void;
-    addDrone: (id: string, drone: Drone) => void;
-    setSchedule: (id: string, patch: Partial<Schedule>) => void;
-    setPlanning: (id: string, kind: 'civilian' | 'responder', running: boolean) => void;
-    setCivilianPlan: (id: string, plan: CivilianPlan) => void;
-    setResponderPlan: (id: string, plan: ResponderPlan) => void;
-    setReportStatus: (id: string, reportId: string, status: CivilianReport['status']) => void;
-    addBlast: (id: string, blast: Blast) => void;
-    /** Marks the risk map changed after an in-place update. */
-    touchRisk: (id: string) => void;
+    summaries: WatchZoneSummary[] | null;
+    listError: string | null;
+    records: Record<string, ZoneRecords>;
+    /** Zones the api no longer has. */
+    missing: Record<string, true>;
+    /** Registered edge servers that no zone has yet. */
+    unassigned: EdgeServer[];
+    /** False while the api cannot be reached. */
+    reachable: boolean;
+    patch: (zoneId: string, patch: Patch) => void;
 }
 
-const seeded = seedZones();
-for (const zone of seeded) dockFleet(zone);
-
-export const useZones = create<ZonesState>()((set, get) => {
-    const update = (id: string, patch: Patch) =>
+export const useZones = create<ZonesState>()((set) => ({
+    summaries: null,
+    listError: null,
+    records: {},
+    missing: {},
+    unassigned: [],
+    reachable: true,
+    patch: (zoneId, patch) =>
         set((s) => {
-            const zone = s.zones[id];
-            if (!zone) return {};
-            const changes = typeof patch === 'function' ? patch(zone) : patch;
-            return { zones: { ...s.zones, [id]: { ...zone, ...changes } } };
-        });
+            const r = s.records[zoneId];
+            if (!r) return {};
+            const changes = typeof patch === 'function' ? patch(r) : patch;
+            return { records: { ...s.records, [zoneId]: { ...r, ...changes } } };
+        }),
+}));
 
-    return {
-        zones: Object.fromEntries(seeded.map((z) => [z.id, z])),
-        order: seeded.map((z) => z.id),
-        update,
+/** The zone's view, or undefined until its records load. */
+export function useZoneView(zoneId: string | null): ZoneView | undefined {
+    const records = useZones((s) => (zoneId ? s.records[zoneId] : undefined));
+    return records ? zoneView(records) : undefined;
+}
 
-        createZone: ({ name, region, boundary }) => {
-            const id = `${
-                name
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/^-|-$/g, '')
-                    .slice(0, 24) || 'zone'
-            }-${Date.now().toString(36).slice(-4)}`;
-            const zone = buildZone({ id, name, region, boundary });
-            set((s) => ({ zones: { ...s.zones, [id]: zone }, order: [id, ...s.order] }));
-            return id;
-        },
-
-        setBoundary: (id, boundary) =>
-            update(id, (z) => {
-                const grid = makeGrid(boundary);
-                return {
-                    boundary,
-                    grid,
-                    areaKm2: Math.round(polygonAreaKm2(boundary) * 10) / 10,
-                    risk: new Uint8Array(grid.rows * grid.cols),
-                    riskVersion: z.riskVersion + 1,
-                    servers: z.servers.filter((s) => s.status === 'deployed'),
-                    civilianPlan: null,
-                    responderPlan: null,
-                };
-            }),
-
-        rename: (id, name) => update(id, { name }),
-
-        setPendingServers: (id, servers) =>
-            update(id, (z) => ({
-                servers: [...z.servers.filter((s) => s.status === 'deployed'), ...servers],
-            })),
-
-        clearPending: (id) =>
-            update(id, (z) => ({ servers: z.servers.filter((s) => s.status === 'deployed') })),
-
-        moveServer: (id, serverId, [lat, lon]) =>
-            update(id, (z) => ({
-                servers: z.servers.map((s) =>
-                    s.id === serverId ? renameServer(z, { ...s, lat, lon }) : s,
-                ),
-            })),
-
-        deployServer: (id, serverId) =>
-            update(id, (z) => ({
-                servers: z.servers.map((s) =>
-                    s.id === serverId ? { ...s, status: 'deployed' as const } : s,
-                ),
-            })),
-
-        addDrone: (id, drone) => update(id, (z) => ({ drones: [...z.drones, drone] })),
-
-        setSchedule: (id, patch) =>
-            update(id, (z) => {
-                const schedule = { ...z.schedule, ...patch };
-                schedule.nextAt = schedule.enabled
-                    ? Date.now() + schedule.everyHours * 3_600_000
-                    : null;
-                return { schedule };
-            }),
-
-        setPlanning: (id, kind, running) =>
-            update(id, (z) => ({ planning: { ...z.planning, [kind]: running } })),
-        setCivilianPlan: (id, civilianPlan) => update(id, { civilianPlan }),
-        setResponderPlan: (id, responderPlan) => update(id, { responderPlan }),
-
-        setReportStatus: (id, reportId, status) =>
-            update(id, (z) => ({
-                reports: z.reports.map((r) => (r.id === reportId ? { ...r, status } : r)),
-            })),
-
-        addBlast: (id, blast) => update(id, (z) => ({ blasts: [blast, ...z.blasts] })),
-
-        touchRisk: (id) => {
-            if (get().zones[id]) update(id, (z) => ({ riskVersion: z.riskVersion + 1 }));
-        },
-    };
-});
-
-export function blastId(): string {
-    return newId('bl');
+export function zoneViewNow(zoneId: string): ZoneView | undefined {
+    const r = useZones.getState().records[zoneId];
+    return r ? zoneView(r) : undefined;
 }

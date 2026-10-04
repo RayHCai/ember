@@ -1,78 +1,49 @@
-import { useId, useMemo } from 'react';
-import { metersPerDegLon } from '../sim/geo';
-import type { LatLon, WatchZone } from '../sim/types';
+import type { LatLng } from '@ember/contracts';
+import { useMemo } from 'react';
+import { metersPerDegLon } from '../model/geo';
+import type { ZoneStatus } from '../model/types';
 
-const CELL_RGBA: Record<number, [number, number, number, number]> = {
-    0: [233, 226, 218, 255],
-    1: [173, 214, 180, 255],
-    2: [248, 196, 64, 255],
-    3: [229, 50, 27, 255],
+const FILL: Record<ZoneStatus, string> = {
+    setup: 'rgba(47,107,255,0.06)',
+    awaiting: 'rgba(47,107,255,0.08)',
+    healthy: 'rgba(46,158,91,0.22)',
+    at_risk: 'rgba(242,169,0,0.30)',
+    on_fire: 'rgba(229,50,31,0.30)',
 };
 
-/** Fits lat/lon into a box, keeping the zone's true proportions. */
-function fitter(points: LatLon[], w: number, h: number, pad: number) {
-    const lats = points.map((p) => p[0]);
-    const lons = points.map((p) => p[1]);
+/** Fits lat/lng into a box, keeping the zone's true proportions. */
+function fitter(points: LatLng[], w: number, h: number, pad: number) {
+    const lats = points.map((p) => p.lat);
+    const lons = points.map((p) => p.lng);
     const south = Math.min(...lats);
     const north = Math.max(...lats);
     const west = Math.min(...lons);
     const east = Math.max(...lons);
     const kx = metersPerDegLon((south + north) / 2) / 111_320;
-    const spanX = (east - west) * kx;
-    const spanY = north - south;
+    const spanX = (east - west) * kx || 1e-9;
+    const spanY = north - south || 1e-9;
     const scale = Math.min((w - pad * 2) / spanX, (h - pad * 2) / spanY);
     const ox = (w - spanX * scale) / 2;
     const oy = (h - spanY * scale) / 2;
-    return ([lat, lon]: LatLon): [number, number] => [
-        ox + (lon - west) * kx * scale,
-        oy + (north - lat) * scale,
+    return (p: LatLng): [number, number] => [
+        ox + (p.lng - west) * kx * scale,
+        oy + (north - p.lat) * scale,
     ];
 }
 
-function riskImage(zone: WatchZone): string {
-    const { rows, cols } = zone.grid;
-    const canvas = document.createElement('canvas');
-    canvas.width = cols;
-    canvas.height = rows;
-    const ctx = canvas.getContext('2d')!;
-    const img = ctx.createImageData(cols, rows);
-    for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-            const i = row * cols + col;
-            if (!zone.grid.inZone[i]) continue;
-            const rgba = CELL_RGBA[zone.risk[i] ?? 0]!;
-            const o = ((rows - 1 - row) * cols + col) * 4;
-            img.data.set(rgba, o);
-        }
-    }
-    ctx.putImageData(img, 0, 0);
-    return canvas.toDataURL();
-}
-
 interface Props {
-    zone: WatchZone;
+    boundary: LatLng[];
+    status: ZoneStatus;
     width?: number;
     height?: number;
 }
 
-/** The zone's outline with a miniature of its detection map and edge server radii. */
-export function ZoneShape({ zone, width = 320, height = 150 }: Props) {
-    const clipId = useId();
-    const project = useMemo(
-        () => fitter(zone.boundary, width, height, 18),
-        [zone.boundary, width, height],
-    );
-    // Every risk change replaces the zone object, so the zone alone keys the image.
-    const image = useMemo(() => riskImage(zone), [zone]);
-    const outline = zone.boundary.map((p) => project(p).join(',')).join(' ');
-    const [x0, y0] = project([zone.grid.north, zone.grid.west]);
-    const [x1, y1] = project([zone.grid.south, zone.grid.east]);
-    const pxPerM =
-        Math.abs(
-            project([zone.grid.south, zone.grid.west])[1] -
-                project([zone.grid.north, zone.grid.west])[1],
-        ) /
-        ((zone.grid.north - zone.grid.south) * 111_320);
+/** The zone's outline, tinted by its status. */
+export function ZoneShape({ boundary, status, width = 320, height = 150 }: Props) {
+    const outline = useMemo(() => {
+        const project = fitter(boundary, width, height, 18);
+        return boundary.map((p) => project(p).join(',')).join(' ');
+    }, [boundary, width, height]);
 
     return (
         <svg
@@ -82,48 +53,11 @@ export function ZoneShape({ zone, width = 320, height = 150 }: Props) {
             preserveAspectRatio="xMidYMid meet"
             aria-hidden
         >
-            <defs>
-                <clipPath id={clipId}>
-                    <polygon points={outline} />
-                </clipPath>
-            </defs>
-            <image
-                href={image}
-                x={x0}
-                y={y0}
-                width={x1 - x0}
-                height={y1 - y0}
-                preserveAspectRatio="none"
-                clipPath={`url(#${clipId})`}
-                style={{ imageRendering: 'pixelated' }}
-            />
-            {zone.servers.map((s) => {
-                const [cx, cy] = project([s.lat, s.lon]);
-                return (
-                    <g key={s.id}>
-                        <circle
-                            cx={cx}
-                            cy={cy}
-                            r={s.radiusM * pxPerM}
-                            fill={
-                                s.status === 'pending'
-                                    ? 'rgba(255,79,163,0.10)'
-                                    : 'rgba(255,79,163,0.07)'
-                            }
-                            stroke="#FF4FA3"
-                            strokeOpacity={0.55}
-                            strokeWidth={1}
-                            strokeDasharray={s.status === 'pending' ? '3 3' : undefined}
-                        />
-                        <rect x={cx - 3} y={cy - 3} width={6} height={6} rx={1.5} fill="#1C1714" />
-                    </g>
-                );
-            })}
             <polygon
                 points={outline}
-                fill="none"
+                fill={FILL[status]}
                 stroke="#2F6BFF"
-                strokeWidth={2}
+                strokeWidth={1.5}
                 strokeLinejoin="round"
             />
         </svg>

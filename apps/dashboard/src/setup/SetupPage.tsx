@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../icons/Icon';
-import type { GlyphName } from '../icons/glyphs';
 import { flyToPoint, flyToPoints } from '../map/camera';
 import { useMapInput } from '../map/input';
 import { BoundaryLayer } from '../map/layers/BoundaryLayer';
@@ -9,23 +8,27 @@ import { DronesLayer } from '../map/layers/DronesLayer';
 import { PairingLayer } from '../map/layers/PairingLayer';
 import { serverIdOf, ServersLayer } from '../map/layers/ServersLayer';
 import { BoundaryTool } from '../map/tools/BoundaryTool';
+import { useWatchedDrones } from '../live/droneInfo';
 import { useMap } from '../map/viewer';
-import type { LatLon } from '../sim/types';
-import { setupStep } from '../sim/world';
+import type { LatLon } from '../model/types';
+import { setupStep } from '../model/zone';
+import { addPlacement, dragPlacement, savePlacement } from '../store/actions';
 import { navigate, type SetupStep } from '../store/router';
-import { useZones } from '../store/zones';
+import { useZoneSync } from '../store/sync';
+import { useZones, useZoneView } from '../store/zones';
+import { Spinner } from '../ui/Spinner';
 import { Button } from '../ui/Button';
-import panel from '../ui/panel.module.css';
+import { QUICK, SMOOTH, SNAP } from '../ui/motion';
 import { BoundaryStep } from './BoundaryStep';
 import { DronesStep } from './DronesStep';
 import { PRESETS } from './presets';
 import { ServersStep } from './ServersStep';
 import styles from './Setup.module.css';
 
-const STEPS: { id: SetupStep; label: string; icon: GlyphName }[] = [
-    { id: 'boundary', label: 'Boundary', icon: 'edit' },
-    { id: 'servers', label: 'Edge servers', icon: 'server' },
-    { id: 'drones', label: 'Drones', icon: 'drone' },
+const STEPS: { id: SetupStep; label: string }[] = [
+    { id: 'boundary', label: 'Boundary' },
+    { id: 'servers', label: 'Edge servers' },
+    { id: 'drones', label: 'Drones' },
 ];
 
 export const PANEL_FRAME = { left: 0.36, right: 0.06, top: 0.12, bottom: 0.1 };
@@ -43,12 +46,16 @@ interface Props {
 /** Onboarding for a watch zone: draw the boundary, place edge servers, pair drones. */
 export function SetupPage({ zoneId, step }: Props) {
     const viewer = useMap((s) => s.viewer);
-    const zone = useZones((s) => (zoneId ? s.zones[zoneId] : undefined));
+    useZoneSync(zoneId, { unassigned: step === 'servers' });
+    const zone = useZoneView(zoneId);
+    useWatchedDrones(zone?.drones.map((d) => d.id) ?? []);
+    const missing = useZones((s) => (zoneId ? s.missing[zoneId] === true : false));
     const [draft, setDraft] = useState<Draft>(() => ({
         points: zone?.boundary ?? [],
         closed: Boolean(zone),
     }));
-    const [pairing, setPairing] = useState(false);
+    const [radiusM, setRadiusM] = useState(500);
+    const [pinpointing, setPinpointing] = useState(false);
     const lastStep = useRef(step);
     const direction =
         STEPS.findIndex((s) => s.id === step) >= STEPS.findIndex((s) => s.id === lastStep.current)
@@ -57,8 +64,16 @@ export function SetupPage({ zoneId, step }: Props) {
     lastStep.current = step;
 
     useEffect(() => {
-        if (zoneId && !zone) navigate({ name: 'zones' }, true);
-    }, [zoneId, zone]);
+        if (missing) navigate({ name: 'zones' }, true);
+    }, [missing]);
+
+    // A zone opened by link loads after the page mounts; start editing from its boundary.
+    const seeded = useRef(Boolean(zone));
+    useEffect(() => {
+        if (seeded.current || !zone) return;
+        seeded.current = true;
+        setDraft({ points: zone.boundary, closed: true });
+    }, [zone]);
 
     // Frame the zone when it changes; a brand new zone starts over a fire-prone forest.
     const framed = useRef<string | null>(null);
@@ -78,22 +93,29 @@ export function SetupPage({ zoneId, step }: Props) {
     }, [viewer, key]);
 
     useEffect(() => {
-        if (step !== 'drones') setPairing(false);
+        if (step !== 'servers') setPinpointing(false);
     }, [step]);
 
-    const moveServer = useZones((s) => s.moveServer);
     useMapInput(step === 'servers' && Boolean(zone), {
+        cursor: pinpointing ? 'crosshair' : undefined,
         draggable: (e) => {
             const id = serverIdOf(e);
             return Boolean(id && zone?.servers.find((s) => s.id === id)?.status === 'pending');
         },
         onDrag: (e, point) => {
             const id = serverIdOf(e);
-            if (id && zone) moveServer(zone.id, id, [point.lat, point.lon]);
+            if (id && zone) dragPlacement(zone.id, id, [point.lat, point.lon]);
+        },
+        onDragEnd: (e) => {
+            const id = serverIdOf(e);
+            if (id && zone) void savePlacement(zone.id, id);
+        },
+        onClick: (point, entity) => {
+            if (!pinpointing || !zone || !point || (entity && serverIdOf(entity))) return;
+            void addPlacement(zone.id, [point.lat, point.lon], radiusM);
         },
     });
 
-    const index = STEPS.findIndex((s) => s.id === step);
     const reachable = (s: SetupStep) => s === 'boundary' || Boolean(zone);
     const done = (s: SetupStep) => {
         if (!zone) return false;
@@ -102,6 +124,7 @@ export function SetupPage({ zoneId, step }: Props) {
         if (s === 'servers') return pending !== 2;
         return pending === null;
     };
+    const loading = Boolean(zoneId && !zone);
 
     return (
         <div className={styles.page}>
@@ -118,19 +141,19 @@ export function SetupPage({ zoneId, step }: Props) {
                     <ServersLayer servers={zone.servers} />
                     {step === 'drones' ? (
                         <>
-                            <DronesLayer drones={zone.drones} />
-                            <PairingLayer servers={zone.servers} active={pairing} />
+                            <DronesLayer drones={zone.drones} servers={zone.servers} />
+                            <PairingLayer servers={zone.servers} active />
                         </>
                     ) : null}
                 </>
             ) : null}
 
             <motion.aside
-                className={`${panel.panel} ${styles.panel}`}
-                initial={{ opacity: 0, x: -40 }}
+                className={styles.panel}
+                initial={{ opacity: 0, x: -24 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -40 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+                exit={{ opacity: 0, x: -24, transition: QUICK }}
+                transition={SMOOTH}
             >
                 <header className={styles.head}>
                     <Button
@@ -155,55 +178,39 @@ export function SetupPage({ zoneId, step }: Props) {
                             : 'New watch zone'}
                     </h1>
                     <nav className={styles.stepper} aria-label="Setup steps">
-                        {STEPS.map((s, i) => (
-                            <button
-                                key={s.id}
-                                type="button"
-                                className={styles.step}
-                                data-state={
-                                    s.id === step ? 'current' : done(s.id) ? 'done' : 'todo'
-                                }
-                                disabled={!reachable(s.id)}
-                                onClick={() =>
-                                    zone &&
-                                    navigate({ name: 'setup', zoneId: zone.id, step: s.id }, true)
-                                }
-                            >
-                                <span className={styles.stepDot}>
-                                    <AnimatePresence mode="wait" initial={false}>
-                                        <motion.span
-                                            key={done(s.id) && s.id !== step ? 'done' : 'icon'}
-                                            initial={{ scale: 0, rotate: -40 }}
-                                            animate={{ scale: 1, rotate: 0 }}
-                                            exit={{ scale: 0 }}
-                                            transition={{
-                                                type: 'spring',
-                                                stiffness: 500,
-                                                damping: 22,
-                                            }}
-                                            style={{ display: 'grid' }}
-                                        >
-                                            <Icon
-                                                name={
-                                                    done(s.id) && s.id !== step ? 'check' : s.icon
-                                                }
-                                                size={14}
-                                            />
-                                        </motion.span>
-                                    </AnimatePresence>
-                                </span>
-                                <span className={styles.stepLabel}>{s.label}</span>
-                                {i < STEPS.length - 1 ? (
-                                    <span className={styles.stepLine}>
-                                        <motion.span
-                                            className={styles.stepLineFill}
-                                            animate={{ scaleX: i < index ? 1 : 0 }}
-                                            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                                        />
+                        {STEPS.map((s, i) => {
+                            const checked = done(s.id) && s.id !== step;
+                            return (
+                                <button
+                                    key={s.id}
+                                    type="button"
+                                    className={styles.step}
+                                    data-state={
+                                        s.id === step ? 'current' : checked ? 'done' : 'todo'
+                                    }
+                                    disabled={!reachable(s.id)}
+                                    onClick={() =>
+                                        zone &&
+                                        navigate(
+                                            { name: 'setup', zoneId: zone.id, step: s.id },
+                                            true,
+                                        )
+                                    }
+                                >
+                                    <span className={styles.stepDot}>
+                                        {checked ? <Icon name="check" size={10} /> : i + 1}
                                     </span>
-                                ) : null}
-                            </button>
-                        ))}
+                                    {s.label}
+                                    {s.id === step ? (
+                                        <motion.span
+                                            layoutId="setup-step"
+                                            className={styles.stepLine}
+                                            transition={SNAP}
+                                        />
+                                    ) : null}
+                                </button>
+                            );
+                        })}
                     </nav>
                 </header>
 
@@ -212,21 +219,34 @@ export function SetupPage({ zoneId, step }: Props) {
                         <motion.div
                             key={step}
                             custom={direction}
-                            initial={{ opacity: 0, x: 28 * direction }}
+                            initial={{ opacity: 0, x: 20 * direction }}
                             animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -28 * direction }}
-                            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                            exit={{ opacity: 0, x: -20 * direction, transition: QUICK }}
+                            transition={SMOOTH}
                         >
-                            {step === 'boundary' ? (
+                            {loading ? (
+                                <div className={styles.processing}>
+                                    <Spinner size={16} />
+                                    <span>
+                                        <strong>Loading the zone</strong>
+                                    </span>
+                                </div>
+                            ) : step === 'boundary' ? (
                                 <BoundaryStep
                                     zone={zone ?? null}
                                     draft={draft}
                                     setDraft={setDraft}
                                 />
                             ) : zone && step === 'servers' ? (
-                                <ServersStep zone={zone} />
+                                <ServersStep
+                                    zone={zone}
+                                    radiusM={radiusM}
+                                    setRadiusM={setRadiusM}
+                                    pinpointing={pinpointing}
+                                    setPinpointing={setPinpointing}
+                                />
                             ) : zone ? (
-                                <DronesStep zone={zone} pairing={pairing} setPairing={setPairing} />
+                                <DronesStep zone={zone} />
                             ) : null}
                         </motion.div>
                     </AnimatePresence>

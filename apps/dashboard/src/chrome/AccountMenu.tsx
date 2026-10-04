@@ -23,34 +23,28 @@ export function AccountMenu() {
         <Popover
             open={open}
             onClose={() => setOpen(false)}
-            width={260}
+            width={240}
             anchor={
                 <button
                     type="button"
                     className={styles.avatar}
                     aria-label="Account"
+                    data-active={open}
                     onClick={() => setOpen(!open)}
                 >
-                    {initials(session.name) || <Icon name="user" size={16} />}
+                    {initials(session.name) || <Icon name="user" size={14} />}
                 </button>
             }
         >
             <div className={styles.account}>
-                <span className={styles.avatarLarge}>{initials(session.name)}</span>
                 <strong>{session.name}</strong>
                 <span>{session.email}</span>
-                <em>
-                    Signed in until{' '}
-                    {new Date(session.expiresAt).toLocaleDateString([], {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                    })}
-                </em>
             </div>
-            <button type="button" className={styles.menuItem} onClick={() => signOut()}>
-                <Icon name="logout" size={16} /> Sign out
-            </button>
+            <div className={styles.menu}>
+                <button type="button" className={styles.menuItem} onClick={() => signOut()}>
+                    <Icon name="logout" size={15} /> Sign out
+                </button>
+            </div>
         </Popover>
     );
 }

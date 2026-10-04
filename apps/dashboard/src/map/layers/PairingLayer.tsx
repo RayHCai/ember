@@ -1,12 +1,12 @@
 import { CallbackProperty, ClassificationType, Color, ColorMaterialProperty } from 'cesium';
 import { useEffect } from 'react';
-import type { EdgeServer } from '../../sim/types';
+import type { ServerView } from '../../model/types';
 import { C, toCartesian } from '../style';
 import { useDataSource } from '../useDataSource';
 import { frameMilliseconds } from '../frameClock';
 
 /** Radar rings rolling out from each edge server while it listens for new drones. */
-export function PairingLayer({ servers, active }: { servers: EdgeServer[]; active: boolean }) {
+export function PairingLayer({ servers, active }: { servers: ServerView[]; active: boolean }) {
     const ds = useDataSource('pairing');
 
     useEffect(() => {

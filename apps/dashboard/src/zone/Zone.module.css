@@ -1,98 +1,75 @@
 .page {
-    --top: 16px;
+    --side: 332px;
+    --inspect: 348px;
     position: fixed;
     inset: 0;
     pointer-events: none;
 }
 
-html[data-shell='desktop'] .page {
-    --top: 40px;
-}
-
-.glass {
-    --facet: var(--surface);
-    border: 1px solid rgba(236, 228, 220, 0.9);
-    border-radius: 16px;
-    background: var(--glass);
-    box-shadow: var(--shadow-md);
-    backdrop-filter: blur(20px) saturate(1.5);
-}
-
-.header {
+.bar {
+    --facet: var(--paper);
     position: absolute;
-    top: var(--top);
-    left: 16px;
-    right: 16px;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    gap: 12px;
-    align-items: start;
-}
-
-.header > * {
+    gap: 16px;
+    align-items: center;
+    height: var(--bar);
+    padding: 0 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
     pointer-events: auto;
 }
 
-.titleCard {
-    composes: glass;
+/* Clear the native window controls. */
+html[data-shell='desktop'] .bar {
+    padding-left: 96px;
+}
+
+.barTitle {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
-    justify-self: start;
-    max-width: 100%;
-    padding: 7px 14px 7px 7px;
-}
-
-.titleCard > button {
-    box-shadow: none;
-}
-
-.titleText {
-    display: grid;
     min-width: 0;
 }
 
 .title {
     overflow: hidden;
-    font-size: 16px;
-    font-weight: 680;
-    letter-spacing: -0.02em;
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1.2;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 
 .region {
     overflow: hidden;
+    padding-right: 4px;
     color: var(--ink-3);
-    font-size: 12px;
+    font-size: 12.5px;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 
-.modeCard {
-    composes: glass;
+.barMode {
     display: flex;
-    gap: 10px;
+    gap: 14px;
     align-items: center;
-    padding: 5px 12px 5px 5px;
-}
-
-.modeCard > div {
-    border: 0;
-    background: transparent;
 }
 
 .suggestToggle {
-    --facet: var(--glass);
     display: inline-flex;
     gap: 8px;
     align-items: center;
-    padding-left: 12px;
-    border-left: 1px solid var(--line);
     color: var(--ink);
     font-size: 13px;
-    font-weight: 550;
+    font-weight: 700;
     cursor: pointer;
+    transition: color var(--fast) var(--ease);
 }
 
 .suggestToggle[data-disabled='true'] {
@@ -100,11 +77,7 @@ html[data-shell='desktop'] .page {
     cursor: not-allowed;
 }
 
-.suggestToggle svg {
-    color: var(--route);
-}
-
-.actions {
+.barActions {
     display: flex;
     gap: 8px;
     align-items: center;
@@ -113,13 +86,13 @@ html[data-shell='desktop'] .page {
 
 .right {
     position: absolute;
-    top: calc(var(--top) + 72px);
-    right: 16px;
-    bottom: 16px;
+    top: calc(var(--bar) + 12px);
+    right: 12px;
+    bottom: 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    width: 360px;
+    width: var(--inspect);
     pointer-events: none;
 }
 
@@ -129,9 +102,9 @@ html[data-shell='desktop'] .page {
 
 .bottom {
     position: absolute;
-    left: 372px;
-    right: 392px;
-    bottom: 24px;
+    left: calc(var(--side) + 16px);
+    right: calc(var(--inspect) + 28px);
+    bottom: 22px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -144,9 +117,21 @@ html[data-shell='desktop'] .page {
 }
 
 @media (max-width: 1280px) {
-    .actions > button:first-child {
-        font-size: 0;
-        gap: 0;
-        padding: 0 11px;
+    .region {
+        display: none;
     }
+}
+
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: var(--paper);
+    box-shadow: var(--shadow-2, 0 8px 24px -12px rgba(17, 17, 16, 0.3));
+    transform: translate(-50%, -50%);
 }

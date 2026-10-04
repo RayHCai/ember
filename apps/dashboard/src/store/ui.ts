@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import type { BlastAudience, BlastPriority } from '../sim/types';
+import type { BlastArea, BlastAudience, BlastPriority } from '@ember/contracts';
 
 export type OverlayMode = 'operator' | 'detection';
 
-export type Pickable = 'server' | 'drone' | 'report' | 'community' | 'drop' | 'safe';
+export type Pickable = 'server' | 'drone' | 'risk' | 'community' | 'drop' | 'safe' | 'station';
 
 export interface Picked {
     kind: Pickable;
@@ -20,7 +20,7 @@ export interface BlastDraft {
     priority: BlastPriority;
     title: string;
     body: string;
-    area: 'zone' | 'near_fire';
+    area: BlastArea;
 }
 
 interface UiState {
@@ -29,15 +29,18 @@ interface UiState {
     selected: Picked | null;
     hover: Hover | null;
     agentOpen: boolean;
-    /** Open with a draft; `approve` jumps straight to the approval step. */
-    blast: { draft: BlastDraft | null; approve: boolean } | null;
+    /**
+     * Open with a draft; `approve` jumps straight to the approval step. `pendingId` is a blast the
+     * api holds for approval (drafted by the agent), approved instead of sent anew.
+     */
+    blast: { draft: BlastDraft | null; approve: boolean; pendingId: string | null } | null;
     gapsUntil: number;
     setMode: (mode: OverlayMode) => void;
     setSuggestions: (on: boolean) => void;
     select: (picked: Picked | null) => void;
     setHover: (hover: Hover | null) => void;
     setAgentOpen: (open: boolean) => void;
-    openBlast: (draft?: BlastDraft | null, approve?: boolean) => void;
+    openBlast: (draft?: BlastDraft | null, approve?: boolean, pendingId?: string | null) => void;
     closeBlast: () => void;
     showGaps: (ms?: number) => void;
     /** Each zone opens on its own default view. */
@@ -59,7 +62,8 @@ export const useUi = create<UiState>()((set) => ({
     select: (selected) => set({ selected }),
     setHover: (hover) => set({ hover }),
     setAgentOpen: (agentOpen) => set({ agentOpen }),
-    openBlast: (draft = null, approve = false) => set({ blast: { draft, approve } }),
+    openBlast: (draft = null, approve = false, pendingId = null) =>
+        set({ blast: { draft, approve, pendingId } }),
     closeBlast: () => set({ blast: null }),
     showGaps: (ms = 9000) =>
         set({ gapsUntil: Date.now() + ms, mode: 'operator', suggestions: false }),

@@ -9,8 +9,8 @@ import {
     type Entity,
 } from 'cesium';
 import { useEffect, useRef } from 'react';
-import { circle } from '../../sim/geo';
-import type { EdgeServer } from '../../sim/types';
+import { circle } from '../../model/geo';
+import type { ServerView } from '../../model/types';
 import { prefersReducedMotion } from '../camera';
 import { ALWAYS_ON_TOP, C, ICONS, toCartesian } from '../style';
 import { useDataSource } from '../useDataSource';
@@ -34,8 +34,15 @@ const pendingRing = () =>
 const pendingTint = () =>
     new CallbackProperty(() => Color.WHITE.withAlpha(0.35 + 0.65 * breath()), false);
 
+const iconOf = (s: ServerView) =>
+    s.status === 'pending'
+        ? ICONS.serverPending
+        : s.online === false
+          ? ICONS.serverOffline
+          : ICONS.server;
+
 interface Props {
-    servers: EdgeServer[];
+    servers: ServerView[];
     /** Hide the connectivity radii (icons stay). */
     radii?: boolean;
     selectedId?: string | null;
@@ -45,7 +52,9 @@ interface Props {
 export function ServersLayer({ servers, radii = true, selectedId = null }: Props) {
     const ds = useDataSource('servers');
     const deployedAt = useRef(new Map<string, number>());
-    const known = useRef(new Map<string, EdgeServer>());
+    const known = useRef(new Map<string, ServerView>());
+    // A server that appears after the first draw has just connected: it gets the ping.
+    const primed = useRef(false);
     const selected = useRef(selectedId);
     selected.current = selectedId;
 
@@ -74,6 +83,7 @@ export function ServersLayer({ servers, radii = true, selectedId = null }: Props
             );
 
             if (!before) {
+                if (primed.current && !pending) deployedAt.current.set(id, now());
                 ds.entities.add({
                     id: ids[1],
                     position: center,
@@ -122,7 +132,7 @@ export function ServersLayer({ servers, radii = true, selectedId = null }: Props
                     id: ids[0],
                     position: center,
                     billboard: {
-                        image: pending ? ICONS.serverPending : ICONS.server,
+                        image: iconOf(server),
                         width: 30,
                         height: 30,
                         verticalOrigin: VerticalOrigin.CENTER,
@@ -152,9 +162,15 @@ export function ServersLayer({ servers, radii = true, selectedId = null }: Props
                 if (ping_) ping_.position = new ConstantPositionProperty(center);
                 ringEntity.polyline!.positions = ring as never;
             }
+            if (before.online !== server.online) icon.billboard!.image = iconOf(server) as never;
+            if (before.radiusM !== server.radiusM) {
+                fill.ellipse!.semiMajorAxis = server.radiusM as never;
+                fill.ellipse!.semiMinorAxis = server.radiusM as never;
+                ringEntity.polyline!.positions = ring as never;
+            }
             if (before.status !== server.status) {
                 if (!pending) deployedAt.current.set(id, now());
-                icon.billboard!.image = (pending ? ICONS.serverPending : ICONS.server) as never;
+                icon.billboard!.image = iconOf(server) as never;
                 icon.billboard!.color = (pending ? pendingTint() : Color.WHITE) as never;
                 fill.ellipse!.material = pending
                     ? pendingFill()
@@ -164,6 +180,7 @@ export function ServersLayer({ servers, radii = true, selectedId = null }: Props
                     : new ColorMaterialProperty(C.pink.withAlpha(0.75));
             }
         }
+        primed.current = true;
         for (const entity of [...ds.entities.values]) {
             if (keep.has(entity.id)) continue;
             ds.entities.remove(entity);
@@ -183,6 +200,7 @@ export function ServersLayer({ servers, radii = true, selectedId = null }: Props
         () => () => {
             ds?.entities.removeAll();
             known.current.clear();
+            primed.current = false;
         },
         [ds],
     );

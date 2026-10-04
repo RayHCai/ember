@@ -8,7 +8,7 @@ import { loadMap } from './mapSource';
 import styles from './MapStage.module.css';
 import { useMap } from './viewer';
 
-const BACKGROUND = '#F1EBE5';
+const BACKGROUND = '#F1F0EC';
 
 /**
  * The one map, created once and kept alive across pages so moving between a zone list
@@ -44,7 +44,7 @@ export function MapStage({ visible }: { visible: boolean }) {
             ScreenSpaceEventType.LEFT_DOUBLE_CLICK,
         );
         scene.backgroundColor = Color.fromCssColorString(BACKGROUND);
-        scene.globe.baseColor = Color.fromCssColorString('#E9E2DA');
+        scene.globe.baseColor = Color.fromCssColorString('#E9E7E2');
         scene.globe.showGroundAtmosphere = false;
         scene.fog.enabled = false;
         if (scene.skyBox) scene.skyBox.show = false;
@@ -102,14 +102,13 @@ export function MapStage({ visible }: { visible: boolean }) {
         // Let the fade finish before the map stops drawing.
         const timer = window.setTimeout(() => {
             if (!viewer.isDestroyed()) viewer.useDefaultRenderLoop = false;
-        }, 700);
+        }, 500);
         return () => window.clearTimeout(timer);
     }, [viewer, visible]);
 
     return (
         <div className={styles.stage} data-visible={visible} data-map-ready={viewer !== null}>
             <div ref={containerRef} className={styles.map} />
-            <div className={styles.vignette} aria-hidden />
             <div ref={creditsRef} className={styles.credits} />
         </div>
     );

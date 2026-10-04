@@ -1,34 +1,36 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '../icons/Icon';
-import type { GlyphName } from '../icons/glyphs';
 import { flyToPoint } from '../map/camera';
 import { geocode, type GeocodeResult } from '../map/geocode';
 import { useMap } from '../map/viewer';
-import { centroid, polygonAreaKm2 } from '../sim/geo';
-import type { LatLon, WatchZone } from '../sim/types';
-import { autoFit, hash } from '../sim/world';
+import { api } from '../api';
+import { message } from '../api/client';
+import { centroid, morphPair, polygonAreaKm2 } from '../model/geo';
+import type { LatLon, ZoneView } from '../model/types';
+import { latLng, ll } from '../model/zone';
+import { createZone, updateZone } from '../store/actions';
 import { notify } from '../store/notifications';
 import { navigate } from '../store/router';
-import { useZones } from '../store/zones';
 import { Button } from '../ui/Button';
 import { CountUp } from '../ui/CountUp';
+import { QUICK } from '../ui/motion';
 import panel from '../ui/panel.module.css';
 import ui from '../ui/ui.module.css';
 import { PRESETS } from './presets';
 import type { Draft } from './SetupPage';
 import styles from './Setup.module.css';
 
-const HELP: { icon: GlyphName; text: string }[] = [
-    { icon: 'pin', text: 'Click the map to drop boundary points' },
-    { icon: 'check', text: 'Click the first point or press Enter to close' },
-    { icon: 'edit', text: 'Drag points; drag a midpoint to add one' },
-    { icon: 'close', text: 'Right-click a point to remove it' },
+const HELP: { input: string; text: string }[] = [
+    { input: 'Click', text: 'Add a point' },
+    { input: 'Enter', text: 'Close the shape' },
+    { input: 'Drag', text: 'Move a point' },
+    { input: 'Right-click', text: 'Remove a point' },
 ];
 
 interface Props {
-    zone: WatchZone | null;
+    zone: ZoneView | null;
     draft: Draft;
     setDraft: (d: Draft) => void;
 }
@@ -36,9 +38,6 @@ interface Props {
 export function BoundaryStep({ zone, draft, setDraft }: Props) {
     const viewer = useMap((s) => s.viewer);
     const source = useMap((s) => s.source);
-    const createZone = useZones((s) => s.createZone);
-    const setBoundary = useZones((s) => s.setBoundary);
-    const rename = useZones((s) => s.rename);
     const [name, setName] = useState(zone?.name ?? '');
     const [region, setRegion] = useState(zone?.region ?? '');
     const [query, setQuery] = useState('');
@@ -46,7 +45,9 @@ export function BoundaryStep({ zone, draft, setDraft }: Props) {
     const [searching, setSearching] = useState(false);
     const [searchError, setSearchError] = useState<string | null>(null);
     const [fitting, setFitting] = useState(false);
-    const fits = useRef(0);
+    const [saving, setSaving] = useState(false);
+    const animation = useRef(0);
+    useEffect(() => () => cancelAnimationFrame(animation.current), []);
 
     const area = draft.closed ? polygonAreaKm2(draft.points) : 0;
     const status =
@@ -78,65 +79,90 @@ export function BoundaryStep({ zone, draft, setDraft }: Props) {
         setResults(null);
     };
 
-    const runAutoFit = () => {
+    const morph = (from: LatLon[], to: LatLon[]) =>
+        new Promise<void>((resolve) => {
+            const [a, b] = morphPair(from, to);
+            const start = performance.now();
+            const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? 0
+                : 1100;
+            const tick = () => {
+                const t = duration ? Math.min(1, (performance.now() - start) / duration) : 1;
+                const e = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+                setDraft({
+                    points: a.map((p, i) => [
+                        p[0] + (b[i]![0] - p[0]) * e,
+                        p[1] + (b[i]![1] - p[1]) * e,
+                    ]),
+                    closed: true,
+                });
+                if (t < 1) animation.current = requestAnimationFrame(tick);
+                else {
+                    setDraft({ points: to, closed: true });
+                    resolve();
+                }
+            };
+            animation.current = requestAnimationFrame(tick);
+        });
+
+    const runAutoFit = async () => {
         if (!draft.closed || fitting) return;
-        fits.current += 1;
-        const { from, to } = autoFit(draft.points, hash(name || 'zone') + fits.current);
         setFitting(true);
-        const start = performance.now();
-        const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1300;
-        const tick = () => {
-            const t = duration ? Math.min(1, (performance.now() - start) / duration) : 1;
-            const e = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-            setDraft({
-                points: from.map((p, i) => [
-                    p[0] + (to[i]![0] - p[0]) * e,
-                    p[1] + (to[i]![1] - p[1]) * e,
-                ]),
-                closed: true,
-            });
-            if (t < 1) requestAnimationFrame(tick);
-            else {
-                setFitting(false);
-                notify(
-                    'success',
-                    'Fitted to the forest edge',
-                    `${polygonAreaKm2(to).toFixed(1)} km² of forest detected from imagery and open data.`,
-                );
-            }
-        };
-        requestAnimationFrame(tick);
+        try {
+            const fit = await api.forestFit(draft.points.map(latLng));
+            const to = fit.boundary.map(ll);
+            await morph(draft.points, to);
+            notify(
+                'success',
+                'Fitted to the vegetation edge',
+                `${(fit.areaM2 / 1e6).toFixed(1)} km² of ${fit.classes.slice(0, 3).join(', ') || 'vegetation'}.`,
+            );
+        } catch (err) {
+            notify('warning', 'Auto-fit found nothing to fit', message(err));
+        } finally {
+            setFitting(false);
+        }
     };
 
-    const proceed = () => {
+    const proceed = async () => {
         const trimmed = name.trim();
-        if (!trimmed || !draft.closed) return;
+        if (!trimmed || !draft.closed || saving) return;
         const where =
             region ||
             `${centroid(draft.points)
                 .map((n) => n.toFixed(3))
                 .join(', ')}`;
-        if (!zone) {
-            const id = createZone({ name: trimmed, region: where, boundary: draft.points });
-            notify(
-                'success',
-                'Watch zone created',
-                `${trimmed} is on the map. Next, place edge servers.`,
-            );
-            navigate({ name: 'setup', zoneId: id, step: 'servers' }, true);
-            return;
+        setSaving(true);
+        try {
+            if (!zone) {
+                const created = await createZone({
+                    name: trimmed,
+                    region: where,
+                    boundary: draft.points,
+                });
+                if (!created) return;
+                notify('success', 'Watch zone created', trimmed);
+                navigate({ name: 'setup', zoneId: created.id, step: 'servers' }, true);
+                return;
+            }
+            const boundaryChanged = draft.points !== zone.boundary;
+            const ok = await updateZone(zone.id, {
+                ...(trimmed !== zone.name ? { name: trimmed } : {}),
+                ...(boundaryChanged ? { boundary: draft.points.map(latLng) } : {}),
+                ...(region !== zone.region ? { region: region || null } : {}),
+            });
+            if (!ok) return;
+            if (boundaryChanged)
+                notify(
+                    'info',
+                    'Boundary updated',
+                    'Recompute edge server placements for the new area.',
+                    zone,
+                );
+            navigate({ name: 'setup', zoneId: zone.id, step: 'servers' }, true);
+        } finally {
+            setSaving(false);
         }
-        if (trimmed !== zone.name) rename(zone.id, trimmed);
-        if (draft.points !== zone.boundary) {
-            setBoundary(zone.id, draft.points);
-            notify(
-                'info',
-                'Boundary updated',
-                'Recompute edge server placements for the new area.',
-                zone,
-            );
-        }
-        navigate({ name: 'setup', zoneId: zone.id, step: 'servers' }, true);
     };
 
     return (
@@ -152,100 +178,112 @@ export function BoundaryStep({ zone, draft, setDraft }: Props) {
                 />
             </label>
 
-            <form className={styles.searchRow} onSubmit={search}>
-                <label className={ui.field} style={{ flex: 1 }}>
-                    <span className={ui.fieldLabel}>Address or place (optional)</span>
+            <div className={styles.place}>
+                <form className={ui.field} onSubmit={search}>
+                    <label className={ui.fieldLabel} htmlFor="place-search">
+                        Find a place
+                    </label>
                     <span className={styles.searchInput}>
-                        <Icon name="search" size={15} />
+                        <Icon name="search" size={14} />
                         <input
+                            id="place-search"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search to move the map"
+                            placeholder="Address or place"
                         />
+                        <Button
+                            type="submit"
+                            size="sm"
+                            variant="ghost"
+                            loading={searching}
+                            disabled={!query.trim()}
+                        >
+                            Find
+                        </Button>
                     </span>
-                </label>
-                <Button type="submit" size="md" loading={searching} disabled={!query.trim()}>
-                    Find
-                </Button>
-            </form>
-            <AnimatePresence>
-                {results && results.length ? (
-                    <motion.ul
-                        className={styles.results}
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                    >
-                        {results.map((r) => (
-                            <li key={`${r.lat},${r.lon}`}>
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        goTo(
-                                            [r.lat, r.lon],
-                                            Math.min(60_000, Math.max(8_000, r.extentM * 2.4)),
-                                            r.name.split(',').slice(0, 3).join(','),
-                                        )
-                                    }
-                                >
-                                    <Icon name="pin" size={13} /> {r.name}
-                                </button>
-                            </li>
-                        ))}
-                    </motion.ul>
-                ) : null}
-            </AnimatePresence>
-            {searchError ? <p className={styles.error}>{searchError}</p> : null}
-            <div className={styles.chips}>
-                {PRESETS.map((p) => (
-                    <button
-                        key={p.name}
-                        type="button"
-                        className={styles.chip}
-                        onClick={() => goTo(p.at, p.heightM, p.region)}
-                    >
-                        {p.name}
-                    </button>
-                ))}
+                </form>
+                <AnimatePresence>
+                    {results && results.length ? (
+                        <motion.ul
+                            className={styles.results}
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={QUICK}
+                        >
+                            {results.map((r) => (
+                                <li key={`${r.lat},${r.lon}`}>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            goTo(
+                                                [r.lat, r.lon],
+                                                Math.min(60_000, Math.max(8_000, r.extentM * 2.4)),
+                                                r.name.split(',').slice(0, 3).join(','),
+                                            )
+                                        }
+                                    >
+                                        <Icon name="pin" size={13} /> {r.name}
+                                    </button>
+                                </li>
+                            ))}
+                        </motion.ul>
+                    ) : null}
+                </AnimatePresence>
+                {searchError ? <p className={styles.error}>{searchError}</p> : null}
+                <div className={styles.chips}>
+                    {PRESETS.map((p) => (
+                        <button
+                            key={p.name}
+                            type="button"
+                            className={styles.chip}
+                            onClick={() => goTo(p.at, p.heightM, p.region)}
+                        >
+                            {p.name}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            <ul className={styles.help}>
-                {HELP.map((h) => (
-                    <li key={h.text}>
-                        <Icon name={h.icon} size={13} /> {h.text}
-                    </li>
-                ))}
-            </ul>
-
-            <div className={styles.drawStats}>
-                <div>
-                    <span className={panel.muted}>Points</span>
-                    <strong className="mono">{draft.points.length}</strong>
+            <div className={styles.draw}>
+                <div className={styles.drawStats}>
+                    <div>
+                        <span className={panel.muted}>Points</span>
+                        <strong>{draft.points.length}</strong>
+                    </div>
+                    <div>
+                        <span className={panel.muted}>Area</span>
+                        <strong>
+                            <CountUp value={area} decimals={1} suffix=" km²" duration={0.5} />
+                        </strong>
+                    </div>
+                    <div className={styles.drawStatus} data-ready={draft.closed}>
+                        <motion.span
+                            key={status}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={QUICK}
+                        >
+                            {draft.closed ? <Icon name="check" size={12} /> : null} {status}
+                        </motion.span>
+                    </div>
                 </div>
-                <div>
-                    <span className={panel.muted}>Area</span>
-                    <strong>
-                        <CountUp value={area} decimals={1} suffix=" km²" duration={0.5} />
-                    </strong>
-                </div>
-                <div className={styles.drawStatus} data-ready={draft.closed}>
-                    <motion.span
-                        key={status}
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                    >
-                        {draft.closed ? <Icon name="check" size={13} /> : null} {status}
-                    </motion.span>
-                </div>
+                <ul className={styles.help}>
+                    {HELP.map((h) => (
+                        <li key={h.input}>
+                            <kbd className={ui.kbd}>{h.input}</kbd> {h.text}
+                        </li>
+                    ))}
+                </ul>
             </div>
 
             <div className={styles.tools}>
                 <Button
-                    variant="soft"
                     icon="sparkle"
+                    size="sm"
                     disabled={!draft.closed}
                     loading={fitting}
-                    onClick={runAutoFit}
+                    onClick={() => void runAutoFit()}
                 >
                     {fitting ? 'Detecting forest' : 'Auto-fit to forest'}
                 </Button>
@@ -282,7 +320,8 @@ export function BoundaryStep({ zone, draft, setDraft }: Props) {
                     block
                     iconAfter="arrowRight"
                     disabled={!name.trim() || !draft.closed || fitting}
-                    onClick={proceed}
+                    loading={saving}
+                    onClick={() => void proceed()}
                 >
                     {zone ? 'Save and recompute servers' : 'Continue to edge servers'}
                 </Button>

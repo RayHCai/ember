@@ -8,64 +8,79 @@ import {
     Math as CesiumMath,
 } from 'cesium';
 import { useEffect, useRef } from 'react';
-import { getTelemetry } from '../../sim/live';
-import type { Drone, DroneTelemetry } from '../../sim/types';
+import { getTelemetry, isAirborne, livePosition } from '../../live/telemetry';
+import type { DroneView, ServerView } from '../../model/types';
 import { ALWAYS_ON_TOP, C, ICONS } from '../style';
 import { useDataSource } from '../useDataSource';
 
 const TRAIL = 7;
 const TRAIL_SAMPLE_MS = 110;
 
-const airborne = (t: DroneTelemetry | undefined) =>
-    t !== undefined && t.state !== 'docked' && t.state !== 'charging';
-
 interface Props {
-    drones: Drone[];
+    drones: DroneView[];
+    servers: ServerView[];
     selectedId?: string | null;
 }
 
-/** Drones at their last reported position. Docked ones cluster around their edge server. */
-export function DronesLayer({ drones, selectedId = null }: Props) {
+/**
+ * Drones where drone-info last saw them, moving live while they fly. A drone drone-info has not
+ * heard from waits beside its edge server.
+ */
+export function DronesLayer({ drones, servers, selectedId = null }: Props) {
     const ds = useDataSource('drones');
     const selected = useRef(selectedId);
     selected.current = selectedId;
+    const latest = useRef({ drones, servers });
+    latest.current = { drones, servers };
+    // Polls hand over fresh arrays; rebuild only when what is drawn changes, so trails survive.
+    const signature = [
+        drones.map((d) => `${d.id}@${d.serverId}`).join(','),
+        servers.map((s) => `${s.id}@${s.lat},${s.lon}`).join(','),
+    ].join('|');
 
     useEffect(() => {
         if (!ds) return;
         ds.entities.removeAll();
-        drones.forEach((drone) => {
-            const sameServer = drones.filter((d) => d.serverId === drone.serverId);
+        const current = latest.current;
+        current.drones.forEach((drone) => {
+            const server = current.servers.find((s) => s.id === drone.serverId);
+            const sameServer = current.drones.filter((d) => d.serverId === drone.serverId);
             const slot = sameServer.findIndex((d) => d.id === drone.id);
             const angle = (slot / Math.max(1, sameServer.length)) * Math.PI * 2 + Math.PI / 4;
             const dockOffset = new Cartesian2(Math.cos(angle) * 22, -Math.sin(angle) * 22);
+            const dock = server ? Cartesian3.fromDegrees(server.lon, server.lat, 0) : undefined;
             const trail: Cartesian3[] = [];
             let lastSample = 0;
 
             const position = () => {
-                const t = getTelemetry(drone.id);
-                return t
-                    ? Cartesian3.fromDegrees(t.lon, t.lat, airborne(t) ? t.altM : 0)
-                    : undefined;
+                const p = livePosition(drone.id);
+                if (!p) return dock;
+                return Cartesian3.fromDegrees(
+                    p.lon,
+                    p.lat,
+                    isAirborne(getTelemetry(drone.id)) ? p.altM : 0,
+                );
             };
 
             ds.entities.add({
                 id: `drone:${drone.id}`,
                 position: new CallbackPositionProperty(() => {
                     const p = position();
-                    const t = getTelemetry(drone.id);
+                    const flying = isAirborne(getTelemetry(drone.id));
                     const nowMs = performance.now();
-                    if (p && airborne(t) && nowMs - lastSample > TRAIL_SAMPLE_MS) {
+                    if (p && flying && nowMs - lastSample > TRAIL_SAMPLE_MS) {
                         trail.unshift(p);
                         trail.length = Math.min(trail.length, TRAIL);
                         lastSample = nowMs;
-                    } else if (!airborne(t)) {
+                    } else if (!flying) {
                         trail.length = 0;
                     }
                     return p;
                 }, false),
                 billboard: {
                     image: new CallbackProperty(
-                        () => (airborne(getTelemetry(drone.id)) ? ICONS.droneActive : ICONS.drone),
+                        () =>
+                            isAirborne(getTelemetry(drone.id)) ? ICONS.droneActive : ICONS.drone,
                         false,
                     ),
                     width: 26,
@@ -76,11 +91,15 @@ export function DronesLayer({ drones, selectedId = null }: Props) {
                     ),
                     alignedAxis: Cartesian3.UNIT_Z,
                     pixelOffset: new CallbackProperty(
-                        () => (airborne(getTelemetry(drone.id)) ? Cartesian2.ZERO : dockOffset),
+                        () => (getTelemetry(drone.id) ? Cartesian2.ZERO : dockOffset),
+                        false,
+                    ),
+                    color: new CallbackProperty(
+                        () => (getTelemetry(drone.id) ? Color.WHITE : Color.WHITE.withAlpha(0.55)),
                         false,
                     ),
                     scale: new CallbackProperty(() => {
-                        const base = airborne(getTelemetry(drone.id)) ? 1 : 0.74;
+                        const base = isAirborne(getTelemetry(drone.id)) ? 1 : 0.74;
                         return selected.current === drone.id ? base * 1.35 : base;
                     }, false),
                     heightReference: HeightReference.RELATIVE_TO_GROUND,
@@ -110,7 +129,7 @@ export function DronesLayer({ drones, selectedId = null }: Props) {
             }
         });
         return () => ds.entities.removeAll();
-    }, [ds, drones]);
+    }, [ds, signature]);
 
     return null;
 }

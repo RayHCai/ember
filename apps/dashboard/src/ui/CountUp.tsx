@@ -35,7 +35,7 @@ export function CountUp({ value, decimals = 0, suffix = '', duration = 0.9 }: Pr
     }, [value, decimals, suffix, duration, reduced]);
 
     return (
-        <span ref={ref} className="mono">
+        <span ref={ref} style={{ fontVariantNumeric: 'lining-nums tabular-nums' }}>
             {`${(0).toFixed(decimals)}${suffix}`}
         </span>
     );
