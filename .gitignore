@@ -41,3 +41,4 @@ edge-connector.db*
 # Playwright output
 test-results/
 playwright-report/
+services/drone-runtime/drone.env

@@ -62,7 +62,8 @@ Run the narrowest check that proves your change, then the full gate before decla
   `docs/architecture.md` and its README in the same commit. Edit the wrong sentence in place; no
   changelogs, no "previously X" notes, no TODO lists inside design docs (those go in `docs/work/`).
 - **Commits** are Conventional Commits (`feat(api): ...`), enforced by hook and CI. Scope is the
-  package directory name.
+  package directory name. Agents are never credited: no `Co-Authored-By:` trailers, "Generated with"
+  lines or other attribution to Claude or any other tool in commit messages or PR descriptions.
 
 ## Work tracking
 
