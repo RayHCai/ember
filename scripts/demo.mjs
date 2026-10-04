@@ -10,6 +10,12 @@
 //     --drone ID           the drone drone-sim follows (default drone-pi)
 //     --host-ip IP         this machine's LAN address, when the guess is wrong
 //     --tailscale          the edge and Pi reach this machine over Tailscale, not the LAN
+//
+//   All three machines on one network (e.g. the phone hotspot): plain pnpm demo:laptop, no
+//   Tailscale. This machine on another network (venue Wi-Fi) than the Mac Mini and Pi: add
+//   --tailscale and put all three on the tailnet, since edge-manager dials the connector at :8070,
+//   the connector dials edge-manager at :8060 and the Pi pulls frames from :8090, all across the
+//   two networks.
 
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, createWriteStream, readFileSync } from 'node:fs';
