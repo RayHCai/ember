@@ -1,6 +1,8 @@
 // `pnpm demo`: the whole stack, a third drone on this machine, the dashboard and drone-sim, with a
 // small watch zone on the Lahaina fire that three drones map in about 30 s. Nothing flies until
-// a scan is started. Ctrl+C stops what this started; the compose stack keeps running.
+// a scan is started. The dashboard comes up without waiting for drones; the script keeps polling
+// for the edge-connector and drones and says when they connect or drop. Ctrl+C stops what this
+// started; the compose stack keeps running.
 //
 //   pnpm demo              build images, then start
 //   pnpm demo --no-build   reuse the images already built
@@ -31,8 +33,12 @@ const DEMO_DATA = 'http://localhost:8090';
 const DASHBOARD = 'http://localhost:5173';
 const SIM = 'http://localhost:5180';
 
-const OPERATOR = { email: 'demo@ember.test', name: 'Demo Operator', password: 'ember-demo-2026' };
-const ZONE_NAME = 'Lahaina quick demo';
+const OPERATOR = {
+    email: 'operator@ember.test',
+    name: 'Field Operator',
+    password: 'ember-ops-2026',
+};
+const ZONE_NAME = 'Lahaina town';
 // The densest burning patch near the town at 15:45 (about 70% of this circle alight, from Demo
 // Data's arrival raster). Every drone takes off at the edge server, so mapping starts at takeoff;
 // a 130 m radius leaves 100 m to fly once the geofence margin is taken.
@@ -218,6 +224,28 @@ async function assignEdge(token, zone, server) {
     if (!a.ok) fail(`could not assign ${server.edgeServerId} to the zone (${a.status})`);
 }
 
+// The most recently seen drone in drone-info's fleet that is not a simulated one.
+function pairedDrone() {
+    return new Promise((resolve) => {
+        const ws = new WebSocket(`ws://${DRONE_INFO}/v1/stream`);
+        const done = (id) => {
+            clearTimeout(timer);
+            ws.close();
+            resolve(id);
+        };
+        const timer = setTimeout(() => done(null), 3000);
+        ws.addEventListener('error', () => done(null));
+        ws.addEventListener('message', (e) => {
+            const m = JSON.parse(String(e.data));
+            if (m.type !== 'fleet') return;
+            const real = m.drones
+                .filter((d) => d.kind !== 'simulated' || !d.droneId.startsWith('sim-'))
+                .toSorted((a, b) => b.lastSeen.localeCompare(a.lastSeen));
+            done(real[0]?.droneId ?? null);
+        });
+    });
+}
+
 async function serving(url) {
     try {
         return (await fetch(url)).ok;
@@ -269,13 +297,16 @@ async function main() {
     log('warming up Demo Data');
     const frame = `${DEMO_DATA}/v1/observation?lat=${EDGE.lat}&lon=${EDGE.lng}&alt_m=60&t=${encodeURIComponent(CLOCK.scenario_time)}`;
     await waitFor('a first Demo Data frame', async () => (await fetch(frame)).ok, 120);
+    // Set now so drones and viewers that connect while pairing already see the fire; set again
+    // once ready so the scan starts at the same moment every time.
+    const early = await http('PUT', `${DEMO_DATA}/v1/clock`, { body: CLOCK });
+    if (!early.ok) fail(`could not set Demo Data's clock (${early.status})`);
 
     if (!(await serving(DASHBOARD)))
         start('dashboard', 'pnpm', ['--filter', '@ember/dashboard', 'dev']);
     if (!(await serving(SIM))) start('drone-sim', 'pnpm', ['--filter', '@ember/drone-sim', 'dev']);
 
     const token = await signIn();
-    let server = null;
     if (REMOTE_EDGE) {
         const key = edgeKey();
         console.log(`
@@ -293,77 +324,121 @@ async function main() {
     bash scripts/setup-pi.sh --id ${DRONE.id} --home ${DRONE_HOME} --sensor-url ws://${hostIp}:8090/v1/stream
   Already set up? Re-running it updates the config and restarts the drone.
 `);
-        await waitFor(
-            'an edge-connector with a drone (see the commands above)',
-            async () => {
-                server = await edgeServer(token);
-                return server && server.live.connectedDrones >= 1;
-            },
-            30 * 60,
-        );
-        log(`${server.edgeServerId} is up with ${server.live.connectedDrones} drone(s)`);
-    } else {
-        await waitFor('the edge-connector and drone-fleet', async () => {
-            server = await edgeServer(token);
-            return server && server.live.connectedDrones >= 2;
-        });
-    }
-    if (server.live.run && server.live.run.state !== 'done')
-        fail(`${server.edgeServerId} is flying run ${server.live.run.runId}; wait for it to land`);
-
-    // A third drone already paired (a Pi, or one left from an earlier run) stands in for this one.
-    if (!REMOTE_EDGE && server.live.connectedDrones < 3) {
-        log(`flying ${DRONE.id} from this machine`);
-        start(DRONE.id, 'uv', [
-            'run',
-            '--package',
-            'ember-drone-runtime',
-            'drone-runtime',
-            'run',
-            '--id',
-            DRONE.id,
-            '--name',
-            isWindows ? `"${DRONE.name}"` : DRONE.name,
-            '--edge',
-            'ws://127.0.0.1:8070/v1/drone',
-            '--home',
-            DRONE_HOME,
-            '--camera',
-            'sensor-stream',
-            '--sensor-url',
-            'ws://127.0.0.1:8090/v1/stream',
-        ]);
-    }
-    if (!REMOTE_EDGE) {
-        await waitFor('three drones on the edge-connector', async () => {
-            server = await edgeServer(token);
-            return server && server.live.connectedDrones >= 3;
-        });
     }
 
     const zone = await ensureZone(token);
-    await assignEdge(token, zone, server);
-
-    const clock = await http('PUT', `${DEMO_DATA}/v1/clock`, { body: CLOCK });
-    if (!clock.ok) fail(`could not set Demo Data's clock (${clock.status})`);
-
     await waitFor('the dashboard', async () => (await fetch(DASHBOARD)).ok, 120);
     await waitFor('drone-sim', async () => (await fetch(SIM)).ok, 120);
 
     const dashboardUrl = `${DASHBOARD}/#/zones/${zone.id}`;
-    const simUrl = `${SIM}/?drone=${DRONE.id}&droneInfo=${DRONE_INFO}`;
     open(dashboardUrl);
-    open(simUrl);
 
     log('ready');
     console.log(`
   Dashboard  ${dashboardUrl}
-             sign in as ${OPERATOR.email} / ${OPERATOR.password}, then start a scan
-  drone-sim  ${simUrl}
+             sign in as ${OPERATOR.email} / ${OPERATOR.password}
   Logs       .demo/
 
+  Searching for ${REMOTE_EDGE ? 'the edge-connector and its drone' : 'the edge-connector and three drones'} every ${WATCH_MS / 1000} s;
+  drone-sim opens once they are connected.
   Ctrl+C stops the dev servers${REMOTE_EDGE ? '' : ` and ${DRONE.id}`}; "docker compose down" stops the rest.
 `);
+
+    await watchFleet(token, zone);
+}
+
+const WATCH_MS = 5000;
+
+// Polls until Ctrl+C, so the demo is usable before the drones are: assigns the edge-connector to
+// the zone when one comes online, says when drones connect or drop, and opens drone-sim (with the
+// clock reset to the scenario start) once the fleet is complete.
+async function watchFleet(token, zone, fleet = { edgeId: null, drones: 0, ready: false }) {
+    try {
+        await checkFleet(token, zone, fleet);
+    } catch (err) {
+        log(`fleet check failed: ${err.message ?? err}; retrying`);
+    }
+    await sleep(WATCH_MS);
+    return watchFleet(token, zone, fleet);
+}
+
+async function checkFleet(token, zone, fleet) {
+    const want = REMOTE_EDGE ? 1 : 3;
+    const server = await edgeServer(token);
+    if (!server) {
+        if (fleet.edgeId) log(`${fleet.edgeId} went offline; searching for an edge-connector`);
+        Object.assign(fleet, { edgeId: null, drones: 0, ready: false });
+        return;
+    }
+    if (server.edgeServerId !== fleet.edgeId) {
+        fleet.edgeId = server.edgeServerId;
+        log(`\x07edge-connector ${fleet.edgeId} connected`);
+        await assignEdge(token, zone, server);
+        if (server.live.run && server.live.run.state !== 'done')
+            log(
+                `${fleet.edgeId} is flying run ${server.live.run.runId}; let it land before a scan`,
+            );
+    }
+    const n = server.live.connectedDrones;
+    if (n > fleet.drones) log(`\x07drone connected (${n}/${want})`);
+    else if (n < fleet.drones) log(`drone disconnected (${n}/${want}); searching`);
+    fleet.drones = n;
+
+    // A third drone already paired (a Pi, or one left from an earlier run) stands in for this one.
+    if (!REMOTE_EDGE && !fleet.localStarted && n === 2) {
+        fleet.localStarted = true;
+        log(`flying ${DRONE.id} from this machine`);
+        startLocalDrone();
+    }
+
+    if (n < want) fleet.ready = false;
+    else if (!fleet.ready) fleet.ready = await fleetReady(server, fleet.simOpened);
+    if (fleet.ready) fleet.simOpened = true;
+}
+
+// The fleet just reached full strength: settle which drone to follow, restart the scenario clock
+// so every scan starts at the same moment, and open drone-sim the first time.
+async function fleetReady(server, simOpened) {
+    // The Pi keeps whatever id it was set up with; follow that one unless --drone says otherwise.
+    if (REMOTE_EDGE && !flag('--drone')) {
+        const found = await pairedDrone();
+        if (!found) return false; // not on drone-info yet; next poll
+        if (found !== DRONE.id) log(`following ${found}, the drone that paired`);
+        DRONE.id = found;
+    }
+    if (server.live.run && server.live.run.state !== 'done') {
+        log('a run is in flight; leaving the scenario clock alone');
+    } else {
+        const clock = await http('PUT', `${DEMO_DATA}/v1/clock`, { body: CLOCK });
+        if (!clock.ok) log(`could not reset Demo Data's clock (${clock.status})`);
+    }
+    const simUrl = `${SIM}/?drone=${DRONE.id}&droneInfo=${DRONE_INFO}`;
+    if (!simOpened) open(simUrl);
+    log(`\x07all drones connected: start a scan from the dashboard`);
+    console.log(`  drone-sim  ${simUrl}\n`);
+    return true;
+}
+
+function startLocalDrone() {
+    start(DRONE.id, 'uv', [
+        'run',
+        '--package',
+        'ember-drone-runtime',
+        'drone-runtime',
+        'run',
+        '--id',
+        DRONE.id,
+        '--name',
+        isWindows ? `"${DRONE.name}"` : DRONE.name,
+        '--edge',
+        'ws://127.0.0.1:8070/v1/drone',
+        '--home',
+        DRONE_HOME,
+        '--camera',
+        'sensor-stream',
+        '--sensor-url',
+        'ws://127.0.0.1:8090/v1/stream',
+    ]);
 }
 
 process.on('SIGINT', () => {
