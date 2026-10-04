@@ -4,7 +4,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "dev": "node --watch --experimental-strip-types src/main.ts",
+        "dev": "tsx watch src/main.ts",
+        "start": "node dist/main.js",
         "build": "tsc -p tsconfig.json",
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "test": "vitest run --passWithNoTests"
@@ -12,5 +13,8 @@
     "dependencies": {
         "@ember/contracts": "workspace:*",
         "fastify": "^5.6.0"
+    },
+    "devDependencies": {
+        "tsx": "^4.23.15"
     }
 }
