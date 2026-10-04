@@ -21,7 +21,7 @@ import type {
 import { DEMO_SESSION, demoBundle } from '../demo/bundle';
 import { fetchBundle, pair } from '../lib/client';
 import { mergeMessages } from '../lib/feed';
-import { sorted } from "../lib/sorted";
+import { sorted } from '../lib/sorted';
 import { clearBadge, onPushedMessage } from './notifications';
 import { clearAll, loadAll, save, type FeedState } from './storage';
 
