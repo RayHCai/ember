@@ -1,5 +1,5 @@
 import type { ResponderMessage } from '@ember/contracts';
-import { sorted } from "./sorted";
+import { sorted } from './sorted';
 
 /** Union by id, newest first, capped so the on-disk feed stays small. */
 export function mergeMessages(

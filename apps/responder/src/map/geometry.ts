@@ -16,7 +16,7 @@ import {
     type Projection,
 } from '../lib/geo';
 import { fuelRuns } from '../lib/terrain';
-import { sorted } from "../lib/sorted";
+import { sorted } from '../lib/sorted';
 
 type Risk = Exclude<RiskLevel, 'none'>;
 
@@ -67,24 +67,24 @@ export function buildGeometry(b: ResponderZoneBundle): ZoneGeometry {
     }
 
     const isochrones = sorted(plan?.isochrones ?? [], (a, c) => c.atMin - a.atMin).map((iso) => {
-            const pts = iso.polygons.flatMap((p) => p.outer.map(toXY));
-            const h = ((heading ?? 0) * Math.PI) / 180;
-            const dir = { x: Math.sin(h), y: -Math.cos(h) };
-            let label = pts[0] ?? { x: 0, y: 0 };
-            let best = -Infinity;
-            for (const p of pts) {
-                const d = p.x * dir.x + p.y * dir.y;
-                if (d > best) {
-                    best = d;
-                    label = p;
-                }
+        const pts = iso.polygons.flatMap((p) => p.outer.map(toXY));
+        const h = ((heading ?? 0) * Math.PI) / 180;
+        const dir = { x: Math.sin(h), y: -Math.cos(h) };
+        let label = pts[0] ?? { x: 0, y: 0 };
+        let best = -Infinity;
+        for (const p of pts) {
+            const d = p.x * dir.x + p.y * dir.y;
+            if (d > best) {
+                best = d;
+                label = p;
             }
-            return {
-                atMin: iso.atMin,
-                d: iso.polygons.map((p) => shapeD(p, toXY)).join(''),
-                label,
-            };
-        });
+        }
+        return {
+            atMin: iso.atMin,
+            d: iso.polygons.map((p) => shapeD(p, toXY)).join(''),
+            label,
+        };
+    });
 
     const trackXY = (plan?.track ?? []).map((t) => toXY(t.center));
     const last = trackXY[trackXY.length - 1];
@@ -95,17 +95,20 @@ export function buildGeometry(b: ResponderZoneBundle): ZoneGeometry {
         boundary: pathD(boundaryXY, true),
         fuel,
         roads: b.roads.map((r) => ({ id: r.id, d: pathD(r.path.map(toXY), false), kind: r.kind })),
-        risk: sorted(b.riskZones, (a, c) => Number(a.risk === "on_fire") - Number(c.risk === "on_fire")).map((z) => ({ id: z.id, risk: z.risk, d: pathD(z.polygon.map(toXY), true) })),
+        risk: sorted(
+            b.riskZones,
+            (a, c) => Number(a.risk === 'on_fire') - Number(c.risk === 'on_fire'),
+        ).map((z) => ({ id: z.id, risk: z.risk, d: pathD(z.polygon.map(toXY), true) })),
         detections: b.detections.map((d) => ({ id: d.id, risk: d.risk, p: toXY(d.center) })),
         isochrones,
         track: pathD(trackXY, false),
         head: last && heading !== null ? { p: last, deg: heading } : null,
         attack: sorted(plan?.attackZones ?? [], (a, c) => c.rank - a.rank).map((zone) => ({
-                zone,
-                p: toXY(zone.center),
-                r: zone.radiusM,
-                drop: toXY(zone.dropSite),
-            })),
+            zone,
+            p: toXY(zone.center),
+            r: zone.radiusM,
+            drop: toXY(zone.dropSite),
+        })),
         safeZones: b.safeZones.map((s) => ({ id: s.id, name: s.name, p: toXY(s.location) })),
         stations: b.stations.map((s) => ({ id: s.id, name: s.name, p: toXY(s.location) })),
         places: b.civilianAreas.map((a) => ({
