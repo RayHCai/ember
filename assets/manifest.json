@@ -3,27 +3,31 @@
     "assets": {
         "drone/quadcopter": {
             "file": "drone/quadcopter.glb",
-            "triangles": 1420,
+            "triangles": 2776,
             "min": [
-                -0.442,
-                -0.173,
-                -0.442
+                -0.47,
+                -0.183,
+                -0.47
             ],
             "max": [
-                0.442,
-                0.098,
-                0.422
+                0.47,
+                0.102,
+                0.45
             ],
             "materials": [
                 "accent",
                 "carbon",
+                "chassis",
                 "glass",
                 "housing",
                 "led_front",
                 "led_rear",
                 "motor",
                 "rotor_blur",
-                "shell"
+                "rubber",
+                "shell",
+                "strobe",
+                "thermal"
             ],
             "nodes": [
                 "quadcopter",
@@ -37,21 +41,42 @@
                 "rotor_blur_rear_right",
                 "gimbal"
             ],
-            "spanM": 0.884,
-            "propRadiusM": 0.192
+            "spanM": 0.94,
+            "propRadiusM": 0.2
+        },
+        "terrain/ground": {
+            "file": "terrain/ground.glb",
+            "triangles": 2,
+            "min": [
+                -0.5,
+                0.0,
+                -0.5
+            ],
+            "max": [
+                0.5,
+                0.0,
+                0.5
+            ],
+            "materials": [
+                "ground"
+            ],
+            "nodes": [
+                "ground"
+            ],
+            "sizeM": 1.0
         },
         "trees/broadleaf_a": {
             "file": "trees/broadleaf_a.glb",
-            "triangles": 498,
+            "triangles": 760,
             "min": [
-                -4.042,
-                -0.038,
-                -3.809
+                -4.566,
+                0.0,
+                -4.658
             ],
             "max": [
-                4.307,
-                8.82,
-                3.849
+                4.535,
+                9.126,
+                4.417
             ],
             "materials": [
                 "bark",
@@ -60,21 +85,21 @@
             "nodes": [
                 "broadleaf"
             ],
-            "heightM": 8.82,
-            "crownRadiusM": 4.33
+            "heightM": 9.13,
+            "crownRadiusM": 4.75
         },
         "trees/broadleaf_a_lod1": {
             "file": "trees/broadleaf_a_lod1.glb",
-            "triangles": 140,
+            "triangles": 189,
             "min": [
-                -3.329,
-                -0.045,
-                -3.632
+                -3.756,
+                -0.029,
+                -3.845
             ],
             "max": [
-                3.974,
-                8.691,
-                3.518
+                4.037,
+                8.775,
+                4.078
             ],
             "materials": [
                 "bark",
@@ -83,21 +108,44 @@
             "nodes": [
                 "broadleaf"
             ],
-            "heightM": 8.69,
-            "crownRadiusM": 4.17
+            "heightM": 8.78,
+            "crownRadiusM": 4.57
+        },
+        "trees/broadleaf_a_lod2": {
+            "file": "trees/broadleaf_a_lod2.glb",
+            "triangles": 26,
+            "min": [
+                -3.423,
+                -0.02,
+                -5.244
+            ],
+            "max": [
+                3.497,
+                9.392,
+                2.882
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "broadleaf"
+            ],
+            "heightM": 9.39,
+            "crownRadiusM": 5.54
         },
         "trees/broadleaf_b": {
             "file": "trees/broadleaf_b.glb",
-            "triangles": 498,
+            "triangles": 752,
             "min": [
-                -4.326,
-                -0.056,
-                -4.549
+                -5.034,
+                0.0,
+                -4.666
             ],
             "max": [
-                3.979,
-                9.877,
-                3.441
+                4.413,
+                10.407,
+                4.042
             ],
             "materials": [
                 "bark",
@@ -106,21 +154,21 @@
             "nodes": [
                 "broadleaf"
             ],
-            "heightM": 9.88,
-            "crownRadiusM": 4.66
+            "heightM": 10.41,
+            "crownRadiusM": 5.23
         },
         "trees/broadleaf_b_lod1": {
             "file": "trees/broadleaf_b_lod1.glb",
-            "triangles": 140,
+            "triangles": 193,
             "min": [
-                -3.78,
-                -0.075,
-                -3.998
+                -4.526,
+                -0.042,
+                -4.094
             ],
             "max": [
-                2.935,
-                9.701,
-                3.223
+                3.455,
+                10.277,
+                3.934
             ],
             "materials": [
                 "bark",
@@ -129,21 +177,44 @@
             "nodes": [
                 "broadleaf"
             ],
-            "heightM": 9.7,
-            "crownRadiusM": 4.27
+            "heightM": 10.28,
+            "crownRadiusM": 5.15
+        },
+        "trees/broadleaf_b_lod2": {
+            "file": "trees/broadleaf_b_lod2.glb",
+            "triangles": 26,
+            "min": [
+                -5.477,
+                -0.038,
+                -4.001
+            ],
+            "max": [
+                5.082,
+                9.79,
+                4.03
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "broadleaf"
+            ],
+            "heightM": 9.79,
+            "crownRadiusM": 5.54
         },
         "trees/conifer_a": {
             "file": "trees/conifer_a.glb",
-            "triangles": 304,
+            "triangles": 366,
             "min": [
-                -2.582,
+                -2.524,
                 0.0,
-                -2.64
+                -2.748
             ],
             "max": [
                 2.465,
-                11.269,
-                2.503
+                13.269,
+                2.576
             ],
             "materials": [
                 "bark",
@@ -152,21 +223,21 @@
             "nodes": [
                 "conifer"
             ],
-            "heightM": 11.27,
-            "crownRadiusM": 2.71
+            "heightM": 13.27,
+            "crownRadiusM": 2.81
         },
         "trees/conifer_a_lod1": {
             "file": "trees/conifer_a_lod1.glb",
-            "triangles": 80,
+            "triangles": 90,
             "min": [
-                -2.582,
+                -2.614,
                 0.0,
-                -2.537
+                -2.432
             ],
             "max": [
-                2.234,
-                11.269,
-                2.48
+                2.766,
+                13.269,
+                2.828
             ],
             "materials": [
                 "bark",
@@ -175,21 +246,44 @@
             "nodes": [
                 "conifer"
             ],
-            "heightM": 11.27,
-            "crownRadiusM": 2.71
+            "heightM": 13.27,
+            "crownRadiusM": 2.84
+        },
+        "trees/conifer_a_lod2": {
+            "file": "trees/conifer_a_lod2.glb",
+            "triangles": 14,
+            "min": [
+                -2.271,
+                0.0,
+                -2.271
+            ],
+            "max": [
+                2.271,
+                13.269,
+                2.271
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "conifer"
+            ],
+            "heightM": 13.27,
+            "crownRadiusM": 2.27
         },
         "trees/conifer_b": {
             "file": "trees/conifer_b.glb",
-            "triangles": 304,
+            "triangles": 366,
             "min": [
-                -2.644,
+                -2.515,
                 0.0,
-                -2.596
+                -2.726
             ],
             "max": [
-                2.559,
-                12.912,
-                2.58
+                2.46,
+                14.912,
+                2.837
             ],
             "materials": [
                 "bark",
@@ -198,21 +292,21 @@
             "nodes": [
                 "conifer"
             ],
-            "heightM": 12.91,
-            "crownRadiusM": 2.8
+            "heightM": 14.91,
+            "crownRadiusM": 2.88
         },
         "trees/conifer_b_lod1": {
             "file": "trees/conifer_b_lod1.glb",
-            "triangles": 80,
+            "triangles": 90,
             "min": [
-                -2.557,
+                -2.773,
                 0.0,
-                -2.391
+                -2.877
             ],
             "max": [
-                2.518,
-                12.912,
-                2.579
+                2.699,
+                14.912,
+                2.424
             ],
             "materials": [
                 "bark",
@@ -221,21 +315,44 @@
             "nodes": [
                 "conifer"
             ],
-            "heightM": 12.91,
-            "crownRadiusM": 2.81
+            "heightM": 14.91,
+            "crownRadiusM": 2.88
+        },
+        "trees/conifer_b_lod2": {
+            "file": "trees/conifer_b_lod2.glb",
+            "triangles": 14,
+            "min": [
+                -2.303,
+                0.0,
+                -2.303
+            ],
+            "max": [
+                2.303,
+                14.912,
+                2.303
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "conifer"
+            ],
+            "heightM": 14.91,
+            "crownRadiusM": 2.3
         },
         "trees/palm_a": {
             "file": "trees/palm_a.glb",
-            "triangles": 600,
+            "triangles": 847,
             "min": [
-                -3.181,
-                -0.008,
-                -4.662
+                -3.538,
+                -0.009,
+                -4.417
             ],
             "max": [
-                3.534,
-                10.659,
-                2.953
+                3.587,
+                11.173,
+                2.324
             ],
             "materials": [
                 "bark",
@@ -244,21 +361,21 @@
             "nodes": [
                 "palm"
             ],
-            "heightM": 10.66,
-            "crownRadiusM": 4.67
+            "heightM": 11.17,
+            "crownRadiusM": 4.45
         },
         "trees/palm_a_lod1": {
             "file": "trees/palm_a_lod1.glb",
-            "triangles": 110,
+            "triangles": 122,
             "min": [
-                -2.934,
-                -0.007,
-                -4.32
+                -2.633,
+                -0.009,
+                -4.153
             ],
             "max": [
-                3.21,
-                10.662,
-                2.128
+                3.249,
+                11.794,
+                2.399
             ],
             "materials": [
                 "bark",
@@ -267,21 +384,44 @@
             "nodes": [
                 "palm"
             ],
-            "heightM": 10.66,
-            "crownRadiusM": 4.38
+            "heightM": 11.79,
+            "crownRadiusM": 4.23
+        },
+        "trees/palm_a_lod2": {
+            "file": "trees/palm_a_lod2.glb",
+            "triangles": 33,
+            "min": [
+                -4.047,
+                -0.025,
+                -4.537
+            ],
+            "max": [
+                4.007,
+                11.035,
+                2.376
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "palm"
+            ],
+            "heightM": 11.03,
+            "crownRadiusM": 4.58
         },
         "trees/palm_b": {
             "file": "trees/palm_b.glb",
-            "triangles": 600,
+            "triangles": 847,
             "min": [
-                -2.538,
+                -2.824,
                 -0.006,
-                -3.256
+                -3.454
             ],
             "max": [
-                3.751,
-                12.414,
-                3.753
+                4.177,
+                12.468,
+                3.628
             ],
             "materials": [
                 "bark",
@@ -290,21 +430,21 @@
             "nodes": [
                 "palm"
             ],
-            "heightM": 12.41,
-            "crownRadiusM": 4.28
+            "heightM": 12.47,
+            "crownRadiusM": 4.6
         },
         "trees/palm_b_lod1": {
             "file": "trees/palm_b_lod1.glb",
-            "triangles": 110,
+            "triangles": 122,
             "min": [
-                -2.511,
-                -0.004,
-                -3.118
+                -2.442,
+                -0.006,
+                -3.009
             ],
             "max": [
-                3.407,
-                12.346,
-                3.289
+                3.679,
+                13.049,
+                3.234
             ],
             "materials": [
                 "bark",
@@ -313,21 +453,44 @@
             "nodes": [
                 "palm"
             ],
-            "heightM": 12.35,
-            "crownRadiusM": 4.32
+            "heightM": 13.05,
+            "crownRadiusM": 4.38
+        },
+        "trees/palm_b_lod2": {
+            "file": "trees/palm_b_lod2.glb",
+            "triangles": 33,
+            "min": [
+                -2.888,
+                -0.02,
+                -3.279
+            ],
+            "max": [
+                4.19,
+                12.555,
+                4.235
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "palm"
+            ],
+            "heightM": 12.55,
+            "crownRadiusM": 4.55
         },
         "trees/umbrella_a": {
             "file": "trees/umbrella_a.glb",
-            "triangles": 608,
+            "triangles": 864,
             "min": [
-                -7.107,
-                -0.065,
-                -7.455
+                -8.339,
+                0.0,
+                -8.054
             ],
             "max": [
-                8.134,
-                9.263,
-                7.391
+                8.653,
+                9.586,
+                7.808
             ],
             "materials": [
                 "bark",
@@ -336,21 +499,21 @@
             "nodes": [
                 "umbrella"
             ],
-            "heightM": 9.26,
-            "crownRadiusM": 8.27
+            "heightM": 9.59,
+            "crownRadiusM": 8.93
         },
         "trees/umbrella_a_lod1": {
             "file": "trees/umbrella_a_lod1.glb",
-            "triangles": 124,
+            "triangles": 192,
             "min": [
-                -8.034,
-                -0.058,
-                -7.738
+                -8.196,
+                -0.044,
+                -7.787
             ],
             "max": [
-                8.473,
-                9.194,
-                7.848
+                7.226,
+                9.656,
+                7.821
             ],
             "materials": [
                 "bark",
@@ -359,21 +522,44 @@
             "nodes": [
                 "umbrella"
             ],
-            "heightM": 9.19,
-            "crownRadiusM": 8.75
+            "heightM": 9.66,
+            "crownRadiusM": 8.4
+        },
+        "trees/umbrella_a_lod2": {
+            "file": "trees/umbrella_a_lod2.glb",
+            "triangles": 26,
+            "min": [
+                -7.872,
+                -0.014,
+                -8.05
+            ],
+            "max": [
+                5.38,
+                9.651,
+                7.599
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "umbrella"
+            ],
+            "heightM": 9.65,
+            "crownRadiusM": 8.82
         },
         "trees/umbrella_b": {
             "file": "trees/umbrella_b.glb",
-            "triangles": 608,
+            "triangles": 851,
             "min": [
-                -7.847,
-                -0.09,
-                -8.163
+                -8.709,
+                0.0,
+                -8.388
             ],
             "max": [
-                7.97,
-                10.784,
-                7.161
+                8.175,
+                10.63,
+                8.514
             ],
             "materials": [
                 "bark",
@@ -382,21 +568,21 @@
             "nodes": [
                 "umbrella"
             ],
-            "heightM": 10.78,
-            "crownRadiusM": 8.53
+            "heightM": 10.63,
+            "crownRadiusM": 9.34
         },
         "trees/umbrella_b_lod1": {
             "file": "trees/umbrella_b_lod1.glb",
-            "triangles": 124,
+            "triangles": 192,
             "min": [
-                -7.181,
-                -0.093,
-                -8.274
+                -8.083,
+                -0.065,
+                -7.472
             ],
             "max": [
-                7.527,
-                10.687,
-                8.126
+                7.699,
+                11.114,
+                8.0
             ],
             "materials": [
                 "bark",
@@ -405,112 +591,443 @@
             "nodes": [
                 "umbrella"
             ],
-            "heightM": 10.69,
-            "crownRadiusM": 8.9
+            "heightM": 11.11,
+            "crownRadiusM": 8.82
+        },
+        "trees/umbrella_b_lod2": {
+            "file": "trees/umbrella_b_lod2.glb",
+            "triangles": 26,
+            "min": [
+                -10.371,
+                -0.027,
+                -8.193
+            ],
+            "max": [
+                7.339,
+                10.598,
+                7.588
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "umbrella"
+            ],
+            "heightM": 10.6,
+            "crownRadiusM": 10.69
         },
         "trees/shrub_a": {
             "file": "trees/shrub_a.glb",
-            "triangles": 256,
+            "triangles": 245,
             "min": [
-                -1.328,
-                0.0,
-                -1.144
+                -1.556,
+                -0.037,
+                -1.653
             ],
             "max": [
-                1.45,
-                1.466,
-                1.517
+                1.417,
+                1.576,
+                1.349
             ],
             "materials": [
+                "bark",
                 "foliage"
             ],
             "nodes": [
                 "shrub"
             ],
-            "heightM": 1.47,
-            "crownRadiusM": 1.54
+            "heightM": 1.58,
+            "crownRadiusM": 1.66
         },
         "trees/shrub_a_lod1": {
             "file": "trees/shrub_a_lod1.glb",
-            "triangles": 88,
+            "triangles": 69,
             "min": [
-                -0.948,
-                0.0,
-                -1.144
+                -1.191,
+                -0.037,
+                -1.378
             ],
             "max": [
-                1.272,
-                1.466,
-                1.042
+                0.717,
+                1.547,
+                1.501
             ],
             "materials": [
+                "bark",
                 "foliage"
             ],
             "nodes": [
                 "shrub"
             ],
-            "heightM": 1.47,
-            "crownRadiusM": 1.48
+            "heightM": 1.55,
+            "crownRadiusM": 1.51
+        },
+        "trees/shrub_a_lod2": {
+            "file": "trees/shrub_a_lod2.glb",
+            "triangles": 25,
+            "min": [
+                -0.988,
+                0.0,
+                -0.9
+            ],
+            "max": [
+                1.011,
+                1.442,
+                0.924
+            ],
+            "materials": [
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "shrub"
+            ],
+            "heightM": 1.44,
+            "crownRadiusM": 1.2
         },
         "trees/shrub_b": {
             "file": "trees/shrub_b.glb",
-            "triangles": 257,
+            "triangles": 247,
             "min": [
-                -1.385,
-                0.0,
-                -1.459
+                -1.492,
+                -0.025,
+                -1.307
             ],
             "max": [
-                1.215,
-                1.846,
-                1.233
+                1.784,
+                1.966,
+                1.581
             ],
             "materials": [
+                "bark",
                 "foliage"
             ],
             "nodes": [
                 "shrub"
             ],
-            "heightM": 1.85,
-            "crownRadiusM": 1.51
+            "heightM": 1.97,
+            "crownRadiusM": 1.79
         },
         "trees/shrub_b_lod1": {
             "file": "trees/shrub_b_lod1.glb",
-            "triangles": 86,
+            "triangles": 70,
             "min": [
-                -0.975,
-                0.0,
-                -1.493
+                -1.502,
+                -0.025,
+                -1.258
             ],
             "max": [
-                1.207,
-                1.846,
-                1.112
+                1.611,
+                1.885,
+                1.215
             ],
             "materials": [
+                "bark",
                 "foliage"
             ],
             "nodes": [
                 "shrub"
             ],
-            "heightM": 1.85,
-            "crownRadiusM": 1.5
+            "heightM": 1.89,
+            "crownRadiusM": 1.68
         },
-        "buildings/house_gable": {
-            "file": "buildings/house_gable.glb",
-            "triangles": 702,
+        "trees/shrub_b_lod2": {
+            "file": "trees/shrub_b_lod2.glb",
+            "triangles": 25,
             "min": [
-                -5.93,
+                -1.016,
                 0.0,
-                -4.35
+                -1.058
             ],
             "max": [
-                5.93,
-                5.263,
-                6.345
+                0.834,
+                1.987,
+                0.903
             ],
             "materials": [
-                "door",
+                "bark",
+                "foliage"
+            ],
+            "nodes": [
+                "shrub"
+            ],
+            "heightM": 1.99,
+            "crownRadiusM": 1.16
+        },
+        "buildings/house_5x4": {
+            "file": "buildings/house_5x4.glb",
+            "triangles": 208,
+            "min": [
+                -2.965,
+                0.0,
+                -2.647
+            ],
+            "max": [
+                2.965,
+                3.579,
+                2.647
+            ],
+            "materials": [
+                "accent",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 5,
+            "widthM": 4,
+            "wallHeightM": 2.52,
+            "heightM": 3.51
+        },
+        "buildings/house_5x4_lod1": {
+            "file": "buildings/house_5x4_lod1.glb",
+            "triangles": 46,
+            "min": [
+                -2.9,
+                0.0,
+                -2.6
+            ],
+            "max": [
+                2.9,
+                3.509,
+                2.6
+            ],
+            "materials": [
+                "accent",
+                "foundation",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 5,
+            "widthM": 4,
+            "wallHeightM": 2.52,
+            "heightM": 3.51
+        },
+        "buildings/house_8x6": {
+            "file": "buildings/house_8x6.glb",
+            "triangles": 492,
+            "min": [
+                -4.465,
+                0.0,
+                -3.647
+            ],
+            "max": [
+                4.465,
+                4.94,
+                3.997
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 8,
+            "widthM": 6,
+            "wallHeightM": 3.25,
+            "heightM": 4.66
+        },
+        "buildings/house_8x6_lod1": {
+            "file": "buildings/house_8x6_lod1.glb",
+            "triangles": 72,
+            "min": [
+                -4.4,
+                0.0,
+                -3.6
+            ],
+            "max": [
+                4.4,
+                4.663,
+                3.6
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 8,
+            "widthM": 6,
+            "wallHeightM": 3.25,
+            "heightM": 4.66
+        },
+        "buildings/house_11x8": {
+            "file": "buildings/house_11x8.glb",
+            "triangles": 642,
+            "min": [
+                -6.2,
+                0.0,
+                -4.7
+            ],
+            "max": [
+                6.2,
+                5.305,
+                4.997
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "metal",
+                "panel",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 11,
+            "widthM": 8,
+            "wallHeightM": 3.25,
+            "heightM": 5.09
+        },
+        "buildings/house_11x8_lod1": {
+            "file": "buildings/house_11x8_lod1.glb",
+            "triangles": 88,
+            "min": [
+                -6.1,
+                0.0,
+                -4.6
+            ],
+            "max": [
+                6.1,
+                5.088,
+                4.6
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "panel",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 11,
+            "widthM": 8,
+            "wallHeightM": 3.25,
+            "heightM": 5.09
+        },
+        "buildings/house_12x6": {
+            "file": "buildings/house_12x6.glb",
+            "triangles": 716,
+            "min": [
+                -6.465,
+                0.0,
+                -3.647
+            ],
+            "max": [
+                6.465,
+                4.808,
+                3.647
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 12,
+            "widthM": 6,
+            "wallHeightM": 3.25,
+            "heightM": 4.66
+        },
+        "buildings/house_12x6_lod1": {
+            "file": "buildings/house_12x6_lod1.glb",
+            "triangles": 104,
+            "min": [
+                -6.4,
+                0.0,
+                -3.6
+            ],
+            "max": [
+                6.4,
+                4.663,
+                3.6
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 12,
+            "widthM": 6,
+            "wallHeightM": 3.25,
+            "heightM": 4.66
+        },
+        "buildings/house_14x10": {
+            "file": "buildings/house_14x10.glb",
+            "triangles": 887,
+            "min": [
+                -7.465,
+                0.0,
+                -5.647
+            ],
+            "max": [
+                7.647,
+                5.628,
+                5.675
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
                 "foundation",
                 "glass",
                 "metal",
@@ -521,28 +1038,270 @@
                 "wood"
             ],
             "nodes": [
-                "house_gable"
+                "house"
             ],
-            "lengthM": 11.0,
-            "widthM": 7.6,
-            "eaveHeightM": 3.2,
-            "ridgeHeightM": 5.19
+            "kind": "house",
+            "lengthM": 14,
+            "widthM": 10,
+            "wallHeightM": 3.25,
+            "heightM": 5.51
         },
-        "buildings/house_hip": {
-            "file": "buildings/house_hip.glb",
-            "triangles": 556,
+        "buildings/house_14x10_lod1": {
+            "file": "buildings/house_14x10_lod1.glb",
+            "triangles": 141,
             "min": [
-                -5.4,
+                -7.4,
                 0.0,
-                -4.6
+                -5.6
+            ],
+            "max": [
+                7.6,
+                5.512,
+                5.61
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 14,
+            "widthM": 10,
+            "wallHeightM": 3.25,
+            "heightM": 5.51
+        },
+        "buildings/house_15x12": {
+            "file": "buildings/house_15x12.glb",
+            "triangles": 910,
+            "min": [
+                -8.2,
+                0.0,
+                -6.7
             ],
             "max": [
                 8.2,
-                5.311,
-                5.7
+                6.007,
+                6.997
             ],
             "materials": [
-                "door",
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "metal",
+                "paint",
+                "roof",
+                "rubber",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 15,
+            "widthM": 12,
+            "wallHeightM": 3.25,
+            "heightM": 5.94
+        },
+        "buildings/house_15x12_lod1": {
+            "file": "buildings/house_15x12_lod1.glb",
+            "triangles": 148,
+            "min": [
+                -8.1,
+                0.0,
+                -6.6
+            ],
+            "max": [
+                8.1,
+                5.937,
+                6.6
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "paint",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 15,
+            "widthM": 12,
+            "wallHeightM": 3.25,
+            "heightM": 5.94
+        },
+        "buildings/house_17x9": {
+            "file": "buildings/house_17x9.glb",
+            "triangles": 1058,
+            "min": [
+                -8.965,
+                0.0,
+                -5.147
+            ],
+            "max": [
+                8.965,
+                5.495,
+                5.147
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "paint",
+                "roof",
+                "rubber",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 17,
+            "widthM": 9,
+            "wallHeightM": 3.25,
+            "heightM": 5.3
+        },
+        "buildings/house_17x9_lod1": {
+            "file": "buildings/house_17x9_lod1.glb",
+            "triangles": 172,
+            "min": [
+                -8.9,
+                0.0,
+                -5.1
+            ],
+            "max": [
+                8.9,
+                5.3,
+                5.1
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "paint",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 17,
+            "widthM": 9,
+            "wallHeightM": 3.25,
+            "heightM": 5.3
+        },
+        "buildings/house_17x12": {
+            "file": "buildings/house_17x12.glb",
+            "triangles": 1135,
+            "min": [
+                -8.965,
+                0.0,
+                -6.647
+            ],
+            "max": [
+                8.965,
+                6.007,
+                6.675
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "paint",
+                "panel",
+                "roof",
+                "rubber",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 17,
+            "widthM": 12,
+            "wallHeightM": 3.25,
+            "heightM": 5.94
+        },
+        "buildings/house_17x12_lod1": {
+            "file": "buildings/house_17x12_lod1.glb",
+            "triangles": 207,
+            "min": [
+                -8.9,
+                0.0,
+                -6.6
+            ],
+            "max": [
+                8.9,
+                5.937,
+                6.61
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "paint",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 17,
+            "widthM": 12,
+            "wallHeightM": 3.25,
+            "heightM": 5.94
+        },
+        "buildings/house_18x7": {
+            "file": "buildings/house_18x7.glb",
+            "triangles": 722,
+            "min": [
+                -9.465,
+                0.0,
+                -4.147
+            ],
+            "max": [
+                9.465,
+                5.017,
+                4.497
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
                 "foundation",
                 "glass",
                 "metal",
@@ -551,28 +1310,605 @@
                 "wall"
             ],
             "nodes": [
-                "house_hip"
+                "house"
             ],
-            "lengthM": 9.6,
-            "widthM": 8.0,
-            "eaveHeightM": 3.2,
-            "ridgeHeightM": 5.31
+            "kind": "house",
+            "lengthM": 18,
+            "widthM": 7,
+            "wallHeightM": 3.25,
+            "heightM": 4.88
         },
-        "buildings/shop": {
-            "file": "buildings/shop.glb",
-            "triangles": 1120,
+        "buildings/house_18x7_lod1": {
+            "file": "buildings/house_18x7_lod1.glb",
+            "triangles": 84,
             "min": [
-                -6.15,
+                -9.4,
                 0.0,
-                -4.65
+                -4.1
             ],
             "max": [
-                6.15,
-                8.6,
+                9.4,
+                4.876,
+                4.1
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 18,
+            "widthM": 7,
+            "wallHeightM": 3.25,
+            "heightM": 4.88
+        },
+        "buildings/house_18x14": {
+            "file": "buildings/house_18x14.glb",
+            "triangles": 1006,
+            "min": [
+                -9.7,
+                0.0,
+                -7.7
+            ],
+            "max": [
+                9.7,
+                6.431,
+                7.7
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "metal",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 18,
+            "widthM": 14,
+            "wallHeightM": 3.25,
+            "heightM": 6.36
+        },
+        "buildings/house_18x14_lod1": {
+            "file": "buildings/house_18x14_lod1.glb",
+            "triangles": 146,
+            "min": [
+                -9.6,
+                0.0,
+                -7.6
+            ],
+            "max": [
+                9.6,
+                6.361,
+                7.6
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 18,
+            "widthM": 14,
+            "wallHeightM": 3.25,
+            "heightM": 6.36
+        },
+        "buildings/house_21x11": {
+            "file": "buildings/house_21x11.glb",
+            "triangles": 1153,
+            "min": [
+                -10.965,
+                0.0,
+                -6.147
+            ],
+            "max": [
+                10.965,
+                5.795,
+                6.175
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "paint",
+                "roof",
+                "rubber",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 21,
+            "widthM": 11,
+            "wallHeightM": 3.25,
+            "heightM": 5.72
+        },
+        "buildings/house_21x11_lod1": {
+            "file": "buildings/house_21x11_lod1.glb",
+            "triangles": 199,
+            "min": [
+                -10.9,
+                0.0,
+                -6.1
+            ],
+            "max": [
+                10.9,
+                5.725,
+                6.11
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "paint",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 21,
+            "widthM": 11,
+            "wallHeightM": 3.25,
+            "heightM": 5.72
+        },
+        "buildings/house_22x15": {
+            "file": "buildings/house_22x15.glb",
+            "triangles": 1343,
+            "min": [
+                -11.7,
+                0.0,
+                -8.2
+            ],
+            "max": [
+                11.7,
+                6.644,
+                8.497
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "paint",
+                "panel",
+                "roof",
+                "rubber",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 22,
+            "widthM": 15,
+            "wallHeightM": 3.25,
+            "heightM": 6.57
+        },
+        "buildings/house_22x15_lod1": {
+            "file": "buildings/house_22x15_lod1.glb",
+            "triangles": 177,
+            "min": [
+                -11.6,
+                0.0,
+                -8.1
+            ],
+            "max": [
+                11.6,
+                6.574,
+                8.11
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "paint",
+                "panel",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 22,
+            "widthM": 15,
+            "wallHeightM": 3.25,
+            "heightM": 6.57
+        },
+        "buildings/house_26x10": {
+            "file": "buildings/house_26x10.glb",
+            "triangles": 1258,
+            "min": [
+                -13.465,
+                0.0,
+                -5.647
+            ],
+            "max": [
+                13.465,
+                5.582,
+                5.647
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 26,
+            "widthM": 10,
+            "wallHeightM": 3.25,
+            "heightM": 5.51
+        },
+        "buildings/house_26x10_lod1": {
+            "file": "buildings/house_26x10_lod1.glb",
+            "triangles": 138,
+            "min": [
+                -13.4,
+                0.0,
+                -5.6
+            ],
+            "max": [
+                13.4,
+                5.512,
+                5.6
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 26,
+            "widthM": 10,
+            "wallHeightM": 3.25,
+            "heightM": 5.51
+        },
+        "buildings/house_27x15": {
+            "file": "buildings/house_27x15.glb",
+            "triangles": 1447,
+            "min": [
+                -13.965,
+                0.0,
+                -8.147
+            ],
+            "max": [
+                13.965,
+                6.644,
+                8.175
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "paint",
+                "panel",
+                "roof",
+                "rubber",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 27,
+            "widthM": 15,
+            "wallHeightM": 3.25,
+            "heightM": 6.57
+        },
+        "buildings/house_27x15_lod1": {
+            "file": "buildings/house_27x15_lod1.glb",
+            "triangles": 219,
+            "min": [
+                -13.9,
+                0.0,
+                -8.1
+            ],
+            "max": [
+                13.9,
+                6.574,
+                8.11
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "paint",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 27,
+            "widthM": 15,
+            "wallHeightM": 3.25,
+            "heightM": 6.57
+        },
+        "buildings/house_33x13": {
+            "file": "buildings/house_33x13.glb",
+            "triangles": 1674,
+            "min": [
+                -17.2,
+                0.0,
+                -7.2
+            ],
+            "max": [
+                17.2,
+                6.219,
+                7.2
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "metal",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 33,
+            "widthM": 13,
+            "wallHeightM": 3.25,
+            "heightM": 6.15
+        },
+        "buildings/house_33x13_lod1": {
+            "file": "buildings/house_33x13_lod1.glb",
+            "triangles": 150,
+            "min": [
+                -17.1,
+                0.0,
+                -7.1
+            ],
+            "max": [
+                17.1,
+                6.149,
                 7.1
             ],
             "materials": [
-                "door",
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 33,
+            "widthM": 13,
+            "wallHeightM": 3.25,
+            "heightM": 6.15
+        },
+        "buildings/house_34x18": {
+            "file": "buildings/house_34x18.glb",
+            "triangles": 1579,
+            "min": [
+                -17.7,
+                0.0,
+                -9.7
+            ],
+            "max": [
+                17.7,
+                7.28,
+                9.997
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "paint",
+                "panel",
+                "roof",
+                "rubber",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 34,
+            "widthM": 18,
+            "wallHeightM": 3.25,
+            "heightM": 7.21
+        },
+        "buildings/house_34x18_lod1": {
+            "file": "buildings/house_34x18_lod1.glb",
+            "triangles": 189,
+            "min": [
+                -17.6,
+                0.0,
+                -9.6
+            ],
+            "max": [
+                17.6,
+                7.21,
+                9.61
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "paint",
+                "panel",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 34,
+            "widthM": 18,
+            "wallHeightM": 3.25,
+            "heightM": 7.21
+        },
+        "buildings/house_10x8_2f": {
+            "file": "buildings/house_10x8_2f.glb",
+            "triangles": 842,
+            "min": [
+                -5.465,
+                0.0,
+                -4.647
+            ],
+            "max": [
+                5.465,
+                7.958,
+                4.997
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 10,
+            "widthM": 8,
+            "wallHeightM": 6.05,
+            "heightM": 7.89
+        },
+        "buildings/house_10x8_2f_lod1": {
+            "file": "buildings/house_10x8_2f_lod1.glb",
+            "triangles": 96,
+            "min": [
+                -5.4,
+                0.0,
+                -4.6
+            ],
+            "max": [
+                5.4,
+                7.888,
+                4.6
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 10,
+            "widthM": 8,
+            "wallHeightM": 6.05,
+            "heightM": 7.89
+        },
+        "buildings/house_14x10_2f": {
+            "file": "buildings/house_14x10_2f.glb",
+            "triangles": 1362,
+            "min": [
+                -7.7,
+                0.0,
+                -5.7
+            ],
+            "max": [
+                7.7,
+                8.449,
+                5.7
+            ],
+            "materials": [
+                "accent",
+                "concrete",
                 "foundation",
                 "glass",
                 "metal",
@@ -582,24 +1918,1341 @@
                 "wood"
             ],
             "nodes": [
-                "shop"
+                "house"
             ],
-            "lengthM": 12.0,
-            "widthM": 9.0,
-            "heightM": 6.6
+            "kind": "house",
+            "lengthM": 14,
+            "widthM": 10,
+            "wallHeightM": 6.05,
+            "heightM": 8.31
         },
-        "buildings/ruin": {
-            "file": "buildings/ruin.glb",
-            "triangles": 520,
+        "buildings/house_14x10_2f_lod1": {
+            "file": "buildings/house_14x10_2f_lod1.glb",
+            "triangles": 136,
             "min": [
-                -5.62,
+                -7.6,
                 0.0,
-                -3.81
+                -5.6
             ],
             "max": [
-                5.594,
-                2.454,
-                3.81
+                7.6,
+                8.312,
+                5.6
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 14,
+            "widthM": 10,
+            "wallHeightM": 6.05,
+            "heightM": 8.31
+        },
+        "buildings/house_18x12_2f": {
+            "file": "buildings/house_18x12_2f.glb",
+            "triangles": 1715,
+            "min": [
+                -9.465,
+                0.0,
+                -6.647
+            ],
+            "max": [
+                9.647,
+                8.807,
+                6.675
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 18,
+            "widthM": 12,
+            "wallHeightM": 6.05,
+            "heightM": 8.74
+        },
+        "buildings/house_18x12_2f_lod1": {
+            "file": "buildings/house_18x12_2f_lod1.glb",
+            "triangles": 179,
+            "min": [
+                -9.4,
+                0.0,
+                -6.6
+            ],
+            "max": [
+                9.6,
+                8.737,
+                6.61
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "panel",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 18,
+            "widthM": 12,
+            "wallHeightM": 6.05,
+            "heightM": 8.74
+        },
+        "buildings/house_24x12_2f": {
+            "file": "buildings/house_24x12_2f.glb",
+            "triangles": 2196,
+            "min": [
+                -12.465,
+                0.0,
+                -6.647
+            ],
+            "max": [
+                12.465,
+                8.807,
+                6.647
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "paint",
+                "roof",
+                "rubber",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 24,
+            "widthM": 12,
+            "wallHeightM": 6.05,
+            "heightM": 8.74
+        },
+        "buildings/house_24x12_2f_lod1": {
+            "file": "buildings/house_24x12_2f_lod1.glb",
+            "triangles": 224,
+            "min": [
+                -12.4,
+                0.0,
+                -6.6
+            ],
+            "max": [
+                12.4,
+                8.737,
+                6.6
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "paint",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 24,
+            "widthM": 12,
+            "wallHeightM": 6.05,
+            "heightM": 8.74
+        },
+        "buildings/house_28x16_2f": {
+            "file": "buildings/house_28x16_2f.glb",
+            "triangles": 2153,
+            "min": [
+                -14.7,
+                0.0,
+                -8.7
+            ],
+            "max": [
+                14.7,
+                9.656,
+                8.997
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "foundation",
+                "glass",
+                "metal",
+                "panel",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 28,
+            "widthM": 16,
+            "wallHeightM": 6.05,
+            "heightM": 9.59
+        },
+        "buildings/house_28x16_2f_lod1": {
+            "file": "buildings/house_28x16_2f_lod1.glb",
+            "triangles": 177,
+            "min": [
+                -14.6,
+                0.0,
+                -8.6
+            ],
+            "max": [
+                14.6,
+                9.586,
+                8.61
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "foundation",
+                "glass",
+                "panel",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "house"
+            ],
+            "kind": "house",
+            "lengthM": 28,
+            "widthM": 16,
+            "wallHeightM": 6.05,
+            "heightM": 9.59
+        },
+        "buildings/store_7x6": {
+            "file": "buildings/store_7x6.glb",
+            "triangles": 366,
+            "min": [
+                -3.75,
+                0.0,
+                -3.65
+            ],
+            "max": [
+                3.75,
+                4.639,
+                4.4
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 7,
+            "widthM": 6,
+            "wallHeightM": 3.75,
+            "heightM": 4.55
+        },
+        "buildings/store_7x6_lod1": {
+            "file": "buildings/store_7x6_lod1.glb",
+            "triangles": 76,
+            "min": [
+                -3.75,
+                0.0,
+                -3.25
+            ],
+            "max": [
+                3.75,
+                4.649,
+                4.4
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 7,
+            "widthM": 6,
+            "wallHeightM": 3.75,
+            "heightM": 4.55
+        },
+        "buildings/store_12x9": {
+            "file": "buildings/store_12x9.glb",
+            "triangles": 472,
+            "min": [
+                -6.25,
+                0.0,
+                -5.15
+            ],
+            "max": [
+                6.25,
+                4.766,
+                5.9
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 12,
+            "widthM": 9,
+            "wallHeightM": 3.75,
+            "heightM": 4.55
+        },
+        "buildings/store_12x9_lod1": {
+            "file": "buildings/store_12x9_lod1.glb",
+            "triangles": 86,
+            "min": [
+                -6.25,
+                0.0,
+                -4.75
+            ],
+            "max": [
+                6.25,
+                4.657,
+                5.9
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 12,
+            "widthM": 9,
+            "wallHeightM": 3.75,
+            "heightM": 4.55
+        },
+        "buildings/store_12x20": {
+            "file": "buildings/store_12x20.glb",
+            "triangles": 584,
+            "min": [
+                -6.25,
+                0.0,
+                -10.65
+            ],
+            "max": [
+                6.25,
+                4.781,
+                11.4
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 12,
+            "widthM": 20,
+            "wallHeightM": 3.75,
+            "heightM": 4.55
+        },
+        "buildings/store_12x20_lod1": {
+            "file": "buildings/store_12x20_lod1.glb",
+            "triangles": 106,
+            "min": [
+                -6.25,
+                0.0,
+                -10.25
+            ],
+            "max": [
+                6.25,
+                4.55,
+                11.4
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 12,
+            "widthM": 20,
+            "wallHeightM": 3.75,
+            "heightM": 4.55
+        },
+        "buildings/store_16x12": {
+            "file": "buildings/store_16x12.glb",
+            "triangles": 570,
+            "min": [
+                -8.25,
+                0.0,
+                -6.65
+            ],
+            "max": [
+                8.25,
+                4.866,
+                7.4
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 16,
+            "widthM": 12,
+            "wallHeightM": 3.75,
+            "heightM": 4.55
+        },
+        "buildings/store_16x12_lod1": {
+            "file": "buildings/store_16x12_lod1.glb",
+            "triangles": 102,
+            "min": [
+                -8.25,
+                0.0,
+                -6.25
+            ],
+            "max": [
+                8.25,
+                4.637,
+                7.4
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 16,
+            "widthM": 12,
+            "wallHeightM": 3.75,
+            "heightM": 4.55
+        },
+        "buildings/store_22x16": {
+            "file": "buildings/store_22x16.glb",
+            "triangles": 722,
+            "min": [
+                -11.25,
+                0.0,
+                -8.65
+            ],
+            "max": [
+                11.25,
+                4.807,
+                9.4
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 22,
+            "widthM": 16,
+            "wallHeightM": 3.75,
+            "heightM": 4.55
+        },
+        "buildings/store_22x16_lod1": {
+            "file": "buildings/store_22x16_lod1.glb",
+            "triangles": 124,
+            "min": [
+                -11.25,
+                0.0,
+                -8.25
+            ],
+            "max": [
+                11.25,
+                4.658,
+                9.4
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 22,
+            "widthM": 16,
+            "wallHeightM": 3.75,
+            "heightM": 4.55
+        },
+        "buildings/shop_8x13_2f": {
+            "file": "buildings/shop_8x13_2f.glb",
+            "triangles": 744,
+            "min": [
+                -4.25,
+                0.0,
+                -7.15
+            ],
+            "max": [
+                4.25,
+                9.25,
+                8.35
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 8,
+            "widthM": 13,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/shop_8x13_2f_lod1": {
+            "file": "buildings/shop_8x13_2f_lod1.glb",
+            "triangles": 158,
+            "min": [
+                -4.25,
+                0.0,
+                -6.75
+            ],
+            "max": [
+                4.25,
+                9.15,
+                8.35
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 8,
+            "widthM": 13,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/shop_11x9_2f": {
+            "file": "buildings/shop_11x9_2f.glb",
+            "triangles": 758,
+            "min": [
+                -5.75,
+                0.0,
+                -5.15
+            ],
+            "max": [
+                5.75,
+                9.25,
+                6.35
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 11,
+            "widthM": 9,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/shop_11x9_2f_lod1": {
+            "file": "buildings/shop_11x9_2f_lod1.glb",
+            "triangles": 156,
+            "min": [
+                -5.75,
+                0.0,
+                -4.75
+            ],
+            "max": [
+                5.75,
+                9.15,
+                6.35
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 11,
+            "widthM": 9,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/shop_13x18_2f": {
+            "file": "buildings/shop_13x18_2f.glb",
+            "triangles": 1034,
+            "min": [
+                -6.75,
+                0.0,
+                -9.65
+            ],
+            "max": [
+                6.75,
+                9.25,
+                10.85
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 13,
+            "widthM": 18,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/shop_13x18_2f_lod1": {
+            "file": "buildings/shop_13x18_2f_lod1.glb",
+            "triangles": 192,
+            "min": [
+                -6.75,
+                0.0,
+                -9.25
+            ],
+            "max": [
+                6.75,
+                9.15,
+                10.85
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall",
+                "wood"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 13,
+            "widthM": 18,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/office_18x12_2f": {
+            "file": "buildings/office_18x12_2f.glb",
+            "triangles": 954,
+            "min": [
+                -9.25,
+                0.0,
+                -6.65
+            ],
+            "max": [
+                9.25,
+                7.853,
+                7.8
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 18,
+            "widthM": 12,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/office_18x12_2f_lod1": {
+            "file": "buildings/office_18x12_2f_lod1.glb",
+            "triangles": 142,
+            "min": [
+                -9.25,
+                0.0,
+                -6.25
+            ],
+            "max": [
+                9.25,
+                7.703,
+                7.8
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 18,
+            "widthM": 12,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/office_26x16_2f": {
+            "file": "buildings/office_26x16_2f.glb",
+            "triangles": 1342,
+            "min": [
+                -13.25,
+                0.0,
+                -8.65
+            ],
+            "max": [
+                13.25,
+                7.897,
+                9.8
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 26,
+            "widthM": 16,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/office_26x16_2f_lod1": {
+            "file": "buildings/office_26x16_2f_lod1.glb",
+            "triangles": 184,
+            "min": [
+                -13.25,
+                0.0,
+                -8.25
+            ],
+            "max": [
+                13.25,
+                7.77,
+                9.8
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 26,
+            "widthM": 16,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/office_36x22_2f": {
+            "file": "buildings/office_36x22_2f.glb",
+            "triangles": 1880,
+            "min": [
+                -18.25,
+                0.0,
+                -11.65
+            ],
+            "max": [
+                18.25,
+                8.485,
+                12.8
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 36,
+            "widthM": 22,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/office_36x22_2f_lod1": {
+            "file": "buildings/office_36x22_2f_lod1.glb",
+            "triangles": 218,
+            "min": [
+                -18.25,
+                0.0,
+                -11.25
+            ],
+            "max": [
+                18.25,
+                8.345,
+                12.8
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 36,
+            "widthM": 22,
+            "wallHeightM": 6.85,
+            "heightM": 7.65
+        },
+        "buildings/lodge_22x11_3f": {
+            "file": "buildings/lodge_22x11_3f.glb",
+            "triangles": 1632,
+            "min": [
+                -11.25,
+                0.0,
+                -6.15
+            ],
+            "max": [
+                11.25,
+                12.49,
+                7.47
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 22,
+            "widthM": 11,
+            "wallHeightM": 9.95,
+            "heightM": 10.75
+        },
+        "buildings/lodge_22x11_3f_lod1": {
+            "file": "buildings/lodge_22x11_3f_lod1.glb",
+            "triangles": 258,
+            "min": [
+                -11.25,
+                0.0,
+                -5.75
+            ],
+            "max": [
+                11.25,
+                12.49,
+                7.47
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 22,
+            "widthM": 11,
+            "wallHeightM": 9.95,
+            "heightM": 10.75
+        },
+        "buildings/lodge_32x14_3f": {
+            "file": "buildings/lodge_32x14_3f.glb",
+            "triangles": 2426,
+            "min": [
+                -16.25,
+                0.0,
+                -7.65
+            ],
+            "max": [
+                16.25,
+                12.49,
+                8.97
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 32,
+            "widthM": 14,
+            "wallHeightM": 9.95,
+            "heightM": 10.75
+        },
+        "buildings/lodge_32x14_3f_lod1": {
+            "file": "buildings/lodge_32x14_3f_lod1.glb",
+            "triangles": 318,
+            "min": [
+                -16.25,
+                0.0,
+                -7.25
+            ],
+            "max": [
+                16.25,
+                12.49,
+                8.97
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 32,
+            "widthM": 14,
+            "wallHeightM": 9.95,
+            "heightM": 10.75
+        },
+        "buildings/lodge_44x18_3f": {
+            "file": "buildings/lodge_44x18_3f.glb",
+            "triangles": 3222,
+            "min": [
+                -22.25,
+                0.0,
+                -9.65
+            ],
+            "max": [
+                22.25,
+                12.49,
+                10.97
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 44,
+            "widthM": 18,
+            "wallHeightM": 9.95,
+            "heightM": 10.75
+        },
+        "buildings/lodge_44x18_3f_lod1": {
+            "file": "buildings/lodge_44x18_3f_lod1.glb",
+            "triangles": 360,
+            "min": [
+                -22.25,
+                0.0,
+                -9.25
+            ],
+            "max": [
+                22.25,
+                12.49,
+                10.97
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 44,
+            "widthM": 18,
+            "wallHeightM": 9.95,
+            "heightM": 10.75
+        },
+        "buildings/hall_30x20": {
+            "file": "buildings/hall_30x20.glb",
+            "triangles": 1124,
+            "min": [
+                -15.25,
+                0.0,
+                -10.65
+            ],
+            "max": [
+                15.25,
+                8.2,
+                12.2
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 30,
+            "widthM": 20,
+            "wallHeightM": 6.55,
+            "heightM": 7.05
+        },
+        "buildings/hall_30x20_lod1": {
+            "file": "buildings/hall_30x20_lod1.glb",
+            "triangles": 144,
+            "min": [
+                -15.25,
+                0.0,
+                -10.25
+            ],
+            "max": [
+                15.25,
+                8.045,
+                12.2
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 30,
+            "widthM": 20,
+            "wallHeightM": 6.55,
+            "heightM": 7.05
+        },
+        "buildings/hall_24x34": {
+            "file": "buildings/hall_24x34.glb",
+            "triangles": 1348,
+            "min": [
+                -12.25,
+                0.0,
+                -17.65
+            ],
+            "max": [
+                12.25,
+                8.122,
+                19.2
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 24,
+            "widthM": 34,
+            "wallHeightM": 6.55,
+            "heightM": 7.05
+        },
+        "buildings/hall_24x34_lod1": {
+            "file": "buildings/hall_24x34_lod1.glb",
+            "triangles": 152,
+            "min": [
+                -12.25,
+                0.0,
+                -17.25
+            ],
+            "max": [
+                12.25,
+                8.035,
+                19.2
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 24,
+            "widthM": 34,
+            "wallHeightM": 6.55,
+            "heightM": 7.05
+        },
+        "buildings/hall_42x28": {
+            "file": "buildings/hall_42x28.glb",
+            "triangles": 1588,
+            "min": [
+                -21.25,
+                0.0,
+                -14.65
+            ],
+            "max": [
+                21.25,
+                8.151,
+                16.2
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "dark",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 42,
+            "widthM": 28,
+            "wallHeightM": 6.55,
+            "heightM": 7.05
+        },
+        "buildings/hall_42x28_lod1": {
+            "file": "buildings/hall_42x28_lod1.glb",
+            "triangles": 166,
+            "min": [
+                -21.25,
+                0.0,
+                -14.25
+            ],
+            "max": [
+                21.25,
+                7.942,
+                16.2
+            ],
+            "materials": [
+                "accent",
+                "concrete",
+                "glass",
+                "metal",
+                "roof",
+                "trim",
+                "wall"
+            ],
+            "nodes": [
+                "block"
+            ],
+            "kind": "block",
+            "lengthM": 42,
+            "widthM": 28,
+            "wallHeightM": 6.55,
+            "heightM": 7.05
+        },
+        "buildings/ruin_8x6": {
+            "file": "buildings/ruin_8x6.glb",
+            "triangles": 408,
+            "min": [
+                -4.141,
+                -0.015,
+                -3.502
+            ],
+            "max": [
+                4.077,
+                2.574,
+                3.0
             ],
             "materials": [
                 "ash",
@@ -609,21 +3262,197 @@
             "nodes": [
                 "ruin"
             ],
-            "lengthM": 11.0,
-            "widthM": 7.6
+            "kind": "ruin",
+            "lengthM": 8,
+            "widthM": 6
+        },
+        "buildings/ruin_8x6_lod1": {
+            "file": "buildings/ruin_8x6_lod1.glb",
+            "triangles": 92,
+            "min": [
+                -4.107,
+                0.0,
+                -3.0
+            ],
+            "max": [
+                4.126,
+                2.574,
+                3.0
+            ],
+            "materials": [
+                "ash",
+                "char",
+                "rust"
+            ],
+            "nodes": [
+                "ruin"
+            ],
+            "kind": "ruin",
+            "lengthM": 8,
+            "widthM": 6
+        },
+        "buildings/ruin_14x10": {
+            "file": "buildings/ruin_14x10.glb",
+            "triangles": 842,
+            "min": [
+                -7.014,
+                -0.098,
+                -5.0
+            ],
+            "max": [
+                7.103,
+                2.574,
+                5.0
+            ],
+            "materials": [
+                "ash",
+                "char",
+                "rust"
+            ],
+            "nodes": [
+                "ruin"
+            ],
+            "kind": "ruin",
+            "lengthM": 14,
+            "widthM": 10
+        },
+        "buildings/ruin_14x10_lod1": {
+            "file": "buildings/ruin_14x10_lod1.glb",
+            "triangles": 136,
+            "min": [
+                -7.102,
+                0.0,
+                -5.0
+            ],
+            "max": [
+                7.06,
+                2.574,
+                5.0
+            ],
+            "materials": [
+                "ash",
+                "char",
+                "rust"
+            ],
+            "nodes": [
+                "ruin"
+            ],
+            "kind": "ruin",
+            "lengthM": 14,
+            "widthM": 10
+        },
+        "buildings/ruin_22x14": {
+            "file": "buildings/ruin_22x14.glb",
+            "triangles": 1458,
+            "min": [
+                -11.102,
+                -0.126,
+                -7.0
+            ],
+            "max": [
+                11.092,
+                2.574,
+                7.0
+            ],
+            "materials": [
+                "ash",
+                "char",
+                "rust"
+            ],
+            "nodes": [
+                "ruin"
+            ],
+            "kind": "ruin",
+            "lengthM": 22,
+            "widthM": 14
+        },
+        "buildings/ruin_22x14_lod1": {
+            "file": "buildings/ruin_22x14_lod1.glb",
+            "triangles": 170,
+            "min": [
+                -11.131,
+                0.0,
+                -7.0
+            ],
+            "max": [
+                11.123,
+                2.574,
+                7.0
+            ],
+            "materials": [
+                "ash",
+                "char",
+                "rust"
+            ],
+            "nodes": [
+                "ruin"
+            ],
+            "kind": "ruin",
+            "lengthM": 22,
+            "widthM": 14
+        },
+        "buildings/ruin_34x20": {
+            "file": "buildings/ruin_34x20.glb",
+            "triangles": 2538,
+            "min": [
+                -17.037,
+                -0.103,
+                -10.0
+            ],
+            "max": [
+                17.114,
+                2.574,
+                10.0
+            ],
+            "materials": [
+                "ash",
+                "char",
+                "rust"
+            ],
+            "nodes": [
+                "ruin"
+            ],
+            "kind": "ruin",
+            "lengthM": 34,
+            "widthM": 20
+        },
+        "buildings/ruin_34x20_lod1": {
+            "file": "buildings/ruin_34x20_lod1.glb",
+            "triangles": 268,
+            "min": [
+                -17.144,
+                0.0,
+                -10.0
+            ],
+            "max": [
+                17.086,
+                2.574,
+                10.0
+            ],
+            "materials": [
+                "ash",
+                "char",
+                "rust"
+            ],
+            "nodes": [
+                "ruin"
+            ],
+            "kind": "ruin",
+            "lengthM": 34,
+            "widthM": 20
         },
         "fx/flame_a": {
             "file": "fx/flame_a.glb",
-            "triangles": 272,
+            "triangles": 230,
             "min": [
-                -0.314,
+                -0.306,
                 0.0,
-                -0.239
+                -0.265
             ],
             "max": [
-                0.302,
+                0.271,
                 1.0,
-                0.324
+                0.298
             ],
             "materials": [
                 "flame"
@@ -632,20 +3461,20 @@
                 "flame"
             ],
             "heightM": 1.0,
-            "widthM": 0.66
+            "widthM": 0.62
         },
         "fx/flame_b": {
             "file": "fx/flame_b.glb",
-            "triangles": 388,
+            "triangles": 200,
             "min": [
-                -0.473,
+                -0.332,
                 0.0,
-                -0.513
+                -0.307
             ],
             "max": [
-                0.463,
+                0.334,
                 1.0,
-                0.493
+                0.316
             ],
             "materials": [
                 "flame"
@@ -654,20 +3483,20 @@
                 "flame"
             ],
             "heightM": 1.0,
-            "widthM": 1.2
+            "widthM": 0.75
         },
         "fx/flame_c": {
             "file": "fx/flame_c.glb",
-            "triangles": 446,
+            "triangles": 188,
             "min": [
-                -1.01,
+                -0.909,
                 0.0,
-                -1.109
+                -0.801
             ],
             "max": [
-                1.043,
+                0.642,
                 1.0,
-                1.113
+                0.763
             ],
             "materials": [
                 "flame"
@@ -676,20 +3505,20 @@
                 "flame"
             ],
             "heightM": 1.0,
-            "widthM": 2.27
+            "widthM": 1.98
         },
         "fx/smoke_a": {
             "file": "fx/smoke_a.glb",
-            "triangles": 480,
+            "triangles": 174,
             "min": [
-                -0.961,
-                -0.71,
-                -0.824
+                -0.934,
+                -0.804,
+                -0.949
             ],
             "max": [
-                0.764,
-                0.625,
-                0.69
+                0.786,
+                0.763,
+                0.863
             ],
             "materials": [
                 "smoke"
@@ -701,16 +3530,16 @@
         },
         "fx/smoke_b": {
             "file": "fx/smoke_b.glb",
-            "triangles": 480,
+            "triangles": 174,
             "min": [
-                -0.9,
-                -0.955,
-                -0.948
+                -0.912,
+                -0.718,
+                -0.852
             ],
             "max": [
-                0.83,
-                0.59,
-                0.868
+                0.875,
+                0.663,
+                0.784
             ],
             "materials": [
                 "smoke"
@@ -722,16 +3551,16 @@
         },
         "fx/smoke_c": {
             "file": "fx/smoke_c.glb",
-            "triangles": 480,
+            "triangles": 178,
             "min": [
-                -0.849,
-                -0.744,
-                -0.986
+                -0.775,
+                -0.743,
+                -0.866
             ],
             "max": [
-                0.685,
-                0.526,
-                0.923
+                0.881,
+                0.72,
+                0.905
             ],
             "materials": [
                 "smoke"
