@@ -1,0 +1,11 @@
+{
+    "name": "@ember/operator-uagent",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "lint": "node ../../scripts/uv.mjs run ruff check .",
+        "format:check": "node ../../scripts/uv.mjs run ruff format --check .",
+        "typecheck": "node ../../scripts/uv.mjs run mypy src",
+        "test": "node ../../scripts/uv.mjs run pytest"
+    }
+}
