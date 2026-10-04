@@ -2,7 +2,7 @@
 
 The operator viewpoint: a Tauri desktop app where an operator sets up watch zones, watches the drone
 fleet map them, runs the civilian and responder planners, and sends event blasts. The product spec is
-the readme's "Operator Dashboard" section; this file is how the package is built.
+the "Operator Dashboard" entry in `docs/product.md`; this file is how the package is built.
 
 It runs on the Ember services. Every record and action goes through the **api** over HTTP
 (`packages/contracts/src/api.ts`); live drone positions and detections come from **drone-info**'s
@@ -53,7 +53,7 @@ and clicking an edge server, drone, risk zone or planned place opens its inspect
 the inspector (a fire, a civilian area, an attack zone). The map zooms with the wheel, a trackpad
 pinch (which never zooms the page) or the +/- buttons at the bottom right. Scans start and stop
 through the api, which sends the tasks to edge-manager; repeat scans run on the api's schedule, which
-the dashboard no longer sets. Civilian alerts never leave without an approval record: the blast
+the dashboard does not set. Civilian alerts never leave without an approval record: the blast
 dialog ends in a hold-to-approve step and the api records the signed-in operator as the approver;
 blasts drafted elsewhere (the operator-agent service) show a "Review blast" button in the top bar
 until approved. Responder-only blasts are queued directly.

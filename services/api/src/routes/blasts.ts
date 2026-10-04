@@ -41,7 +41,8 @@ export function blastWire(row: BlastRow): Blast {
 
 /**
  * Blasts to a zone. One that reaches civilians is `queued` only with a signed-in operator's
- * approval (docs/development.md: human in the loop); the migration's check constraint holds the same line.
+ * approval (docs/development.md: human in the loop); the migration's check constraint holds the
+ * same line.
  */
 export function blastRoutes(app: FastifyInstance, db: Db) {
     app.post<{ Params: ZoneParams; Body: CreateBlastRequest }>(

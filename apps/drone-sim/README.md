@@ -104,8 +104,9 @@ recolours and animates those models. The only geometry made here is the overlay 
 
 Always drawn: the drone (drawn six times life size so it reads from the orbit distance, rotor
 blurs on, camera gimbal at the reported pitch), its camera's frustum and ground footprint (blue lines), and the
-ground zone of each risk it reported (a translucent fill with a solid edge), red for `on_fire` and
-yellow for `at_risk` (the readme's colours), for 6 s after its frame.
+ground zone of each risk it reported (a translucent fill with a solid edge), magenta for `on_fire` and
+cyan for `at_risk` (not the spec's red and yellow, which vanish against the flames), for 6 s after
+its frame.
 
 "Can see" is tested per pixel, like a shadow map. Every frame the scene's depth is rendered from the
 drone's camera (`world/visibility.ts`), and each world material darkens any point outside that
@@ -120,11 +121,11 @@ The followed drone is drawn 300 ms behind its own clock, placed by each message'
 than when it arrived, so uneven delivery does not show as the drone lurching
 (`src/droneInfo/track.ts`).
 
-drone-info is not built yet, so without it the sim plays **dummy drone data**
+Without `--drone-info`, the sim plays **dummy drone data**
 (`src/droneInfo/dummy.ts`) behind the same interface:
 
 - one drone, `dummy-1`, hovers at a fixed pose south of Front St looking north (`dummyDrone.ts`);
-- their scenario time is Demo Data's clock (`PUT /v1/clock` to move or speed it up), and their
+- its scenario time is Demo Data's clock (`PUT /v1/clock` to move or speed it up), and its
   detections are the thermal hotspots (600 K and hotter) Demo Data reports for a camera at the
   drone's pose, as `on_fire` zones. There are no `at_risk` zones in the dummy data.
 

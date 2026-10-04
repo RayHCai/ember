@@ -1,7 +1,7 @@
 """Stand-in for edge-manager in `swarm-sim`: posts what drones report to drone-info's ingest route.
 
-Same route and shape edge-manager will use (`DroneInfoIngest` in packages/contracts), so the
-stand-in goes away without drone-info noticing. Only `hello`, `telemetry` and `detections` go up.
+Same route and shape edge-manager uses (`DroneInfoIngest` in packages/contracts), so drone-info
+cannot tell them apart. Only `hello`, `telemetry` and `detections` go up.
 """
 
 from __future__ import annotations

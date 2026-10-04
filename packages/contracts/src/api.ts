@@ -15,9 +15,9 @@ import type {
 
 /**
  * The api's records over HTTP. Every `/v1` route below needs `Authorization: Bearer <token>`: an
- * operator's session token, `EMBER_EDGE_KEY` or `EMBER_PLANNER_KEY`. The planner's own routes
- * (`planner.ts`) take only the planner key; sign-up and sign-in are open. Errors are `{ error }`
- * with a 4xx or 5xx status. Paths with `:param` use Fastify syntax.
+ * operator's session token, `EMBER_EDGE_KEY`, `EMBER_PLANNER_KEY` or `EMBER_AGENT_KEY`. The
+ * planner's own routes (`planner.ts`) take only the planner key; sign-up and sign-in are open.
+ * Errors are `{ error }` with a 4xx or 5xx status. Paths with `:param` use Fastify syntax.
  */
 export const SIGN_UP_PATH = '/v1/auth/sign-up';
 export const SIGN_IN_PATH = '/v1/auth/sign-in';

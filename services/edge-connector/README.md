@@ -8,14 +8,14 @@ swarm about 20 times a second. Nothing else talks to a drone-runtime.
 ## Contract
 
 - **Drone link** (`packages/contracts/src/droneLink.ts`): WebSocket at `/v1/drone`.
-  - The drone sends `hello` first; the connector pairs it and answers `welcome`.
-  - Down: `start_mapping`, `stop_mapping`, and `swarm` relayed from the other drones of the run.
-  - Up: `telemetry`, `detections`, `mission_status`, `swarm`.
-  - A message whose `droneId` is not the drone that owns the socket is dropped.
+    - The drone sends `hello` first; the connector pairs it and answers `welcome`.
+    - Down: `start_mapping`, `stop_mapping`, and `swarm` relayed from the other drones of the run.
+    - Up: `telemetry`, `detections`, `mission_status`, `swarm`.
+    - A message whose `droneId` is not the drone that owns the socket is dropped.
 - **Tasks** (`edge.ts`): `POST /v1/tasks` with a `ConnectorTask`, from edge-manager.
-  - Answers `ConnectorTaskResult` (the run's drones), or `{ error }` with 400, 401, 404 or 409.
+    - Answers `ConnectorTaskResult` (the run's drones), or `{ error }` with 400, 401, 404 or 409.
 - **Uplink** (`edge.ts`): WebSocket to edge-manager's `/v1/edge`.
-  - `register` on every connect, then an `EdgeUpdate` every `EMBER_EDGE_UPDATE_MS`.
+    - `register` on every connect, then an `EdgeUpdate` every `EMBER_EDGE_UPDATE_MS`.
 - **Discovery:** an mDNS (DNS-SD) announcement of `_ember-edge._tcp` (`EDGE_SERVICE_TYPE` in
   `droneLink.ts`) on the listen port, named and TXT-tagged `id=<edge server id>`,
   `path=/v1/drone`, for as long as the process runs. A connector whose announcement fails logs it
@@ -37,14 +37,14 @@ swarm about 20 times a second. Nothing else talks to a drone-runtime.
 
 ## Runs
 
-| Event | What happens |
-|---|---|
-| `start_mapping` | Every connected drone becomes the swarm. The run is saved, then each drone gets the mission with the swarm filled in. Starting the active run again answers with its swarm; another run gets 409 until this one is done. No connected drones is 409. |
-| `swarm` from a drone | Sent to the other drones of the run with `from` set to the sender. `coverage` cells are added to the run's mapped set. |
-| `stop_mapping` | The run is `stopping`; every connected drone of the run gets `stop_mapping`. |
-| A drone reconnects mid-run | It gets `start_mapping` again if this process saw it flying the run. The runtime ignores a start for the run it is flying, so this revives a drone that restarted. A drone that has landed gets nothing, so it does not fly the run twice. |
-| Done | Every drone of the run has reported `landed`, or sent no `mission_status` for 2 minutes. |
-| Connector restarts | The unfinished run is loaded from the store and relayed as before. No drone is sent a start, because their phases are unknown. |
+| Event                      | What happens                                                                                                                                                                                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `start_mapping`            | Every connected drone becomes the swarm. The run is saved, then each drone gets the mission with the swarm filled in. Starting the active run again answers with its swarm; another run gets 409 until this one is done. No connected drones is 409. |
+| `swarm` from a drone       | Sent to the other drones of the run with `from` set to the sender. `coverage` cells are added to the run's mapped set.                                                                                                                               |
+| `stop_mapping`             | The run is `stopping`; every connected drone of the run gets `stop_mapping`.                                                                                                                                                                         |
+| A drone reconnects mid-run | It gets `start_mapping` again if this process saw it flying the run. The runtime ignores a start for the run it is flying, so this revives a drone that restarted. A drone that has landed gets nothing, so it does not fly the run twice.           |
+| Done                       | Every drone of the run has reported `landed`, or sent no `mission_status` for 2 minutes.                                                                                                                                                             |
+| Connector restarts         | The unfinished run is loaded from the store and relayed as before. No drone is sent a start, because their phases are unknown.                                                                                                                       |
 
 ## The update
 
@@ -56,9 +56,9 @@ swarm about 20 times a second. Nothing else talks to a drone-runtime.
   edge-manager has taken an update, so an uplink outage delays them instead of losing them. Up to
   2000 frames are held; past that the oldest are dropped and the drop is logged.
 - **Dedupe:**
-  - Telemetry no newer than the drone's last `sentAt` is dropped.
-  - A detections frame is kept once per drone, `frameId` and `capturedAt`.
-  - Coverage cells are a set per run.
+    - Telemetry no newer than the drone's last `sentAt` is dropped.
+    - A detections frame is kept once per drone, `frameId` and `capturedAt`.
+    - Coverage cells are a set per run.
 - Drone health (battery, mode, phase, position, last seen) goes to the store at most once a second,
   for drones that reported since the last write.
 
@@ -66,11 +66,11 @@ swarm about 20 times a second. Nothing else talks to a drone-runtime.
 
 SQLite (`modernc.org/sqlite`, pure Go, so it cross-compiles to a Mac mini or Pi without cgo).
 
-| Table | Holds |
-|---|---|
-| `meta` | `edge_server_id`, the token |
+| Table    | Holds                                                                                                                                |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `meta`   | `edge_server_id`, the token                                                                                                          |
 | `drones` | each drone's last `hello`, when it paired and was last seen, whether it is connected, and its last battery, mode, phase and position |
-| `runs` | each run's mission as sent (swarm included), its state, and when it started and ended |
+| `runs`   | each run's mission as sent (swarm included), its state, and when it started and ended                                                |
 
 ## Run
 
@@ -81,12 +81,12 @@ go run ./services/edge-connector/cmd           # from the repo root
 uv run --package ember-drone-runtime drone-runtime run --id drone-1 --edge ws://localhost:8070/v1/drone
 ```
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `EMBER_EDGE_ADDR` | `:8070` | Listen address for drones, tasks and health |
-| `EMBER_EDGE_MANAGER_URL` | `http://localhost:8060` | edge-manager; the uplink path is added |
-| `EMBER_EDGE_PUBLIC_URL` | derived | URL edge-manager reaches this connector at |
-| `EMBER_EDGE_TOKEN` | generated, kept | This edge server's id |
-| `EMBER_EDGE_KEY` | unset | Shared bearer key. Unset accepts any task and logs a warning (local dev only) |
-| `EMBER_EDGE_DB` | `edge-connector.db` | SQLite file |
-| `EMBER_EDGE_UPDATE_MS` | `50` | Update interval: at least twice the drones' 10 Hz telemetry, so none is overwritten |
+| Variable                 | Default                 | Meaning                                                                             |
+| ------------------------ | ----------------------- | ----------------------------------------------------------------------------------- |
+| `EMBER_EDGE_ADDR`        | `:8070`                 | Listen address for drones, tasks and health                                         |
+| `EMBER_EDGE_MANAGER_URL` | `http://localhost:8060` | edge-manager; the uplink path is added                                              |
+| `EMBER_EDGE_PUBLIC_URL`  | derived                 | URL edge-manager reaches this connector at                                          |
+| `EMBER_EDGE_TOKEN`       | generated, kept         | This edge server's id                                                               |
+| `EMBER_EDGE_KEY`         | unset                   | Shared bearer key. Unset accepts any task and logs a warning (local dev only)       |
+| `EMBER_EDGE_DB`          | `edge-connector.db`     | SQLite file                                                                         |
+| `EMBER_EDGE_UPDATE_MS`   | `50`                    | Update interval: at least twice the drones' 10 Hz telemetry, so none is overwritten |

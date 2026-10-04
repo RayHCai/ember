@@ -1,5 +1,5 @@
-// Ember desktop app: the operator console in a native window. All data is
-// built-in dummy data in the console itself; there is no backend to start.
+// Tauri shell for the operator dashboard: the window and the app log. The frontend talks to the
+// Ember services itself.
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

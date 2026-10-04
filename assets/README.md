@@ -77,13 +77,13 @@ and carports are the open end of it, so a house keeps to its footprint.
 `buildings/<style>_<length>x<width>[_<storeys>f].glb` (`kind: "block"`), flat roofs behind a
 parapet; `lengthM` is the frontage. Units of equal depth can stand side by side as a street row.
 
-| Style    | What it is                                                     |
-| -------- | -------------------------------------------------------------- |
-| `store`  | One storey, glazed front under a striped awning                |
-| `shop`   | Front Street timber shop: false front, balcony over the walk   |
-| `office` | Two storeys of ribbon windows, entrance canopy                 |
-| `lodge`  | Three storeys with a walkway on every floor and a stair tower  |
-| `hall`   | One tall floor, sheet cladding, roller doors, roof lights      |
+| Style    | What it is                                                    |
+| -------- | ------------------------------------------------------------- |
+| `store`  | One storey, glazed front under a striped awning               |
+| `shop`   | Front Street timber shop: false front, balcony over the walk  |
+| `office` | Two storeys of ribbon windows, entrance canopy                |
+| `lodge`  | Three storeys with a walkway on every floor and a stair tower |
+| `hall`   | One tall floor, sheet cladding, roller doors, roof lights     |
 
 ![ruins](previews/ruins.png)
 

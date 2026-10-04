@@ -57,9 +57,9 @@ export function hotspotDetections(hotspots: Hotspot[], frameId: number): RiskDet
 }
 
 /**
- * Stand-in for services/drone-info until it exists: one drone hovering at a fixed pose, reporting
- * as its detections the thermal hotspots Demo Data serves a camera there. No flight model and no
- * detector run here.
+ * Stand-in for services/drone-info when the sim has no `--drone-info`: one drone hovering at a
+ * fixed pose, reporting as its detections the thermal hotspots Demo Data serves a camera there. No
+ * flight model and no detector run here.
  */
 export class DummyDroneInfo implements DroneInfoSource {
     private readonly emitter = new Emitter({

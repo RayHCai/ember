@@ -9,12 +9,12 @@ drones, runs and detections at the API.
 
 All shapes are in `packages/contracts/src/edge.ts`, mirrored in `internal/edgeproto`.
 
-| Route | Caller | Does |
-|---|---|---|
-| `POST /v1/tasks` | api | Takes an `EdgeTask` and sends each edge server it names a `ConnectorTask` at `<url>/v1/tasks`, all at once with a 10 s timeout each. Answers `EdgeTaskResult`: one result per edge server, so one failing does not fail the rest. 400 when the task is invalid. |
-| `GET /v1/edge-servers` | api | `EdgeServerStatus[]`: every connector registered since this process started, online while its uplink is open, with its drone counts and run. |
-| `GET /v1/edge` (WebSocket) | edge-connector | `register` → `registered`, then `EdgeUpdate`s. A second socket for the same id replaces the first. |
-| `GET /healthz` | anyone | Liveness. |
+| Route                      | Caller         | Does                                                                                                                                                                                                                                                            |
+| -------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/tasks`           | api            | Takes an `EdgeTask` and sends each edge server it names a `ConnectorTask` at `<url>/v1/tasks`, all at once with a 10 s timeout each. Answers `EdgeTaskResult`: one result per edge server, so one failing does not fail the rest. 400 when the task is invalid. |
+| `GET /v1/edge-servers`     | api            | `EdgeServerStatus[]`: every connector registered since this process started, online while its uplink is open, with its drone counts and run.                                                                                                                    |
+| `GET /v1/edge` (WebSocket) | edge-connector | `register` → `registered`, then `EdgeUpdate`s. A second socket for the same id replaces the first.                                                                                                                                                              |
+| `GET /healthz`             | anyone         | Liveness.                                                                                                                                                                                                                                                       |
 
 Every route except `/healthz` needs `Authorization: Bearer $EMBER_EDGE_KEY`.
 
@@ -47,12 +47,12 @@ Each update is merged into pending state per edge server, never queued whole, an
 what is pending. A slow API costs a connector's uplink nothing and loses no change. Every request
 carries `Authorization: Bearer $EMBER_EDGE_KEY`.
 
-| What | Sent when | Request |
-|---|---|---|
-| Edge server | a connector registers | `PUT /v1/edge-servers/:edgeServerId` with its `url` |
-| Drone | its `hello` name or kind is new or changed, or it first appears under this edge server | `PUT /v1/drones/:droneId` with `edgeServerId`, `name`, `kind` |
-| Run | cells are pending, or its state or coverage changed since the last accepted send | `PUT /v1/mapping-runs/:runId/edge-servers/:edgeServerId` with the connector's `EdgeRun`, whose `newCells` is every cell the API has not yet accepted |
-| Detections | frames are pending | `POST /v1/detections` with `edgeServerId`, at most 500 frames per request |
+| What        | Sent when                                                                              | Request                                                                                                                                              |
+| ----------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Edge server | a connector registers                                                                  | `PUT /v1/edge-servers/:edgeServerId` with its `url`                                                                                                  |
+| Drone       | its `hello` name or kind is new or changed, or it first appears under this edge server | `PUT /v1/drones/:droneId` with `edgeServerId`, `name`, `kind`                                                                                        |
+| Run         | cells are pending, or its state or coverage changed since the last accepted send       | `PUT /v1/mapping-runs/:runId/edge-servers/:edgeServerId` with the connector's `EdgeRun`, whose `newCells` is every cell the API has not yet accepted |
+| Detections  | frames are pending                                                                     | `POST /v1/detections` with `edgeServerId`, at most 500 frames per request                                                                            |
 
 - An edge server's drones and detections wait until its registration is accepted.
 - A network error or a 5xx keeps the work pending. The pass is tried again after 1 s, then 2 s and so
@@ -71,12 +71,12 @@ carries `Authorization: Bearer $EMBER_EDGE_KEY`.
 go run ./services/edge-manager/cmd            # from the repo root
 ```
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `EMBER_EDGE_MANAGER_ADDR` | `:8060` | Listen address |
-| `EMBER_DRONE_INFO_URL` | `http://localhost:4002` | drone-info; empty disables forwarding |
-| `EMBER_API_URL` | `http://localhost:4001` | api; empty disables recording |
-| `EMBER_EDGE_KEY` | unset | Shared bearer key, required of callers and sent to the API. Unset accepts anything and logs a warning (local dev only) |
+| Variable                  | Default                 | Meaning                                                                                                                |
+| ------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `EMBER_EDGE_MANAGER_ADDR` | `:8060`                 | Listen address                                                                                                         |
+| `EMBER_DRONE_INFO_URL`    | `http://localhost:4002` | drone-info; empty disables forwarding                                                                                  |
+| `EMBER_API_URL`           | `http://localhost:4001` | api; empty disables recording                                                                                          |
+| `EMBER_EDGE_KEY`          | unset                   | Shared bearer key, required of callers and sent to the API. Unset accepts anything and logs a warning (local dev only) |
 
 Start a run by hand (ids and URLs from `GET /v1/edge-servers`):
 

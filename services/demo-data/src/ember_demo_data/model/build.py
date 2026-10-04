@@ -9,9 +9,12 @@ Synthetic:    the arrival time of the fire at each 10 m cell between those sight
 
 Outputs (data/derived/):
     burned.tif        1 where the fire burned (from Sentinel-2 dNBR inside the perimeter)
+    perimeter.tif     1 inside the official perimeter
     fuel.tif          fuel class (see FUELS)
     arrival.tif       minutes since the 14:52 rekindle when the fire reaches each cell
                       (negative for the morning fire, NaN where fire never arrives)
+    speed_multiplier.tif  calibrated scale on each cell's spread speed
+    buildings_2m.tif  building footprints at 2 m
     structures.geojson  pre-fire buildings with arrival time and fate
     spot_fires.json   sightings the continuous front cannot explain, kept as spot fires
     calibration.json  per-anchor observed vs modelled times

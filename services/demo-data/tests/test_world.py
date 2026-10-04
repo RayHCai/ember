@@ -24,7 +24,6 @@ def test_frame_round_trip():
     x, y = FRAME.to_local(-156.6772, 20.8725)
     lon, lat = FRAME.to_lonlat(x, y)
     assert abs(lon + 156.6772) < 1e-9 and abs(lat - 20.8725) < 1e-9
-    # 1 km north is 1 km north.
     _, y1 = FRAME.to_local(FRAME.lon0, FRAME.lat0 + 1000 / FRAME.m_lat)
     assert abs(y1 - 1000) < 1e-6
 

@@ -10,7 +10,7 @@ export type SourceStatus = {
 /**
  * Where the sim gets drones from. The sim never moves drones or detects anything itself: it
  * renders what this source reports. `DroneInfoClient` is the real source (services/drone-info);
- * `DummyDroneInfo` stands in until that service exists.
+ * `DummyDroneInfo` stands in when none is configured.
  */
 export interface DroneInfoSource {
     start(): void;

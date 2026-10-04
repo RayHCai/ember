@@ -1,3 +1,4 @@
 # @ember/civilian-map
 
-Read-only web map linked from civilian texts. No auth, no install.
+Placeholder for the read-only web map linked from civilian texts (no auth, no install). The map is
+not built yet: `src/index.ts` only exports the package name.

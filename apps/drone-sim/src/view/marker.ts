@@ -25,7 +25,7 @@ import type { WorldFrame } from '../world/frame';
 import { LAYER } from '../world/visibility';
 import { cameraBasis } from './droneCamera';
 
-/** Cool hues rather than the readme's red/yellow, which vanish against rendered flames. */
+/** Cool hues rather than the spec's red/yellow, which vanish against rendered flames. */
 export const RISK_COLOUR: Record<RiskDetection['risk'], string> = {
     on_fire: '#ff00ff',
     at_risk: '#00e5ff',
@@ -166,7 +166,7 @@ export class DroneMarker {
         }
     }
 
-    /** The readme's coloured overlay zone: a translucent fill with a solid edge. */
+    /** A risk's overlay zone: a translucent fill with a solid edge. */
     private zone(frame: WorldFrame, ground: LatLng[], colour: string, order: number): Group {
         const flat = ground.map((p) => {
             const { x, y } = toLocal(frame, p.lat, p.lng);

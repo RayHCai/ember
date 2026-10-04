@@ -13,30 +13,30 @@ flies back to where it took off and lands.
   only the one named by `--edge-id`. It prefers the announcement's IPv4 address.
 - **Edge link:** a WebSocket to the edge-connector at `/v1/drone`, with the shapes in
   `packages/contracts/src/droneLink.ts` (`link/messages.py` mirrors them).
-  - Up: `hello` on every connect, then `telemetry` at 10 Hz, `detections` (as in `droneInfo.ts`),
-    `mission_status` and `swarm`.
-  - Down: `welcome`, `start_mapping`, `stop_mapping`, and `swarm` messages relayed from the other
-    drones of the run.
+    - Up: `hello` on every connect, then `telemetry` at 10 Hz, `detections` (as in `droneInfo.ts`),
+      `mission_status` and `swarm`.
+    - Down: `welcome`, `start_mapping`, `stop_mapping`, and `swarm` messages relayed from the other
+      drones of the run.
 - **Swarm:** drones talk to each other only through the connector.
-  - Positions and goals are in the mission frame (metres east/north/up of the edge server).
-  - Coverage is cell indices of the grid the mission defines, with the fire evidence the drone's own
-    frames added to cells since its last coverage message.
-  - Every drone runs the same Hungarian assignment of drones to unmapped tiles over that shared
-    state and flies its own row. There is no leader.
+    - Positions and goals are in the mission frame (metres east/north/up of the edge server).
+    - Coverage is cell indices of the grid the mission defines, with the fire evidence the drone's own
+      frames added to cells since its last coverage message.
+    - Every drone runs the same Hungarian assignment of drones to unmapped tiles over that shared
+      state and flies its own row. There is no leader.
 - **Outbound civilian alerts:** none. This service only reports detections.
 
 ## How a drone flies a run
 
-| Step | What happens | Code |
-|---|---|---|
-| Altitude band | Each drone of the run cruises at its own height in the mission's band (60, 70, 80 m...), so most pairs never share an altitude. | `mission.py` |
-| Goals | The area is cut into tiles about one camera footprint wide. Unmapped tiles are assigned across the swarm; a drone's current tile is discounted so goals do not flap. | `swarm/goals.py` |
-| Paths | Straight unless something taller than the band allows is in the way, then A* over the height map. Altitude follows the terrain and climbs early for tall things ahead. | `nav/path.py` |
-| Avoidance | Each peer is predicted at constant velocity; the drone bends away from any it would pass closer than 15 m within 6 s. Vertical gaps count double. | `nav/avoid.py` |
-| Geofence | Never leaves the connectivity radius minus a 30 m margin. | `nav/avoid.py` |
-| Mapping | Each frame is folded into a 2.5D grid (coverage, ground, surface top, risk). With depth (LiDAR) every pixel is a 3D point; without it, rays hit the ground estimate. | `mapping/` |
-| Detection | Region outlines from the detectors (or boxes) are projected onto the surface they show, folded into per-cell fire evidence, and sent up as ground outlines once confirmed. | `perception/`, `mapping/evidence.py` |
-| Failsafes | Returns home when coverage reaches 97 %, on `stop_mapping`, when battery nears what the trip home needs plus 15 %, or after 20 s without the edge link. | `mission.py` |
+| Step          | What happens                                                                                                                                                               | Code                                 |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Altitude band | Each drone of the run cruises at its own height in the mission's band (60, 70, 80 m...), so most pairs never share an altitude.                                            | `mission.py`                         |
+| Goals         | The area is cut into tiles about one camera footprint wide. Unmapped tiles are assigned across the swarm; a drone's current tile is discounted so goals do not flap.       | `swarm/goals.py`                     |
+| Paths         | Straight unless something taller than the band allows is in the way, then A* over the height map. Altitude follows the terrain and climbs early for tall things ahead.     | `nav/path.py`                        |
+| Avoidance     | Each peer is predicted at constant velocity; the drone bends away from any it would pass closer than 15 m within 6 s. Vertical gaps count double.                          | `nav/avoid.py`                       |
+| Geofence      | Never leaves the connectivity radius minus a 30 m margin.                                                                                                                  | `nav/avoid.py`                       |
+| Mapping       | Each frame is folded into a 2.5D grid (coverage, ground, surface top, risk). With depth (LiDAR) every pixel is a 3D point; without it, rays hit the ground estimate.       | `mapping/`                           |
+| Detection     | Region outlines from the detectors (or boxes) are projected onto the surface they show, folded into per-cell fire evidence, and sent up as ground outlines once confirmed. | `perception/`, `mapping/evidence.py` |
+| Failsafes     | Returns home when coverage reaches 97 %, on `stop_mapping`, when battery nears what the trip home needs plus 15 %, or after 20 s without the edge link.                    | `mission.py`                         |
 
 ## Detection
 
@@ -48,23 +48,23 @@ in camera pixels, traced along pixel edges (`perception/outline.py`, at most 32 
 Without a mask the outline is the box.
 
 - **Baseline** (`perception/heuristic.py`):
-  - Thermal above 520 K is `on_fire`. Flames read 520-1200 K, and smouldering debris below that
-    is `at_risk`.
-  - Above 335 K and at least 20 K over the local background (median of the cooler pixels nearby)
-    is `at_risk`, so sun-baked ground is not a front.
-  - Confidence grows with peak temperature and with area (63 % of its peak at 12 sensor pixels),
-    so a few hot pixels are weak evidence.
-  - Without thermal, flame colours count as `on_fire`, at most 0.6.
-  - It cannot see dry fuel or smoke.
+    - Thermal above 520 K is `on_fire`. Flames read 520-1200 K, and smouldering debris below that
+      is `at_risk`.
+    - Above 335 K and at least 20 K over the local background (median of the cooler pixels nearby)
+      is `at_risk`, so sun-baked ground is not a front.
+    - Confidence grows with peak temperature and with area (63 % of its peak at 12 sensor pixels),
+      so a few hot pixels are weak evidence.
+    - Without thermal, flame colours count as `on_fire`, at most 0.6.
+    - It cannot see dry fuel or smoke.
 - **YOLO** (`perception/yolo.py`): an Ultralytics YOLOv8/11 export in ONNX, run with ONNX Runtime
   so it works on a Raspberry Pi. The model is built by `tools/fire-seg`.
-  - Class names come from the model metadata and map to a risk by keyword: fire/flame are
-    `on_fire`; smoke, ember, burned, dry fuel and at-risk are `at_risk`.
-  - Segmentation exports give each region a mask, decoded exactly as Ultralytics does. Its outline
-    is what gets georeferenced, and the confidence is the class score times the mean mask
-    probability inside it. Detection exports give boxes.
-  - `EMBER_YOLO_MODEL` (or `--yolo-model`) points at another `.onnx`; compose mounts the repo's
-    models at `/models`.
+    - Class names come from the model metadata and map to a risk by keyword: fire/flame are
+      `on_fire`; smoke, ember, burned, dry fuel and at-risk are `at_risk`.
+    - Segmentation exports give each region a mask, decoded exactly as Ultralytics does. Its outline
+      is what gets georeferenced, and the confidence is the class score times the mean mask
+      probability inside it. Detection exports give boxes.
+    - `EMBER_YOLO_MODEL` (or `--yolo-model`) points at another `.onnx`; compose mounts the repo's
+      models at `/models`.
 - **Fusion** (`FusedDetector`): within a frame, overlapping regions of one risk merge. Their
   confidences combine as independent evidence, and the most confident region's outline is kept.
 
@@ -75,11 +75,11 @@ Detectors only see pixels, so the same model works on oblique, horizon and nadir
 Detections are not reported as they come. `mapping/evidence.py` keeps per-cell log-odds that a
 cell is `on_fire` and that it is `at_risk`:
 
-| Event | Effect on a cell's log-odds |
-|---|---|
-| A detection's ground outline covers it | `+ 3.5 x confidence`; overlapping detections in one frame do not stack |
-| The frame saw it and found no region of that risk there | `- 0.7` |
-| A peer's coverage message carries evidence for it | that drone's own delta is added |
+| Event                                                   | Effect on a cell's log-odds                                            |
+| ------------------------------------------------------- | ---------------------------------------------------------------------- |
+| A detection's ground outline covers it                  | `+ 3.5 x confidence`; overlapping detections in one frame do not stack |
+| The frame saw it and found no region of that risk there | `- 0.7`                                                                |
+| A peer's coverage message carries evidence for it       | that drone's own delta is added                                        |
 
 Values stay between the prior (5 %) and a ceiling. Because the floor is the prior, a cell that
 looked clear for a long time still confirms a strong new detection at once; fires ignite. A
@@ -97,12 +97,12 @@ The numbers are `EvidenceParams` in `FlightParams.evidence`.
 
 The core (`mission.py`, `MissionBrain`) is synchronous and knows only these protocols:
 
-| Protocol | Implementations |
-|---|---|
-| `FlightController` (`flight/`) | `SimulatedFlight`: point mass with acceleration limits and battery drain |
-| `Camera` (`sensors/`) | `SensorStreamCamera`: any server speaking Demo Data's `/v1/stream`; `SyntheticCamera`: ray-marched procedural world with RGB, thermal and depth |
-| `Detector` (`perception/`) | `HeuristicDetector`, `YoloDetector`, `FusedDetector` |
-| `Link` (`link/`) | `EdgeLink`: reconnecting WebSocket; `LocalHub`: in-process connector for simulation |
+| Protocol                       | Implementations                                                                                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FlightController` (`flight/`) | `SimulatedFlight`: point mass with acceleration limits and battery drain                                                                        |
+| `Camera` (`sensors/`)          | `SensorStreamCamera`: any server speaking Demo Data's `/v1/stream`; `SyntheticCamera`: ray-marched procedural world with RGB, thermal and depth |
+| `Detector` (`perception/`)     | `HeuristicDetector`, `YoloDetector`, `FusedDetector`                                                                                            |
+| `Link` (`link/`)               | `EdgeLink`: reconnecting WebSocket; `LocalHub`: in-process connector for simulation                                                             |
 
 There is no physical flight controller, Pi camera or LiDAR adapter yet.
 
@@ -137,15 +137,15 @@ uv and this package, writes `services/drone-runtime/drone.env` and runs `run` as
 systemd service. Without `--edge` it finds the edge server over mDNS. `docs/raspberry-pi.md` walks
 through a whole Pi 5 deployment.
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `EMBER_DRONE_ID` | `drone-1` | Drone id sent in `hello` |
-| `EMBER_EDGE_URL` | `auto` | Edge-connector link, or `auto` to find one over mDNS |
-| `EMBER_EDGE_ID` | unset | With `auto`, connect only to this edge server id |
-| `EMBER_DRONE_HOME` | `20.8838,-156.6670` | `lat,lng` the simulated drone takes off from (`--home`) |
-| `EMBER_SENSOR_URL` | `ws://localhost:8090/v1/stream` | Sensor stream for `--camera sensor-stream` |
-| `EMBER_YOLO_MODEL` | the checkout's `fire-seg-v1.onnx` | ONNX model YOLO runs under `--detector auto` |
-| `EMBER_DRONE_INFO_URL` | unset | `swarm-sim --drone-info`: post reports to drone-info for viewers |
+| Variable               | Default                           | Meaning                                                          |
+| ---------------------- | --------------------------------- | ---------------------------------------------------------------- |
+| `EMBER_DRONE_ID`       | `drone-1`                         | Drone id sent in `hello`                                         |
+| `EMBER_EDGE_URL`       | `auto`                            | Edge-connector link, or `auto` to find one over mDNS             |
+| `EMBER_EDGE_ID`        | unset                             | With `auto`, connect only to this edge server id                 |
+| `EMBER_DRONE_HOME`     | `20.8838,-156.6670`               | `lat,lng` the simulated drone takes off from (`--home`)          |
+| `EMBER_SENSOR_URL`     | `ws://localhost:8090/v1/stream`   | Sensor stream for `--camera sensor-stream`                       |
+| `EMBER_YOLO_MODEL`     | the checkout's `fire-seg-v1.onnx` | ONNX model YOLO runs under `--detector auto`                     |
+| `EMBER_DRONE_INFO_URL` | unset                             | `swarm-sim --drone-info`: post reports to drone-info for viewers |
 
 `swarm-sim` centres on the fire's path west of the Kuialua St rekindle (20.8838, -156.6670) unless
 given `--center`. A drone takes at most two frames a second (scaled with `--time-scale`), the pace

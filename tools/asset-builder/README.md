@@ -13,10 +13,10 @@ From the repository root:
 uv run asset-builder
 ```
 
-| Flag            | Default  | Meaning                                |
-| --------------- | -------- | -------------------------------------- |
-| `--out`         | `assets` | Directory to write into                |
-| `--no-previews` | off      | Skip the preview sheets (faster)       |
+| Flag            | Default  | Meaning                          |
+| --------------- | -------- | -------------------------------- |
+| `--out`         | `assets` | Directory to write into          |
+| `--no-previews` | off      | Skip the preview sheets (faster) |
 
 It writes every model as `.glb`, `manifest.json`, and `previews/*.png`. The output is deterministic
 (seeded), so a rebuild with no code change leaves the files as they were. Commit the rebuilt

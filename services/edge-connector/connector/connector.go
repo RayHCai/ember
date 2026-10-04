@@ -20,7 +20,7 @@ import (
 const lostAfter = 2 * time.Minute
 
 // Connector holds every paired drone and the current run. One mutex guards all of it: messages
-// arrive at a few per second per drone, far below where contention matters.
+// arrive at a few dozen per second per drone, far below where contention matters.
 type Connector struct {
 	ID    string
 	URL   string

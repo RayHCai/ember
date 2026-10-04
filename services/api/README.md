@@ -49,9 +49,9 @@ an approval, so the human-in-the-loop rule holds even outside the api's code.
 `/healthz`, `POST /civilians`, sign-up and sign-in are open. Every other `/v1` route needs
 `Authorization: Bearer <token>`, where the token is an operator's session, `EMBER_EDGE_KEY`,
 `EMBER_PLANNER_KEY` or `EMBER_AGENT_KEY`. The planner's three routes take only `EMBER_PLANNER_KEY`,
-and `GET /v1/civilians` (phone numbers) only `EMBER_AGENT_KEY`. An unset key is skipped; with no key
-set every route is open and the api logs a warning (local dev only), but
-a valid session token still identifies its operator.
+and `GET /v1/civilians` (phone numbers) only `EMBER_AGENT_KEY`. An unset key is skipped: without
+`EMBER_PLANNER_KEY` the planner's routes are open, and with no key set every route is open (local
+dev only; the api logs a warning), though a valid session token still identifies its operator.
 
 Sign-up and sign-in answer an `OperatorSession`. The token is 32 random bytes (base64url); the api
 stores only its SHA-256 and the session lasts `SESSION_DAYS` (7). Passwords are stored as
@@ -164,16 +164,16 @@ Errors are `{ error }`. Lists take `limit` (1-1000, default 100). `:zoneId`, `:p
 pnpm --filter @ember/api dev
 ```
 
-| Variable                 | Default                                   | Meaning                                                           |
-| ------------------------ | ----------------------------------------- | ----------------------------------------------------------------- |
-| `DATABASE_URL`           | none                                      | Postgres; required                                                |
-| `PORT`                   | `4001`                                    | Listen port                                                       |
-| `EMBER_EDGE_KEY`         | unset                                     | Bearer key edge-manager calls with, and the api calls it with     |
-| `EMBER_PLANNER_KEY`      | unset                                     | Bearer key the planner orchestrator calls with                    |
+| Variable                 | Default                                   | Meaning                                                                 |
+| ------------------------ | ----------------------------------------- | ----------------------------------------------------------------------- |
+| `DATABASE_URL`           | none                                      | Postgres; required                                                      |
+| `PORT`                   | `4001`                                    | Listen port                                                             |
+| `EMBER_EDGE_KEY`         | unset                                     | Bearer key edge-manager calls with, and the api calls it with           |
+| `EMBER_PLANNER_KEY`      | unset                                     | Bearer key the planner orchestrator calls with                          |
 | `EMBER_AGENT_KEY`        | unset                                     | Bearer key operator-agent calls with; the only one that lists civilians |
-| `EMBER_REDIS_URL`        | unset                                     | Planner job queue; unset, creating a planner job is 503           |
-| `EMBER_EDGE_MANAGER_URL` | unset                                     | edge-manager's base URL; unset, scans are 503 and `live` is null  |
-| `EMBER_API_ORIGINS`      | unset                                     | Comma-separated browser origins allowed besides localhost & Tauri |
-| `EMBER_OPEN_DATA`        | on                                        | `off`: no forest fit (503), surroundings (failed) or weather      |
-| `EMBER_OVERPASS_URL`     | `https://overpass-api.de/api/interpreter` | Overpass endpoint for forest fit and surroundings                 |
-| `EMBER_OPEN_METEO_URL`   | `https://api.open-meteo.com/v1/forecast`  | Open-Meteo forecast endpoint for weather                          |
+| `EMBER_REDIS_URL`        | unset                                     | Planner job queue; unset, creating a planner job is 503                 |
+| `EMBER_EDGE_MANAGER_URL` | unset                                     | edge-manager's base URL; unset, scans are 503 and `live` is null        |
+| `EMBER_API_ORIGINS`      | unset                                     | Comma-separated browser origins allowed besides localhost & Tauri       |
+| `EMBER_OPEN_DATA`        | on                                        | `off`: no forest fit (503), surroundings (failed) or weather            |
+| `EMBER_OVERPASS_URL`     | `https://overpass-api.de/api/interpreter` | Overpass endpoint for forest fit and surroundings                       |
+| `EMBER_OPEN_METEO_URL`   | `https://api.open-meteo.com/v1/forecast`  | Open-Meteo forecast endpoint for weather                                |
