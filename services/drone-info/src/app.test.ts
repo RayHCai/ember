@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import type { DroneInfoMessage } from '@ember/contracts';
 import { buildApp } from './app.js';
 
@@ -128,4 +128,19 @@ test('stream sends the fleet, then the followed drone only', async () => {
 
     const later = await next('fleet');
     expect(later.drones.find((d) => d.droneId === 'd2')?.batteryPct).toBe(50);
+});
+
+test('ingested detections frames with detections reach the forwarder', async () => {
+    const push = vi.fn<(frame: unknown) => void>();
+    await app.close();
+    app = buildApp({ forwarder: { push, close: vi.fn<() => void>() } });
+    await ingest([
+        hello('d1'),
+        telemetry('d1'),
+        { ...detections('d1'), frameId: 8, detections: [] },
+    ]);
+    expect(push).not.toHaveBeenCalled();
+    await ingest([detections('d1')]);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push.mock.calls[0]?.[0]).toMatchObject({ type: 'detections', frameId: 7 });
 });
