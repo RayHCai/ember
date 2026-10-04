@@ -21,7 +21,9 @@ def main(argv: list[str] | None = None) -> None:
     worker = sub.add_parser("worker", help="run a Celery planner worker")
     worker.add_argument("--concurrency", type=int, default=None)
     worker.add_argument(
-        "--pool", default="solo" if sys.platform == "win32" else "prefork", help="Celery pool"
+        "--pool",
+        default="solo" if sys.platform in ("win32", "darwin") else "prefork",
+        help="Celery pool",
     )
     offline = sub.add_parser("plan", help="plan one context file offline and print the result")
     offline.add_argument("context", type=Path, help="PlannerContext JSON")

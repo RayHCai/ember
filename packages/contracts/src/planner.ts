@@ -34,6 +34,8 @@ export type PlannerOptions = {
     evacuationDelayMin?: number;
     /** Minimum lead an evacuation route keeps over the fire at every point. Default 15. */
     safetyMarginMin?: number;
+    /** Side of the square sectors `sectorRisks` grades the zone in. Default 1000. */
+    sectorSizeM?: number;
 };
 
 /** api -> Redis -> orchestrator. */
@@ -65,6 +67,11 @@ export type Weather = {
     windFromDeg: number;
     temperatureC: number | null;
     relativeHumidityPct: number | null;
+    windGustMps: number | null;
+    /** Null when the source does not say. */
+    redFlagWarning: boolean | null;
+    /** Where the observation came from, e.g. `fixture:lahaina-2023-08-08`, `demo-data`, `nws:PHOG`. */
+    source: string;
 };
 
 /** A mapped area the api holds as at risk or on fire, merged from drone runs. */
@@ -90,7 +97,16 @@ export type CivilianArea = {
 
 export type RoadKind = 'motorway' | 'primary' | 'secondary' | 'residential' | 'track';
 
-export type Road = { id: string; name: string | null; kind: RoadKind; path: LatLng[] };
+/** `blocked`: impassable. `uncertain`: reported but unconfirmed; the planner slows it down. */
+export type RoadState = 'open' | 'blocked' | 'uncertain';
+
+export type Road = {
+    id: string;
+    name: string | null;
+    kind: RoadKind;
+    path: LatLng[];
+    state: RoadState;
+};
 
 /** An evacuation destination: shelter, assembly point, or a road exit out of the area. */
 export type SafeZone = { id: string; name: string; location: LatLng; capacity: number | null };
@@ -148,6 +164,17 @@ export type FireSpreadForecast = {
     maxSpreadMpm: number;
 };
 
+/** How crews get from their station to an attack zone's drop site over the road network. */
+export type AttackApproach = {
+    stationId: string;
+    path: LatLng[];
+    /** Roads the path uses, in order, without repeats. */
+    roadIds: string[];
+    etaMin: number;
+    /** Compass bearing the crew arrives at the drop site from; null for a path of one point. */
+    arrivesFromDeg: number | null;
+};
+
 /** A recommended place to fight the fire: drop site plus a working radius. */
 export type AttackZone = {
     id: string;
@@ -167,6 +194,8 @@ export type AttackZone = {
     protects: string[];
     protectedPopulation: number;
     protectedAreaHa: number;
+    /** Null when the context has no stations or no roads. */
+    approach: AttackApproach | null;
 };
 
 export type ImpactSeverity = 'immediate' | 'warning' | 'watch' | 'clear';
@@ -185,8 +214,8 @@ export type CivilianImpact = {
     severity: ImpactSeverity;
 };
 
-export type EvacuationRoute = {
-    civilianAreaId: string;
+/** One way out for a civilian area. */
+export type EvacuationPath = {
     /** `tight`: the route keeps the safety margin but less than twice it. */
     status: 'clear' | 'tight' | 'no_safe_route';
     /** Empty when there is no safe route. */
@@ -196,8 +225,44 @@ export type EvacuationRoute = {
     etaMin: number;
     /** Smallest lead over the fire along the route; null when the fire never reaches it. */
     clearanceMin: number | null;
+    /** Roads the path uses, in order, without repeats; empty off the road network. */
+    roadIds: string[];
+};
+
+export type EvacuationRoute = EvacuationPath & {
+    civilianAreaId: string;
     /** `roads` when the context had a road network, `terrain` for straight cross-country routing. */
     network: 'roads' | 'terrain';
+    /** The best route that uses none of the primary's roads; null when there is none. */
+    alternate: EvacuationPath | null;
+};
+
+export type RiskBand = 'low' | 'moderate' | 'high' | 'extreme';
+
+/**
+ * One square sector of the watch zone, graded on how readily fire would start and run there now
+ * and who it would reach. Sectors are numbered row by row from the north-west, `S1` first.
+ */
+export type SectorRisk = {
+    id: string;
+    number: number;
+    polygon: LatLng[];
+    center: LatLng;
+    /** 1 is the highest score of this plan. */
+    rank: number;
+    /** 0 to 1, comparable across plans: weather that worsens raises it. */
+    score: number;
+    band: RiskBand;
+    /** Each 0 to 1; `score` weighs them. */
+    factors: { spreadPotential: number; ignition: number; exposure: number };
+    dominantFuel: FuelType;
+    meanSlopeDeg: number;
+    /** Civilians living within 1.5 km of the sector centre. */
+    population: number;
+    /** Earliest forecast fire arrival in the sector; null when the forecast does not reach it. */
+    fireArrivalMin: number | null;
+    /** Short factual phrases from the inputs, strongest first, e.g. `wind 14 m/s from 70°`. */
+    drivers: string[];
 };
 
 /** worker -> orchestrator -> api. */
@@ -213,4 +278,6 @@ export type PlannerResult = {
     attackZones: AttackZone[];
     civilianImpacts: CivilianImpact[];
     evacuationRoutes: EvacuationRoute[];
+    /** Highest score first. */
+    sectorRisks: SectorRisk[];
 };

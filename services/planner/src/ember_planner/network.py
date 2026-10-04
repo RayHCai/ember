@@ -29,6 +29,7 @@ TERRAIN_SPEED_KMH = 15.0
 FOOT_SPEED_MPM = 50.0
 # Road points closer than this are one junction.
 SNAP_M = 3.0
+UNCERTAIN_SPEED_FACTOR = 0.5
 
 
 def mpm(kmh: float) -> float:
@@ -40,6 +41,7 @@ class Edge:
     to: int
     length_m: float
     minutes: float
+    road: str | None = None
 
 
 @dataclass
@@ -67,7 +69,7 @@ class Network:
 def road_network(roads: Iterable[Road], frame: LocalFrame, max_segment_m: float) -> Network | None:
     """Roads densified to `max_segment_m` so the fire is sampled along every stretch, and split
     where they cross or where one ends on another, so those points join the two."""
-    road_list = list(roads)
+    road_list = [r for r in roads if r.state != "blocked"]
     lines = [shapely.LineString(frame.ring(r.path)) for r in road_list]
     index: dict[tuple[int, int], int] = {}
     xy: list[tuple[float, float]] = []
@@ -84,15 +86,17 @@ def road_network(roads: Iterable[Road], frame: LocalFrame, max_segment_m: float)
         adj.append([])
         return len(xy) - 1
 
-    def link(a: int, b: int, speed: float) -> None:
+    def link(a: int, b: int, speed: float, road: str) -> None:
         if a == b:
             return
         length = math.dist(xy[a], xy[b])
-        adj[a].append(Edge(b, length, length / speed))
-        adj[b].append(Edge(a, length, length / speed))
+        adj[a].append(Edge(b, length, length / speed, road))
+        adj[b].append(Edge(a, length, length / speed, road))
 
     for road, line, cuts in zip(road_list, lines, _junctions(lines), strict=True):
         speed = mpm(ROAD_SPEED_KMH[road.kind])
+        if road.state == "uncertain":
+            speed *= UNCERTAIN_SPEED_FACTOR
         vertices = [line.project(shapely.Point(p)) for p in line.coords]
         stops = sorted({*vertices, *cuts})
         prev = node(*line.coords[0])
@@ -101,7 +105,7 @@ def road_network(roads: Iterable[Road], frame: LocalFrame, max_segment_m: float)
             for k in range(1, steps + 1):
                 p = line.interpolate(d0 + (d1 - d0) * k / steps)
                 cur = node(p.x, p.y)
-                link(prev, cur, speed)
+                link(prev, cur, speed, road.id)
                 prev = cur
     if not xy:
         return None
@@ -152,13 +156,32 @@ def node_fire_times(net: Network, grid: Grid, arrival: FloatArray) -> FloatArray
     return np.where(inside, arrival[r, c], np.inf)
 
 
-def travel_minutes(net: Network, sources: dict[int, float]) -> FloatArray:
-    """Fastest time to every node from any source, each starting at its given minute."""
+@dataclass(frozen=True)
+class TravelTree:
+    """Fastest times from the sources and how each node was reached; -1 marks a source."""
+
+    minutes: FloatArray
+    pred: list[int]
+    origin: list[int]
+    via: list[str | None]
+
+    def walk_back(self, node: int) -> list[int]:
+        nodes = [node]
+        while self.pred[nodes[-1]] >= 0:
+            nodes.append(self.pred[nodes[-1]])
+        nodes.reverse()
+        return nodes
+
+
+def travel_tree(net: Network, sources: dict[int, float]) -> TravelTree:
     best = np.full(net.size, np.inf)
-    heap = [(t, n) for n, t in sources.items()]
-    heapq.heapify(heap)
+    pred = [-1] * net.size
+    origin = list(range(net.size))
+    via: list[str | None] = [None] * net.size
     for n, t in sources.items():
         best[n] = min(best[n], t)
+    heap = [(float(best[n]), n) for n in sources]
+    heapq.heapify(heap)
     while heap:
         t, n = heapq.heappop(heap)
         if t > best[n]:
@@ -167,5 +190,16 @@ def travel_minutes(net: Network, sources: dict[int, float]) -> FloatArray:
             nt = t + e.minutes
             if nt < best[e.to]:
                 best[e.to] = nt
+                pred[e.to], origin[e.to], via[e.to] = n, origin[n], e.road
                 heapq.heappush(heap, (nt, e.to))
-    return best
+    return TravelTree(best, pred, origin, via)
+
+
+def travel_minutes(net: Network, sources: dict[int, float]) -> FloatArray:
+    """Fastest time to every node from any source, each starting at its given minute."""
+    return travel_tree(net, sources).minutes
+
+
+def distinct_roads(via: Iterable[str | None]) -> list[str]:
+    """Road ids in first-use order, without repeats."""
+    return list(dict.fromkeys(r for r in via if r is not None))

@@ -9,8 +9,9 @@ from .forecast import forecast
 from .landscape import build_landscape
 from .network import road_network, terrain_network
 from .response import attack_zones
+from .sectors import sector_risks
 from .spread import simulate
-from .wire import Json, PlannerContext, PlannerJobRequest, PlannerResult
+from .wire import Json, PlannerContext, PlannerJobRequest, PlannerResult, Road
 
 
 def plan(job: PlannerJobRequest, ctx: PlannerContext, now: datetime | None = None) -> PlannerResult:
@@ -23,6 +24,7 @@ def plan(job: PlannerJobRequest, ctx: PlannerContext, now: datetime | None = Non
     roads = road_network(ctx.roads, land.grid.frame, land.grid.cell)
     if roads is None:
         land.assumptions.append("roads: none known, so evacuation routes go cross-country")
+    _note_roads(ctx.roads, land.assumptions)
     impacts = civilian_impacts(ctx.civilian_areas, land, spread)
     needs_routes = any(i.severity != "clear" for i in impacts)
     routes = []
@@ -55,7 +57,19 @@ def plan(job: PlannerJobRequest, ctx: PlannerContext, now: datetime | None = Non
         attack_zones=attack_zones(land, spread, roads, ctx.stations, opts.attack_zone_count),
         civilian_impacts=impacts,
         evacuation_routes=routes,
+        sector_risks=sector_risks(ctx, land, spread, opts.sector_size_m),
     )
+
+
+def _note_roads(roads: list[Road], assumptions: list[str]) -> None:
+    for state, effect in (
+        ("blocked", "so no route uses {it}"),
+        ("uncertain", "so routes travel {it} at half speed"),
+    ):
+        named = [f"{r.name} ({r.id})" if r.name else r.id for r in roads if r.state == state]
+        if named:
+            it = "it" if len(named) == 1 else "them"
+            assumptions.append(f"roads: {', '.join(named)} {state}, {effect.format(it=it)}")
 
 
 def run_plan(job: object, context: object) -> Json:

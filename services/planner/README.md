@@ -40,9 +40,14 @@ A run takes well under a second on a laptop.
 | Output             | How                                                                                                                                                                                                                                                                                                                                                       |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `fireSpread`       | Minimum travel time (Dijkstra) over a 16-neighbour grid from every `on_fire` zone and confident detection, each started at its age. Spread rate = fuel base rate × dryness (temperature, humidity) × elliptical wind factor × slope factor. Output: arrival minutes per cell, perimeter isochrones every `bandMin`, the centroid track and the heading. |
-| `attackZones`      | The forecast is a tree (each cell burns from one parent). A cell's value is everything downstream of it, people weighted above forest. Candidates must be reachable from a station (roads, then on foot) 15 min before the fire, and slow fronts beat fast ones. Top-N with a 400 m minimum separation; drop site is the nearest road point.              |
+| `attackZones`      | The forecast is a tree (each cell burns from one parent). A cell's value is everything downstream of it, people weighted above forest. Candidates must be reachable from a station (roads, then on foot) 15 min before the fire, and slow fronts beat fast ones. Top-N with a 400 m minimum separation; drop site is the nearest road point. With stations and roads, `approach` is the fastest road path from the nearest-in-time station (walk-on, then roads) to the drop site: `stationId`, `path`, `roadIds`, `etaMin` and `arrivesFromDeg`, the bearing the crew comes from.              |
 | `civilianImpacts`  | Earliest arrival over each area's cells. `gradient` is 1 for burning now, 0 for not reached in the horizon. Severity: `immediate` ≤ 60 min, `warning` ≤ 120, `watch` later, `clear` never.                                                                                                                                                               |
-| `evacuationRoutes` | For every impacted area, a time-aware search over the road network to the nearest safe zone: a node is passable only if the evacuee reaches it `safetyMarginMin` before the fire, and nodes the fire reaches soon after cost more. No safe zones: road exits at the planning edge. No roads: cross-country over the grid.                                  |
+| `evacuationRoutes` | For every impacted area, a time-aware search over the road network to the nearest safe zone: a node is passable only if the evacuee reaches it `safetyMarginMin` before the fire, and nodes the fire reaches soon after cost more. No safe zones: road exits at the planning edge. No roads: cross-country over the grid. `roadIds` lists the roads a route uses, in order. `alternate` is the same search rerun with every road of the primary removed; null when there is none.                                  |
+| `sectorRisks`      | Square sectors of `sectorSizeM` over the zone boundary, clipped to it and numbered `S1`, `S2`, ... row by row from the north-west. Score = 0.5 × spread potential (fastest head-fire rate across burnable cells under today's weather and slope, against 20 m/min) + 0.3 × ignition (nearness to observed fire, decaying over 1.5 km, floor 0.1) + 0.2 × exposure (civilians within 1.5 km, against 2,000). Bands: low < 0.3, moderate < 0.5, high < 0.7, else extreme. Highest score first, with up to four factual `drivers`. |
+
+Road `state` shapes every route over the network: `blocked` roads are not in the network, so no
+route or approach uses them; `uncertain` roads are travelled at half speed. Each is listed in
+`assumptions`. A context whose roads are all blocked is treated as having no road network.
 
 Missing context degrades rather than fails, and each fallback is listed in `assumptions`: no
 terrain means flat ground, and no fuel map means timber inside the zone, shrub outside and urban in
@@ -51,7 +56,7 @@ what-if.
 
 This is a fast screening model with Rothermel-shaped factors, not a calibrated simulator (no
 spotting, no fuel moisture by time of day, no suppression). Constants are at the top of
-`landscape.py`, `spread.py`, `response.py` and `civilians.py`.
+`landscape.py`, `spread.py`, `response.py`, `civilians.py` and `sectors.py`.
 
 ### Job options (`PlannerJobRequest.options`)
 
@@ -62,12 +67,13 @@ spotting, no fuel moisture by time of day, no suppression). Constants are at the
 | `attackZoneCount`    | 5       |
 | `evacuationDelayMin` | 10      |
 | `safetyMarginMin`    | 15      |
+| `sectorSizeM`        | 1000    |
 
 ## Run
 
 ```
 docker compose up -d redis
-uv run --package ember-planner ember-planner worker          # Windows defaults to --pool solo
+uv run --package ember-planner ember-planner worker          # Windows and macOS default to --pool solo
 uv run --package ember-planner ember-planner orchestrator
 uv run --package ember-planner ember-planner plan context.json --out result.json   # offline, no Redis
 ```

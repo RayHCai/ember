@@ -10,14 +10,16 @@ separation, become the attack zones.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
 import numpy as np
+import shapely
 
-from .grid import FloatArray
+from .grid import FloatArray, Grid, bearing_deg
 from .landscape import Landscape
-from .network import FOOT_SPEED_MPM, Network, mpm, travel_minutes
+from .network import FOOT_SPEED_MPM, Network, TravelTree, distinct_roads, mpm, travel_tree
 from .spread import Spread
-from .wire import AttackZone, ResponderStation
+from .wire import AttackApproach, AttackZone, LatLng, ResponderStation
 
 SETUP_MIN = 15.0
 DIRECT_ATTACK_MAX_MPM = 10.0
@@ -55,7 +57,8 @@ def attack_zones(
         if p >= 0:
             downstream[p] += downstream[c]
 
-    access = _access_minutes(land, roads, stations)
+    crews = _road_crews(g, roads, stations)
+    access = _access_minutes(land, roads, stations, crews)
     lead = (access if access is not None else np.zeros(g.size)) + SETUP_MIN
     rate = spread.rate.ravel()
     burnable = land.base_ros.ravel() > 0
@@ -94,10 +97,11 @@ def attack_zones(
         held = zone_of == k
         protects = [aid for aid, m in land.civilian_masks.items() if (held & m.ravel()).any()]
         drop = (float(gx[c]), float(gy[c]))
+        drop_node = None
         if roads is not None:
-            node, d = roads.nearest(*drop)
+            drop_node, d = roads.nearest(*drop)
             if d <= MAX_DROP_DISTANCE_M:
-                drop = (float(roads.xy[node, 0]), float(roads.xy[node, 1]))
+                drop = (float(roads.xy[drop_node, 0]), float(roads.xy[drop_node, 1]))
         zones.append(
             AttackZone(
                 id=f"attack-{k + 1}",
@@ -113,33 +117,85 @@ def attack_zones(
                 protects=protects,
                 protected_population=round(float(population[held].sum()), 1),
                 protected_area_ha=round(float(held.sum()) * g.cell_ha, 2),
+                approach=_approach(g, roads, crews, drop_node),
             )
         )
     return zones
 
 
+@dataclass(frozen=True)
+class _Crews:
+    tree: TravelTree
+    station_at: dict[int, ResponderStation]
+
+
+def _road_crews(g: Grid, roads: Network | None, stations: list[ResponderStation]) -> _Crews | None:
+    """Fastest road travel from the stations; each walks to its nearest road node first."""
+    if roads is None or not stations:
+        return None
+    sources: dict[int, float] = {}
+    station_at: dict[int, ResponderStation] = {}
+    for s in stations:
+        node, d = roads.nearest(*g.frame.point(s.location))
+        t = d / FOOT_SPEED_MPM
+        if t < sources.get(node, math.inf):
+            sources[node], station_at[node] = t, s
+    return _Crews(travel_tree(roads, sources), station_at)
+
+
 def _access_minutes(
-    land: Landscape, roads: Network | None, stations: list[ResponderStation]
+    land: Landscape,
+    roads: Network | None,
+    stations: list[ResponderStation],
+    crews: _Crews | None,
 ) -> FloatArray | None:
     """Minutes from the nearest station to each cell; None when there are no stations."""
     if not stations:
         return None
     g = land.grid
     gx, gy = g.centers()
-    pts = [g.frame.point(s.location) for s in stations]
-    if roads is None:
+    if roads is None or crews is None:
         best = np.full(g.size, np.inf)
-        for x, y in pts:
+        for st in stations:
+            x, y = g.frame.point(st.location)
             path_m = np.hypot(gx - x, gy - y).ravel() * TORTUOSITY
             best = np.minimum(best, path_m / mpm(OFFROAD_KMH))
         return best
-    sources: dict[int, float] = {}
-    for x, y in pts:
-        node, d = roads.nearest(x, y)
-        sources[node] = min(sources.get(node, math.inf), d / FOOT_SPEED_MPM)
-    node_t = travel_minutes(roads, sources)
     idx, dist = roads.nearest_many(gx, gy)
-    return np.asarray(node_t[idx] + dist / FOOT_SPEED_MPM, dtype=np.float64)
+    return np.asarray(crews.tree.minutes[idx] + dist / FOOT_SPEED_MPM, dtype=np.float64)
+
+
+def _approach(
+    g: Grid, roads: Network | None, crews: _Crews | None, drop_node: int | None
+) -> AttackApproach | None:
+    if roads is None or crews is None or drop_node is None:
+        return None
+    tree = crews.tree
+    eta = float(tree.minutes[drop_node])
+    if not math.isfinite(eta):
+        return None
+    nodes = tree.walk_back(drop_node)
+    station = crews.station_at[tree.origin[drop_node]]
+    pts = np.vstack([[g.frame.point(station.location)], roads.xy[nodes]])
+    pts = shapely.get_coordinates(shapely.LineString(pts).simplify(1.0)) if len(pts) >= 2 else pts
+    path = [g.frame.to_latlng(float(x), float(y)) for x, y in pts]
+    return AttackApproach(
+        station_id=station.id,
+        path=path,
+        road_ids=distinct_roads(tree.via[n] for n in nodes[1:]),
+        eta_min=round(eta, 1),
+        arrives_from_deg=_arrives_from(g, path),
+    )
+
+
+def _arrives_from(g: Grid, path: list[LatLng]) -> float | None:
+    """Bearing from the drop site toward the previous distinct point of the path."""
+    x1, y1 = g.frame.point(path[-1])
+    for p in reversed(path[:-1]):
+        x0, y0 = g.frame.point(p)
+        if (x0, y0) != (x1, y1):
+            return round(bearing_deg(x0 - x1, y0 - y1), 1) % 360.0
+    return None
 
 
 def _held_by(

@@ -144,12 +144,13 @@ function attackZones(): AttackZone[] {
         protects,
         protectedPopulation: pop,
         protectedAreaHa: [86, 41, 23, 64][i]!,
+        approach: null,
     }));
 }
 
 function messages(now: number): ResponderMessage[] {
     const ago = (min: number) => new Date(now - min * 60_000).toISOString();
-    const base = { zoneId: ZONE_ID, from: 'Ops · K. Akana' };
+    const base = { zoneId: ZONE_ID, responderId: null, from: 'Ops · K. Akana' };
     return [
         {
             ...base,
@@ -227,6 +228,7 @@ export function demoBundle(now = Date.now()): ResponderZoneBundle {
                 id: 'r-hwy',
                 name: 'Honoapiilani Hwy',
                 kind: 'primary',
+                state: 'open',
                 path: [-2100, -1400, -700, 0, 700, 1400, 2100].map((n) =>
                     at(-1550 + 220 * Math.sin(n / 700), n),
                 ),
@@ -235,12 +237,14 @@ export function demoBundle(now = Date.now()): ResponderZoneBundle {
                 id: 'r-kuialua',
                 name: 'Kuialua Rd',
                 kind: 'secondary',
+                state: 'open',
                 path: [at(-1500, 300), at(-700, 320), at(-120, 260), at(600, 420), at(1500, 900)],
             },
             {
                 id: 'r-gulch',
                 name: null,
                 kind: 'track',
+                state: 'open',
                 path: [at(-1400, -700), at(-200, -560), at(700, -300), at(1800, -50)],
             },
         ],
@@ -285,6 +289,9 @@ export function demoBundle(now = Date.now()): ResponderZoneBundle {
             windFromDeg: 72,
             temperatureC: 31,
             relativeHumidityPct: 18,
+            windGustMps: 19,
+            redFlagWarning: true,
+            source: 'demo',
         },
         riskZones: [
             {
@@ -339,5 +346,6 @@ export function demoBundle(now = Date.now()): ResponderZoneBundle {
             attackZones: attackZones(),
         },
         messages: messages(now),
+        assignment: null,
     };
 }

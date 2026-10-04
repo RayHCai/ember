@@ -21,6 +21,8 @@ PLANNER_RESULT_PATH = "/v1/planner/jobs/:jobId/result"
 
 FuelType = Literal["none", "grass", "shrub", "timber", "urban"]
 RoadKind = Literal["motorway", "primary", "secondary", "residential", "track"]
+RoadState = Literal["open", "blocked", "uncertain"]
+RiskBand = Literal["low", "moderate", "high", "extreme"]
 ActiveRisk = Literal["at_risk", "on_fire"]
 JobState = Literal["gathering", "planning", "failed"]
 ImpactSeverity = Literal["immediate", "warning", "watch", "clear"]
@@ -51,6 +53,7 @@ class PlannerOptions(Wire):
     attack_zone_count: int = Field(default=5, ge=0, le=50)
     evacuation_delay_min: float = Field(default=10, ge=0)
     safety_margin_min: float = Field(default=15, ge=0)
+    sector_size_m: float = Field(default=1000, gt=0)
 
 
 class PlannerJobRequest(Wire):
@@ -87,6 +90,9 @@ class Weather(Wire):
     wind_from_deg: float
     temperature_c: float | None
     relative_humidity_pct: float | None = Field(ge=0, le=100)
+    wind_gust_mps: float | None = Field(default=None, ge=0)
+    red_flag_warning: bool | None = None
+    source: str = "unknown"
 
 
 class PlannerRiskZone(Wire):
@@ -122,6 +128,7 @@ class Road(Wire):
     name: str | None
     kind: RoadKind
     path: Ring = Field(min_length=2)
+    state: RoadState = "open"
 
 
 class SafeZone(Wire):
@@ -186,6 +193,14 @@ class FireSpreadForecast(Wire):
     max_spread_mpm: float
 
 
+class AttackApproach(Wire):
+    station_id: str
+    path: Ring
+    road_ids: list[str]
+    eta_min: float
+    arrives_from_deg: float | None
+
+
 class AttackZone(Wire):
     id: str
     rank: int
@@ -200,6 +215,7 @@ class AttackZone(Wire):
     protects: list[str]
     protected_population: float
     protected_area_ha: float
+    approach: AttackApproach | None = None
 
 
 class CivilianImpact(Wire):
@@ -217,15 +233,42 @@ class Destination(Wire):
     location: LatLng
 
 
-class EvacuationRoute(Wire):
-    civilian_area_id: str
+class EvacuationPath(Wire):
     status: Literal["clear", "tight", "no_safe_route"]
     path: Ring
     destination: Destination | None
     distance_m: float
     eta_min: float
     clearance_min: float | None
+    road_ids: list[str] = Field(default_factory=list)
+
+
+class EvacuationRoute(EvacuationPath):
+    civilian_area_id: str
     network: Literal["roads", "terrain"]
+    alternate: EvacuationPath | None = None
+
+
+class SectorFactors(Wire):
+    spread_potential: float
+    ignition: float
+    exposure: float
+
+
+class SectorRisk(Wire):
+    id: str
+    number: int
+    polygon: Ring
+    center: LatLng
+    rank: int
+    score: float
+    band: RiskBand
+    factors: SectorFactors
+    dominant_fuel: FuelType
+    mean_slope_deg: float
+    population: float
+    fire_arrival_min: float | None
+    drivers: list[str]
 
 
 class PlannerResult(Wire):
@@ -239,3 +282,4 @@ class PlannerResult(Wire):
     attack_zones: list[AttackZone]
     civilian_impacts: list[CivilianImpact]
     evacuation_routes: list[EvacuationRoute]
+    sector_risks: list[SectorRisk] = Field(default_factory=list)
