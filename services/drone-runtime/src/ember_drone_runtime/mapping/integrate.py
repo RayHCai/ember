@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+from numpy.typing import NDArray
 
 from ..camera import Frame, hit_plane, pixel_rays, sample_at, sample_grid
 from ..geo import FloatArray
@@ -18,9 +19,9 @@ def integrate_frame(
     camera_xyz: FloatArray,
     ground_z: float,
     max_range_m: float,
-) -> int:
+) -> NDArray[np.intp]:
     """Mark what the frame saw. With depth, every sample is a 3D point that also feeds the height
-    map; without depth, rays are cast onto the ground estimate. Returns newly observed cells."""
+    map; without depth, rays are cast onto the ground estimate. Returns the flat cells seen."""
     u, v = sample_grid(frame.camera, SAMPLE_COLS)
     rays = pixel_rays(frame.camera, frame.pose.heading_deg, frame.pose.pitch_deg, u, v)
     depth = frame.images.depth_m
@@ -30,6 +31,8 @@ def integrate_frame(
         pts = camera_xyz + rays[ok] * d[ok, None]
         near = np.hypot(pts[:, 0] - camera_xyz[0], pts[:, 1] - camera_xyz[1]) <= max_range_m
         pts = pts[near]
-        return grid.observe(pts[:, 0], pts[:, 1], pts[:, 2])
+        grid.observe(pts[:, 0], pts[:, 1], pts[:, 2])
+        return grid.flat_cells(pts[:, 0], pts[:, 1])
     pts, hit = hit_plane(camera_xyz, rays, ground_z, max_range_m)
-    return grid.observe(pts[hit, 0], pts[hit, 1], None)
+    grid.observe(pts[hit, 0], pts[hit, 1], None)
+    return grid.flat_cells(pts[hit, 0], pts[hit, 1])

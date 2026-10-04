@@ -30,14 +30,14 @@ class SensorStreamCamera:
         url: str,
         drone_id: str,
         spec: CameraSpec,
-        thermal_width: int = 320,
+        thermal_width: int | None = None,
         timeout_s: float = 15.0,
     ) -> None:
         self.url = url
         self.drone_id = drone_id
         self.spec = spec
         self.sensors = ["rgb", "thermal"]
-        self.thermal_width = thermal_width
+        self.thermal_width = thermal_width or min(320, spec.width_px)
         self.timeout_s = timeout_s
         self._ws: ClientConnection | None = None
         self._ids = itertools.count(1)

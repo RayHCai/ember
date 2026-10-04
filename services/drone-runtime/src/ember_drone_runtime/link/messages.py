@@ -16,6 +16,8 @@ from ..geo import LatLng
 from ..perception.georef import RiskDetection
 
 DRONE_LINK_PATH = "/v1/drone"
+# Mirrors DRONE_INFO_INGEST_PATH in droneInfo.ts; what edge-manager posts reports to.
+DRONE_INFO_INGEST_PATH = "/v1/ingest"
 
 Phase = Literal["takeoff", "mapping", "returning", "landing", "landed"]
 DroneMode = Literal["idle", "patrol", "returning", "landed"]
@@ -68,9 +70,19 @@ class PeerState:
 
 
 @dataclass(frozen=True)
+class PeerEvidence:
+    """Log-odds a drone's own frames added to cells since its last coverage message."""
+
+    cells: tuple[int, ...]
+    on_fire: tuple[float, ...]
+    at_risk: tuple[float, ...]
+
+
+@dataclass(frozen=True)
 class PeerCoverage:
     cells: tuple[int, ...]
     top_m: tuple[float | None, ...]
+    evidence: PeerEvidence | None = None
 
 
 @dataclass(frozen=True)
@@ -166,8 +178,30 @@ def _payload(p: Json) -> PeerState | PeerCoverage:
         return PeerCoverage(
             tuple(cast(list[int], cells)),
             tuple(None if t is None else float(cast(float, t)) for t in tops),
+            None if p.get("evidence") is None else _evidence(p["evidence"]),
         )
     raise LinkError(f"unknown swarm payload kind {kind!r}")
+
+
+def _evidence(value: object) -> PeerEvidence:
+    e = _obj(value, "swarm coverage evidence")
+    cells, on_fire, at_risk = e.get("cells"), e.get("onFire"), e.get("atRisk")
+    if not (
+        isinstance(cells, list)
+        and isinstance(on_fire, list)
+        and isinstance(at_risk, list)
+        and len(cells) == len(on_fire) == len(at_risk)
+    ):
+        raise LinkError("swarm coverage evidence: cells, onFire and atRisk must be equal lists")
+    if not all(isinstance(c, int) and not isinstance(c, bool) for c in cells):
+        raise LinkError("swarm coverage evidence: cells must be integers")
+    if not all(_finite(v) for v in (*on_fire, *at_risk)):
+        raise LinkError("swarm coverage evidence: onFire and atRisk must be numbers")
+    return PeerEvidence(
+        tuple(cast(list[int], cells)),
+        tuple(float(cast(float, v)) for v in on_fire),
+        tuple(float(cast(float, v)) for v in at_risk),
+    )
 
 
 def hello(
@@ -275,6 +309,12 @@ def swarm_coverage(run_id: str, drone_id: str, coverage: PeerCoverage) -> Json:
         "cells": list(coverage.cells),
         "topM": list(coverage.top_m),
     }
+    if coverage.evidence is not None:
+        payload["evidence"] = {
+            "cells": list(coverage.evidence.cells),
+            "onFire": list(coverage.evidence.on_fire),
+            "atRisk": list(coverage.evidence.at_risk),
+        }
     return {"type": "swarm", "runId": run_id, "from": drone_id, "payload": payload}
 
 

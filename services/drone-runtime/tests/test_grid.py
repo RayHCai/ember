@@ -67,7 +67,15 @@ def test_boundary_limits_what_must_be_mapped() -> None:
 def test_risk_marks_cells_under_an_outline() -> None:
     grid = MissionGrid(radius_m=100.0, cell_m=10.0, margin_m=0.0)
     outline = np.array([[0.0, 0.0], [30.0, 0.0], [30.0, 30.0], [0.0, 30.0]])
-    assert grid.mark_risk(outline, "at_risk") == 9
-    grid.mark_risk(outline[:, :] * 0.3, "on_fire")
+    assert grid.cells_under(outline).size == 9
+    grid.mark_risk(grid.cells_under(outline), "at_risk")
+    grid.mark_risk(grid.cells_under(outline * 0.3), "on_fire")
     row, col, _ = grid.cells(np.array([5.0, 25.0]), np.array([5.0, 25.0]))
     assert grid.risk[row, col].tolist() == [2, 1]
+
+
+def test_outline_past_the_grid_edge_keeps_its_cells_inside() -> None:
+    grid = MissionGrid(radius_m=100.0, cell_m=10.0, margin_m=0.0)
+    outline = np.array([[80.0, 80.0], [500.0, 80.0], [500.0, 500.0], [80.0, 500.0]])
+    assert grid.cells_under(outline).size == 4
+    assert grid.cells_under(outline + 1000.0).size == 0

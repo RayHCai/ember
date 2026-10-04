@@ -9,6 +9,7 @@ from ember_drone_runtime.link import messages as wire
 from ember_drone_runtime.link.messages import (
     LinkError,
     PeerCoverage,
+    PeerEvidence,
     PeerState,
     StartMapping,
     StopMapping,
@@ -69,12 +70,23 @@ def test_swarm_messages_round_trip_through_json() -> None:
         "2026-10-03T00:00:00Z", "mapping", (1.0, 2.0, 70.0), (3.0, 0.0, 0.0), (50.0, 60.0), 88.0
     )
     coverage = PeerCoverage((1, 2, 3), (None, 12.5, 0.0))
+    evidence = PeerCoverage((), (), PeerEvidence((4, 9), (2.1, -0.7), (0.0, 1.5)))
     for raw, payload in (
         (wire.swarm_state("run-1", "drone-1", state), state),
         (wire.swarm_coverage("run-1", "drone-1", coverage), coverage),
+        (wire.swarm_coverage("run-1", "drone-1", evidence), evidence),
     ):
         msg = parse_downlink(json.loads(json.dumps(raw)))
         assert msg == SwarmIn("run-1", "drone-1", payload)
+
+
+def test_rejects_evidence_lists_of_different_lengths() -> None:
+    raw = wire.swarm_coverage(
+        "run-1", "drone-1", PeerCoverage((), (), PeerEvidence((4, 9), (2.1, -0.7), (0.0, 1.5)))
+    )
+    raw["payload"]["evidence"]["atRisk"] = [0.0]  # type: ignore[index]
+    with pytest.raises(LinkError, match="evidence"):
+        parse_downlink(raw)
 
 
 def test_uplink_shapes_match_the_contract() -> None:

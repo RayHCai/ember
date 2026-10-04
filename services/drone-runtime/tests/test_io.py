@@ -3,6 +3,8 @@ import base64
 import contextlib
 import io
 import json
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
 import numpy as np
@@ -10,6 +12,7 @@ import pytest
 from ember_drone_runtime.camera import CameraSpec, Pose
 from ember_drone_runtime.flight.simulated import Kinematics, SimulatedFlight
 from ember_drone_runtime.geo import LatLng
+from ember_drone_runtime.link.drone_info import DroneInfoForwarder
 from ember_drone_runtime.link.edge import EdgeLink
 from ember_drone_runtime.link.local import LocalHub
 from ember_drone_runtime.link.messages import Downlink, Json, StartMapping, SwarmIn, Welcome
@@ -191,3 +194,38 @@ def test_sensor_stream_camera_decodes_frames() -> None:
         server.close()
 
     asyncio.run(scenario())
+
+
+def test_forwarder_posts_reports_to_drone_info_like_edge_manager() -> None:
+    batches: list[dict[str, Any]] = []
+
+    class Ingest(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:
+            body = json.loads(self.rfile.read(int(self.headers["content-length"])))
+            batches.append({"path": self.path, **body})
+            out = json.dumps({"accepted": len(body["messages"]), "rejected": 0, "errors": []})
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(out.encode())
+
+        def log_message(self, *args: object) -> None:
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Ingest)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    forwarder = DroneInfoForwarder(f"http://127.0.0.1:{server.server_port}/")
+    forwarder.offer({"type": "telemetry", "droneId": "d1"})
+    forwarder.offer({"type": "swarm", "runId": "r", "from": "d1", "payload": {}})
+    forwarder.offer({"type": "mission_status", "droneId": "d1"})
+    forwarder.offer({"type": "hello", "droneId": "d1"})
+    asyncio.run(forwarder.flush())
+    forwarder.offer({"type": "detections", "droneId": "d1"})
+    asyncio.run(forwarder.flush())
+    asyncio.run(forwarder.flush())
+    server.shutdown()
+    assert [b["path"] for b in batches] == ["/v1/ingest", "/v1/ingest"]
+    assert [[m["type"] for m in b["messages"]] for b in batches] == [
+        ["hello", "telemetry"],
+        ["detections"],
+    ]

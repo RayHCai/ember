@@ -4,7 +4,8 @@ Layout is the contract's (packages/contracts/src/droneLink.ts, `MappingMission`)
 `cols` cells a side centred on the edge server, row 0 south, col 0 west, index `row * cols + col`.
 Heights are 2.5D: the highest point seen in each cell over the ground estimate, which is the
 lowest point seen within a few cells (under closed canopy a cell may never see the forest floor,
-but a gap nearby usually does). Only frames with depth measure heights.
+but a gap nearby usually does). Only frames with depth measure heights. Fire evidence per cell is
+in `evidence.py`.
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from scipy import ndimage
 from ..geo import FloatArray, inside_polygon
 from ..link.messages import PeerCoverage
 from ..perception.detector import RISK_RANK, Risk
+from .evidence import EvidenceGrid, EvidenceParams
 
 # Height changes smaller than this are not worth telling the swarm about.
 HEIGHT_RESEND_M = 1.0
@@ -32,6 +34,7 @@ class MissionGrid:
         cell_m: float,
         margin_m: float,
         boundary_xy: FloatArray | None = None,
+        evidence: EvidenceParams | None = None,
     ) -> None:
         self.radius_m = radius_m
         self.cell_m = cell_m
@@ -53,6 +56,7 @@ class MissionGrid:
         self.top_z = np.full(shape, np.nan)
         self.peer_height = np.full(shape, np.nan)
         self.risk = np.zeros(shape, dtype=np.int8)
+        self.evidence = EvidenceGrid(self.cols * self.cols, evidence or EvidenceParams())
         self._ground: FloatArray | None = None
         self._touched: set[int] = set()
         self._sent_height: dict[int, float] = {}
@@ -64,6 +68,11 @@ class MissionGrid:
         row = np.floor((y - self.x0) / self.cell_m).astype(np.intp)
         ok = (col >= 0) & (col < self.cols) & (row >= 0) & (row < self.cols)
         return np.where(ok, row, 0), np.where(ok, col, 0), ok
+
+    def flat_cells(self, x: FloatArray, y: FloatArray) -> NDArray[np.intp]:
+        """Distinct flat indices of the cells under these points, inside the grid."""
+        row, col, ok = self.cells(x, y)
+        return np.unique(row[ok] * self.cols + col[ok])
 
     def observe(self, x: FloatArray, y: FloatArray, z: FloatArray | None) -> int:
         """Mark cells under these points seen; measured z also feeds the height map. New cells."""
@@ -100,6 +109,8 @@ class MissionGrid:
 
     def merge(self, coverage: PeerCoverage) -> None:
         n = self.cols * self.cols
+        if coverage.evidence is not None:
+            self.evidence.merge(coverage.evidence)
         for i, h in zip(coverage.cells, coverage.top_m, strict=True):
             if not 0 <= i < n:
                 continue
@@ -110,9 +121,11 @@ class MissionGrid:
             self._sent_height.setdefault(i, float("nan") if h is None else h)
 
     def take_fresh(self) -> PeerCoverage | None:
-        """Cells to tell the swarm about: newly seen, or with a height that changed."""
+        """Cells to tell the swarm about (newly seen, or with a height that changed) and the fire
+        evidence this drone added since the last call."""
+        evidence = self.evidence.take_fresh()
         if not self._touched:
-            return None
+            return None if evidence is None else PeerCoverage((), (), evidence)
         h = self.heights()
         cells: list[int] = []
         tops: list[float | None] = []
@@ -129,7 +142,9 @@ class MissionGrid:
             tops.append(round(height, 1) if known else None)
             self._sent_height[i] = height
         self._touched.clear()
-        return PeerCoverage(tuple(cells), tuple(tops)) if cells else None
+        if not cells and evidence is None:
+            return None
+        return PeerCoverage(tuple(cells), tuple(tops), evidence)
 
     def coverage(self) -> float:
         return float((self.observed & self.target).sum()) / self.target_count
@@ -141,21 +156,20 @@ class MissionGrid:
         g = self.ground()[row[0], col[0]]
         return 0.0 if math.isnan(g) else float(g)
 
-    def mark_risk(self, outline_xy: FloatArray, risk: Risk) -> int:
-        """Raise the risk of cells under a ground outline. Cells touched."""
-        lo, hi = outline_xy.min(axis=0), outline_xy.max(axis=0)
-        r0, c0, _ = self.cells(np.array([lo[0]]), np.array([lo[1]]))
-        r1, c1, _ = self.cells(np.array([hi[0]]), np.array([hi[1]]))
-        rows = slice(max(0, int(r0[0])), min(self.cols, int(r1[0]) + 1))
-        cols = slice(max(0, int(c0[0])), min(self.cols, int(c1[0]) + 1))
+    def cells_under(self, outline_xy: FloatArray) -> NDArray[np.intp]:
+        """Flat indices of the cells whose centres fall inside a ground outline, or of the cell
+        under its centre when it is smaller than a cell; empty off the grid."""
+        lo = np.floor((outline_xy.min(axis=0) - self.x0) / self.cell_m).astype(int)
+        hi = np.floor((outline_xy.max(axis=0) - self.x0) / self.cell_m).astype(int)
+        rows = slice(max(0, int(lo[1])), max(0, min(self.cols, int(hi[1]) + 1)))
+        cols = slice(max(0, int(lo[0])), max(0, min(self.cols, int(hi[0]) + 1)))
         inside = inside_polygon(self.cx[rows, cols], self.cy[rows, cols], outline_xy)
-        if not inside.any():
-            centre = outline_xy.mean(axis=0)
-            r, c, ok = self.cells(np.array([centre[0]]), np.array([centre[1]]))
-            if not ok[0]:
-                return 0
-            rows, cols = slice(int(r[0]), int(r[0]) + 1), slice(int(c[0]), int(c[0]) + 1)
-            inside = np.ones((1, 1), dtype=bool)
-        block = self.risk[rows, cols]
-        block[inside] = np.maximum(block[inside], RISK_RANK[risk])
-        return int(inside.sum())
+        if inside.any():
+            rr, cc = np.nonzero(inside)
+            return (rr + rows.start) * self.cols + cc + cols.start
+        centre = outline_xy.mean(axis=0)
+        return self.flat_cells(np.array([centre[0]]), np.array([centre[1]]))
+
+    def mark_risk(self, cells: NDArray[np.intp], risk: Risk) -> None:
+        """Raise the risk of these flat cells to at least `risk`."""
+        self.risk.flat[cells] = np.maximum(self.risk.flat[cells], RISK_RANK[risk])

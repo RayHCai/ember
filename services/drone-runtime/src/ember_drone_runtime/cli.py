@@ -22,8 +22,9 @@ from .sensors.sensor_stream import SensorStreamCamera
 from .sensors.synthetic import SyntheticCamera, demo_world
 from .swarm_sim import ScaledClock, run_swarm
 
-# Lahaina, inside Demo Data's coverage, so the sensor-stream camera works out of the box.
-DEFAULT_CENTER = "20.8790,-156.6760"
+# Lahaina, on the path the fire takes west from the Kuialua St rekindle (14:52 HST), inside Demo
+# Data's coverage, so the sensor-stream camera sees fire within minutes of the clock starting.
+DEFAULT_CENTER = "20.8838,-156.6670"
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -46,7 +47,17 @@ def main(argv: list[str] | None = None) -> None:
     sim.add_argument("--drones", type=int, default=3)
     sim.add_argument("--center", default=DEFAULT_CENTER, help="lat,lng of the edge server")
     sim.add_argument("--radius", type=float, default=300.0, help="connectivity radius in metres")
-    sim.add_argument("--time-scale", type=float, default=5.0)
+    sim.add_argument(
+        "--time-scale",
+        type=float,
+        default=None,
+        help="flight speed against the wall clock; default 5, or 1 with --drone-info",
+    )
+    sim.add_argument(
+        "--drone-info",
+        default=os.environ.get("EMBER_DRONE_INFO_URL"),
+        help="post what drones report to this drone-info (e.g. http://localhost:4002), for viewers",
+    )
     sim.add_argument(
         "--timeout", type=float, default=900.0, help="simulated seconds before giving up"
     )
@@ -68,7 +79,12 @@ def main(argv: list[str] | None = None) -> None:
 
 
 def _sensor_args(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--camera", choices=["synthetic", "sensor-stream"], default="synthetic")
+    p.add_argument(
+        "--camera",
+        choices=["synthetic", "sensor-stream"],
+        default=None,
+        help="default synthetic; with --drone-info sensor-stream, the world viewers draw",
+    )
     p.add_argument(
         "--sensor-url",
         default=os.environ.get("EMBER_SENSOR_URL", "ws://localhost:8090/v1/stream"),
@@ -117,15 +133,18 @@ async def _run(args: argparse.Namespace) -> None:
         params,
         clock=clock,
         control_period_s=0.1 / args.time_scale,
+        frame_period_s=0.5 / args.time_scale,
     )
     await runtime.run()
 
 
 async def _swarm_sim(args: argparse.Namespace) -> None:
     center = _latlng(args.center)
-    world = None
-    if args.camera == "synthetic":
-        world = demo_world(center, args.radius)
+    watched = bool(args.drone_info)
+    camera = args.camera or ("sensor-stream" if watched else "synthetic")
+    if watched and camera == "synthetic":
+        print("note: viewers draw Demo Data's world; synthetic fires will not line up with it")
+    world = demo_world(center, args.radius) if camera == "synthetic" else None
 
     def make_camera(drone_id: str, spec: CameraSpec) -> Camera:
         if world is not None:
@@ -138,9 +157,10 @@ async def _swarm_sim(args: argparse.Namespace) -> None:
         args.radius,
         make_camera,
         make_detector(args.detector, args.yolo_model),
-        time_scale=args.time_scale,
+        time_scale=args.time_scale or (1.0 if watched else 5.0),
         timeout_s=args.timeout,
         progress=print,
+        drone_info_url=args.drone_info,
     )
     print(
         f"{'all landed' if report.landed else 'timed out'} after {report.sim_seconds:.0f} s: "

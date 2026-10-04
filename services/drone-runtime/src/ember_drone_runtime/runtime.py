@@ -75,6 +75,7 @@ class DroneRuntime:
         control_period_s: float = 0.1,
         telemetry_period_s: float = 0.5,
         swarm_period_s: float = 0.25,
+        frame_period_s: float = 0.5,
     ) -> None:
         self.identity = identity
         self.link = link
@@ -86,6 +87,8 @@ class DroneRuntime:
         self.control_period_s = control_period_s
         self.telemetry_period_s = telemetry_period_s
         self.swarm_period_s = swarm_period_s
+        # Frames at most this often: an on-board detector's pace, and a sensor stream's load.
+        self.frame_period_s = frame_period_s
         self.brain: MissionBrain | None = None
         self.frame_id = 0
         self._vehicle: VehicleState | None = None
@@ -165,6 +168,7 @@ class DroneRuntime:
             if pose.alt_m < MIN_CAPTURE_ALT_M:
                 await asyncio.sleep(0.2)
                 continue
+            started = time.monotonic()
             try:
                 images = await self.camera.capture(pose)
             except CameraError as exc:
@@ -190,6 +194,7 @@ class DroneRuntime:
                     risks,
                 )
             )
+            await asyncio.sleep(max(0.0, self.frame_period_s - (time.monotonic() - started)))
 
     async def _telemetry_loop(self) -> None:
         ticks = 0

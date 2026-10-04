@@ -1,4 +1,4 @@
-"""Risk detectors: anything that turns a camera frame into risk boxes in image pixels."""
+"""Risk detectors: anything that turns a camera frame into risk regions in image pixels."""
 
 from __future__ import annotations
 
@@ -12,15 +12,20 @@ from ..camera import Frame
 Risk = Literal["at_risk", "on_fire"]
 RISK_RANK: dict[Risk, int] = {"at_risk": 1, "on_fire": 2}
 
+Box = tuple[float, float, float, float]
+Outline = tuple[tuple[float, float], ...]
+
 
 @dataclass(frozen=True)
 class Detection2D:
     risk: Risk
     confidence: float
-    # [x0, y0, x1, y1] in the frame's RGB pixels, origin top-left.
-    bbox: tuple[float, float, float, float]
+    # [x0, y0, x1, y1] in camera pixels (`frame.camera`), origin top-left.
+    bbox: Box
     label: str
     peak_temp_k: float | None = None
+    # The region's outline in camera pixels, clockwise from its top-left point; None: the box.
+    outline: Outline | None = None
 
 
 class Detector(Protocol):
@@ -29,7 +34,7 @@ class Detector(Protocol):
     def detect(self, frame: Frame) -> list[Detection2D]: ...
 
 
-def iou(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> float:
+def iou(a: Box, b: Box) -> float:
     ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
     iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
     inter = ix * iy
@@ -38,7 +43,9 @@ def iou(a: tuple[float, float, float, float], b: tuple[float, float, float, floa
 
 
 class FusedDetector:
-    """Runs several detectors and merges boxes of the same risk that overlap."""
+    """Runs several detectors and merges regions of the same risk that overlap, so one fire is one
+    region. Confidences combine as independent evidence; the outline is the most confident one's.
+    Accumulation across frames happens in the mission grid (`mapping/evidence.py`)."""
 
     def __init__(self, detectors: list[Detector], merge_iou: float = 0.4) -> None:
         self.detectors = detectors
@@ -75,6 +82,7 @@ class FusedDetector:
                 box,
                 k.label,
                 max(temps) if temps else None,
+                k.outline if k.outline is not None else d.outline,
             )
         return kept
 

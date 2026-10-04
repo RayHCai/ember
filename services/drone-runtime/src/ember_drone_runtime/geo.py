@@ -74,3 +74,15 @@ def inside_polygon(x: FloatArray, y: FloatArray, polygon: FloatArray) -> NDArray
 def polygon_area(polygon: FloatArray) -> float:
     x, y = polygon[:, 0], polygon[:, 1]
     return 0.5 * abs(float(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))))
+
+
+def polygon_centroid(polygon: FloatArray) -> FloatArray:
+    """Area centroid of one ring; the vertex mean when the ring has no area."""
+    x, y = polygon[:, 0], polygon[:, 1]
+    xn, yn = np.roll(x, -1), np.roll(y, -1)
+    cross = x * yn - xn * y
+    area = cross.sum() / 2
+    if abs(area) < 1e-9:
+        mean: FloatArray = polygon.mean(axis=0)
+        return mean
+    return np.array([((x + xn) * cross).sum() / (6 * area), ((y + yn) * cross).sum() / (6 * area)])

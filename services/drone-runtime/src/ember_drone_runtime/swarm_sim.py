@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from .camera import CameraSpec
 from .flight.simulated import Kinematics, SimulatedFlight
 from .geo import LatLng, LocalFrame
+from .link.drone_info import DroneInfoForwarder
 from .link.local import LocalHub
 from .link.messages import Json
 from .mission import FlightParams
@@ -74,9 +75,13 @@ async def run_swarm(
     timeout_s: float = 600.0,
     spec: CameraSpec = SIM_CAMERA,
     progress: Callable[[str], None] | None = None,
+    drone_info_url: str | None = None,
 ) -> SimReport:
+    """Fly one run to the end. With `drone_info_url`, the in-process edge also posts what drones
+    report to that drone-info, as edge-manager does, so viewers can watch."""
     clock = ScaledClock(time_scale)
     hub = LocalHub()
+    forwarder = DroneInfoForwarder(drone_info_url) if drone_info_url else None
     local = LocalFrame(center)
     ids = [f"sim-{i + 1}" for i in range(drones)]
     params = FlightParams()
@@ -101,11 +106,14 @@ async def run_swarm(
             control_period_s=0.1 / time_scale,
             telemetry_period_s=max(0.05, 0.5 / time_scale),
             swarm_period_s=max(0.02, 0.25 / time_scale),
+            frame_period_s=0.5 / time_scale,
         )
         tasks.append(asyncio.create_task(runtime.run()))
 
     def watch(drone_id: str, msg: Json) -> None:
         nonlocal min_sep
+        if forwarder is not None:
+            forwarder.offer(msg)
         if msg["type"] != "telemetry":
             return
         mine = _xyz(local, msg)
@@ -117,6 +125,8 @@ async def run_swarm(
                 min_sep = min(min_sep, math.hypot(*gap))
 
     hub.on_uplink = watch
+    if forwarder is not None:
+        tasks.append(asyncio.create_task(forwarder.run()))
     await asyncio.sleep(0.2)
     hub.start_mapping(mission_json(center, radius_m, ids))
     started = clock()
@@ -141,6 +151,8 @@ async def run_swarm(
         for t in tasks:
             with contextlib.suppress(asyncio.CancelledError):
                 await t
+        if forwarder is not None:
+            await forwarder.flush()
     coverage = max((_num(s["coverage"]) for s in hub.status.values()), default=0.0)
     return SimReport(landed, clock() - started, coverage, _risky(hub), min_sep, dict(hub.status))
 

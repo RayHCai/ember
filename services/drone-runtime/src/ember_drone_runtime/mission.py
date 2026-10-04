@@ -8,7 +8,7 @@ lockstep.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 import numpy as np
@@ -17,6 +17,7 @@ from .camera import CameraSpec, Frame, Pose
 from .flight import VehicleState
 from .geo import FloatArray, LocalFrame
 from .link.messages import Mission, PeerCoverage, PeerState, Phase, SwarmIn, now_iso
+from .mapping.evidence import EvidenceParams
 from .mapping.grid import MissionGrid
 from .mapping.integrate import integrate_frame
 from .nav.avoid import avoid, contain
@@ -50,6 +51,7 @@ class FlightParams:
     battery_reserve_pct: float = 15.0
     gimbal_pitch_deg: float = -90.0
     waypoint_tolerance_m: float = 8.0
+    evidence: EvidenceParams = field(default_factory=EvidenceParams)
 
 
 @dataclass(frozen=True)
@@ -74,7 +76,11 @@ class MissionBrain:
             else np.array([self.local.point(q) for q in mission.boundary])
         )
         self.grid = MissionGrid(
-            mission.connectivity_radius_m, mission.cell_size_m, params.geofence_margin_m, boundary
+            mission.connectivity_radius_m,
+            mission.cell_size_m,
+            params.geofence_margin_m,
+            boundary,
+            params.evidence,
         )
         self.terrain = Terrain(self.grid, params.clearance_m, params.unknown_height_m)
         members = sorted(set(mission.swarm) | {drone_id})
@@ -113,11 +119,13 @@ class MissionBrain:
             self.grid.merge(msg.payload)
 
     def on_frame(self, frame: Frame, found: list[Detection2D]) -> list[RiskDetection]:
+        """Fold a frame and its detections into the grid. Returns the confirmed detections, each
+        with its cells' posterior as confidence."""
         x, y = self.local.point_xy(frame.pose.lat, frame.pose.lng)
         ground = self.grid.ground_at(x, y)
         cam = np.array([x, y, ground + frame.pose.alt_m])
-        integrate_frame(self.grid, frame, cam, ground, self.p.map_range_m)
-        risks = [
+        seen = integrate_frame(self.grid, frame, cam, ground, self.p.map_range_m)
+        located = [
             georeference(
                 d,
                 f"{self.drone_id}-{frame.frame_id}-{i}",
@@ -129,8 +137,18 @@ class MissionBrain:
             )
             for i, d in enumerate(found)
         ]
-        for r in risks:
-            self.grid.mark_risk(r.outline_xy, r.risk)
+        under = [self.grid.cells_under(r.outline_xy) for r in located]
+        evidence = self.grid.evidence
+        evidence.update(
+            seen, [(r.risk, cells, r.confidence) for r, cells in zip(located, under, strict=True)]
+        )
+        risks = []
+        for r, cells in zip(located, under, strict=True):
+            p = evidence.posterior(r.risk, cells, r.confidence)
+            if p < self.p.evidence.confirm:
+                continue
+            risks.append(replace(r, confidence=p))
+            self.grid.mark_risk(cells, r.risk)
         self.detections_total += len(risks)
         return risks
 
