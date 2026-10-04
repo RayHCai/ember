@@ -13,7 +13,7 @@ flies back to where it took off and lands.
   only the one named by `--edge-id`. It prefers the announcement's IPv4 address.
 - **Edge link:** a WebSocket to the edge-connector at `/v1/drone`, with the shapes in
   `packages/contracts/src/droneLink.ts` (`link/messages.py` mirrors them).
-  - Up: `hello` on every connect, then `telemetry`, `detections` (as in `droneInfo.ts`),
+  - Up: `hello` on every connect, then `telemetry` at 10 Hz, `detections` (as in `droneInfo.ts`),
     `mission_status` and `swarm`.
   - Down: `welcome`, `start_mapping`, `stop_mapping`, and `swarm` messages relayed from the other
     drones of the run.
@@ -40,9 +40,11 @@ flies back to where it took off and lands.
 
 ## Detection
 
-`--detector auto` (default) runs YOLO when a model is configured, fused with the thermal baseline;
-otherwise the baseline runs alone. Each detection is a region with an outline in camera pixels,
-traced along pixel edges (`perception/outline.py`, at most 32 points, clockwise from its top-left).
+`--detector auto` (default) runs YOLO fused with the thermal baseline, so RGB finds flame, smoke and
+burned ground thermal misses. The model is `EMBER_YOLO_MODEL`, else the repo's
+`data/fire-seg/models/fire-seg-v1.onnx` when installed from a checkout; with neither, the baseline
+runs alone. `--detector heuristic` forces the baseline. Each detection is a region with an outline
+in camera pixels, traced along pixel edges (`perception/outline.py`, at most 32 points, clockwise from its top-left).
 Without a mask the outline is the box.
 
 - **Baseline** (`perception/heuristic.py`):
@@ -61,8 +63,8 @@ Without a mask the outline is the box.
   - Segmentation exports give each region a mask, decoded exactly as Ultralytics does. Its outline
     is what gets georeferenced, and the confidence is the class score times the mean mask
     probability inside it. Detection exports give boxes.
-  - Install with `uv sync --all-packages --extra yolo` and point `EMBER_YOLO_MODEL` (or
-    `--yolo-model`) at the `.onnx`.
+  - `EMBER_YOLO_MODEL` (or `--yolo-model`) points at another `.onnx`; compose mounts the repo's
+    models at `/models`.
 - **Fusion** (`FusedDetector`): within a frame, overlapping regions of one risk merge. Their
   confidences combine as independent evidence, and the most confident region's outline is kept.
 
@@ -140,8 +142,9 @@ through a whole Pi 5 deployment.
 | `EMBER_DRONE_ID` | `drone-1` | Drone id sent in `hello` |
 | `EMBER_EDGE_URL` | `auto` | Edge-connector link, or `auto` to find one over mDNS |
 | `EMBER_EDGE_ID` | unset | With `auto`, connect only to this edge server id |
+| `EMBER_DRONE_HOME` | `20.8838,-156.6670` | `lat,lng` the simulated drone takes off from (`--home`) |
 | `EMBER_SENSOR_URL` | `ws://localhost:8090/v1/stream` | Sensor stream for `--camera sensor-stream` |
-| `EMBER_YOLO_MODEL` | unset | ONNX model; enables YOLO under `--detector auto` |
+| `EMBER_YOLO_MODEL` | the checkout's `fire-seg-v1.onnx` | ONNX model YOLO runs under `--detector auto` |
 | `EMBER_DRONE_INFO_URL` | unset | `swarm-sim --drone-info`: post reports to drone-info for viewers |
 
 `swarm-sim` centres on the fire's path west of the Kuialua St rekindle (20.8838, -156.6670) unless

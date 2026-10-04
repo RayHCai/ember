@@ -600,27 +600,22 @@ version = "0.0.0"
 source = { editable = "services/drone-runtime" }
 dependencies = [
     { name = "numpy" },
+    { name = "onnxruntime" },
     { name = "pillow" },
     { name = "scipy" },
     { name = "websockets" },
     { name = "zeroconf" },
 ]
 
-[package.optional-dependencies]
-yolo = [
-    { name = "onnxruntime" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=2.0" },
-    { name = "onnxruntime", marker = "extra == 'yolo'", specifier = ">=1.18" },
+    { name = "onnxruntime", specifier = ">=1.18" },
     { name = "pillow", specifier = ">=10.4" },
     { name = "scipy", specifier = ">=1.13" },
     { name = "websockets", specifier = ">=13" },
     { name = "zeroconf", specifier = ">=0.136" },
 ]
-provides-extras = ["yolo"]
 
 [[package]]
 name = "ember-fire-seg"

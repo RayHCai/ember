@@ -39,6 +39,7 @@ MODE: dict[Phase, DroneMode] = {
 }
 # Below this a simulated camera has nothing useful to show and Demo Data rejects the pose.
 MIN_CAPTURE_ALT_M = 5.0
+MISSION_STATUS_PERIOD_S = 1.0
 
 
 @dataclass(frozen=True)
@@ -73,7 +74,7 @@ class DroneRuntime:
         params: FlightParams | None = None,
         clock: Callable[[], float] = time.monotonic,
         control_period_s: float = 0.1,
-        telemetry_period_s: float = 0.5,
+        telemetry_period_s: float = 0.1,
         swarm_period_s: float = 0.25,
         frame_period_s: float = 0.5,
     ) -> None:
@@ -197,12 +198,22 @@ class DroneRuntime:
             await asyncio.sleep(max(0.0, self.frame_period_s - (time.monotonic() - started)))
 
     async def _telemetry_loop(self) -> None:
+        loop = asyncio.get_running_loop()
+        status_every = max(1, round(MISSION_STATUS_PERIOD_S / self.telemetry_period_s))
         ticks = 0
+        due = loop.time()
         while True:
-            await asyncio.sleep(self.telemetry_period_s)
-            vs = self._vehicle
-            if vs is None:
+            # A fixed schedule, not a sleep after each send: viewers interpolate between messages
+            # and see any drift in their spacing as the drone speeding up and slowing down.
+            due += self.telemetry_period_s
+            now = loop.time()
+            if due < now:
+                due = now
+            await asyncio.sleep(due - now)
+            if self._vehicle is None:
                 continue
+            # Read now rather than the control loop's copy, so the pose is the one at `sentAt`.
+            vs = await self.flight.state()
             brain = self.brain
             if brain is not None:
                 pose = brain.wire_pose(vs)
@@ -224,7 +235,7 @@ class DroneRuntime:
                 )
             )
             ticks += 1
-            if brain is not None and ticks % 2 == 0:
+            if brain is not None and ticks % status_every == 0:
                 await self.link.send(
                     wire.mission_status(
                         self.identity.drone_id,

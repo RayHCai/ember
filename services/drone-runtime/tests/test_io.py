@@ -233,6 +233,32 @@ def test_sensor_stream_camera_decodes_frames() -> None:
     asyncio.run(scenario())
 
 
+def test_sensor_stream_camera_closes_a_socket_that_timed_out() -> None:
+    opened: list[ServerConnection] = []
+    closed = asyncio.Event()
+
+    async def silent(ws: ServerConnection) -> None:
+        opened.append(ws)
+        with contextlib.suppress(Exception):
+            async for _ in ws:
+                pass
+        closed.set()
+
+    async def scenario() -> None:
+        server, url = await _serve(silent)
+        camera = SensorStreamCamera(url, "drone-1", CameraSpec(64, 48, 84.0), timeout_s=0.2)
+        pose = Pose(EDGE.lat, EDGE.lng, 60.0, 0.0, -90.0)
+        with pytest.raises(CameraError, match="no observation in time"):
+            await camera.capture(pose)
+        await asyncio.wait_for(closed.wait(), 2.0)
+        with pytest.raises(CameraError):
+            await camera.capture(pose)
+        assert len(opened) == 2
+        server.close()
+
+    asyncio.run(scenario())
+
+
 def test_forwarder_posts_reports_to_drone_info_like_edge_manager() -> None:
     batches: list[dict[str, Any]] = []
 

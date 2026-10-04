@@ -28,8 +28,12 @@ fire at 98 %.
 - [x] Evidence shared across drones in `swarm` coverage payloads (`evidence`, optional)
 - [x] Contracts: `RiskDetection` docs (droneInfo.ts), `SwarmCoverage.evidence` (droneLink.ts),
       mirrored in `link/messages.py`
-- [ ] Download FLAME, D-Fire and a Roboflow set; stage, assemble, train on the Mac Mini (Ray)
-- [ ] Copy the ONNX to the drone, set `EMBER_YOLO_MODEL`, time it on a Pi 5 against 2 Hz
+- [x] Download D-Fire and a Roboflow set; stage, assemble, train on the Mac Mini (Ray): fire-seg-v1,
+      5 of 50 epochs, committed under `data/fire-seg/models/`
+- [x] drone-runtime runs fire-seg-v1 by default: onnxruntime is a core dependency, `--detector auto`
+      finds the checkout's model, compose mounts it into drone-fleet
+- [ ] Time fire-seg-v1 on a Pi 5 against 2 Hz
+- [ ] Train longer (FLAME for the test split if it becomes available)
 - [ ] Tune `EvidenceParams` against Demo Data runs once a trained model exists
 - [ ] Optional: add a smoke label to Demo Data so its plumes stop counting as background
 
@@ -51,6 +55,9 @@ fire at 98 %.
   region per fire; the grid does the cross-frame part.
 - fire-seg evaluates through `ember-drone-runtime`'s own `YoloDetector` (a workspace dependency)
   so the score is for exactly what ships, including letterbox and mask decoding.
+- The released model is committed (`data/fire-seg/models/*.onnx`, 11 MB) so every checkout, Pi
+  and compose stack runs YOLO with no setup. onnxruntime is a core drone-runtime dependency for the
+  same reason; it has wheels for aarch64.
 - Training dependencies (ultralytics, torch) are the `train` extra, which neither CI nor a plain
   `uv sync` installs. `opencv-python` is overridden away in favour of the headless build Demo Data
   already uses, so both never land in one environment.
@@ -71,3 +78,8 @@ fire at 98 %.
 
     Next: on the Mac, `uv sync --package ember-fire-seg --extra train`, then `fire-seg smoke`, stage
     sources, assemble and train (tools/fire-seg/README.md).
+
+- 2026-10-04: fire-seg-v1 trained (flame mask IoU 0.688 vs the colour baseline's 0.509, smoke
+  0.781) and made the default detector. On 14 live Demo Data frames it found flame in every frame
+  the RGB baseline did except one oblique shot, and nothing in fire-free frames; 77 ms a frame on a
+  Windows laptop CPU. It reported no smoke on Demo Data's hazy frames.

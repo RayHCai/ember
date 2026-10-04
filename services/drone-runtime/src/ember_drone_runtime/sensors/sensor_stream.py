@@ -47,7 +47,9 @@ class SensorStreamCamera:
         if self._ws is not None:
             return self._ws
         try:
-            ws = await connect(self.url, open_timeout=self.timeout_s, max_size=32 * 2**20)
+            ws = await connect(
+                self.url, open_timeout=self.timeout_s, close_timeout=1.0, max_size=32 * 2**20
+            )
         except (OSError, WebSocketException, TimeoutError) as exc:
             raise CameraError(f"sensor stream {self.url}: {exc}") from exc
         await ws.send(
@@ -99,8 +101,11 @@ class SensorStreamCamera:
                 elif kind == "observation" and reply.get("request_id") == request_id:
                     return self._images(reply)
         except (WebSocketException, OSError, TimeoutError) as exc:
+            # Closed, not just dropped: the server renders for every open socket's pending pose.
             self._ws = None
-            raise CameraError(f"sensor stream {self.url}: {exc}") from exc
+            await ws.close()
+            why = str(exc) or "no observation in time"
+            raise CameraError(f"sensor stream {self.url}: {why}") from exc
         except (KeyError, ValueError) as exc:
             raise CameraError(f"sensor stream {self.url}: bad observation: {exc}") from exc
 

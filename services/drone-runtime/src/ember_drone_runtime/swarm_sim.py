@@ -102,7 +102,7 @@ async def run_swarm(
             params,
             clock=clock,
             control_period_s=0.1 / time_scale,
-            telemetry_period_s=max(0.05, 0.5 / time_scale),
+            telemetry_period_s=max(0.05, min(0.1, 0.5 / time_scale)),
             swarm_period_s=max(0.02, 0.25 / time_scale),
             frame_period_s=0.5 / time_scale,
         )

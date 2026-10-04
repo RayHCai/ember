@@ -5,7 +5,12 @@ import numpy as np
 import pytest
 from ember_drone_runtime.camera import CameraSpec, Frame, Images, Pose
 from ember_drone_runtime.geo import LatLng, LocalFrame, polygon_area
-from ember_drone_runtime.perception import FusedDetector, HeuristicDetector
+from ember_drone_runtime.perception import (
+    FusedDetector,
+    HeuristicDetector,
+    bundled_model,
+    make_detector,
+)
 from ember_drone_runtime.perception.detector import Detection2D
 from ember_drone_runtime.perception.georef import georeference
 from ember_drone_runtime.perception.outline import components, outline, simplify, trace
@@ -79,6 +84,18 @@ def test_fused_detector_merges_overlapping_boxes_of_one_risk() -> None:
     assert math.isclose(fire[0].confidence, 0.8)
     # The more confident member has no outline, so the other's is kept.
     assert fire[0].outline == ring
+
+
+@pytest.mark.skipif(bundled_model() is None, reason="not running from a checkout")
+def test_auto_runs_the_bundled_model_beside_the_thermal_baseline() -> None:
+    assert make_detector("auto", None).name == "yolo:fire-seg-v1+heuristic"
+    assert make_detector("heuristic", None).name == "heuristic"
+    detector = make_detector("yolo", None)
+    assert isinstance(detector, FusedDetector)
+    yolo = detector.detectors[0]
+    assert isinstance(yolo, YoloDetector)
+    assert yolo.risks == ["on_fire", "at_risk", "at_risk"]
+    assert yolo.detect(frame(Images(green()))) == []
 
 
 @pytest.mark.parametrize(

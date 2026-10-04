@@ -9,10 +9,8 @@ dependencies = [
   "pillow>=10.4",
   "websockets>=13",
   "zeroconf>=0.136",
+  "onnxruntime>=1.18",
 ]
-
-[project.optional-dependencies]
-yolo = ["onnxruntime>=1.18"]
 
 [project.scripts]
 drone-runtime = "ember_drone_runtime.cli:main"

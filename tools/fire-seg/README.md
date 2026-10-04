@@ -2,10 +2,12 @@
 
 Builds the fire segmentation dataset and trains the drone's RGB model: YOLO11n-seg with three
 classes, `flame`, `smoke` and `burned`. It then exports the model to ONNX and scores it the way the
-drone runs it. drone-runtime loads the ONNX through `EMBER_YOLO_MODEL`. Thermal stays the main
-flame signal; this model adds smoke, burned ground and flames thermal misses.
+drone runs it. drone-runtime loads `data/fire-seg/models/fire-seg-v1.onnx` by default, or the ONNX
+at `EMBER_YOLO_MODEL`. Thermal stays the main flame signal; this model adds smoke, burned ground
+and flames thermal misses.
 
-Weights never go in git (`*.onnx` and `*.pt` are ignored). Everything lives under the data root:
+Weights stay out of git (`*.onnx` and `*.pt` are ignored), except released exports in
+`data/fire-seg/models/`, which drones load by default. Everything lives under the data root:
 `data/fire-seg/` by default, or `EMBER_FIRE_SEG_DIR`, or `--root`.
 
 ## Pipeline
@@ -52,9 +54,9 @@ caffeinate -i uv run --package ember-fire-seg fire-seg train --name fire-seg-v1
 data/fire-seg/runs/fire-seg-v1/weights/last.pt` continues a stopped run. Before trusting MPS, time
 the first epoch and multiply out. If the loss goes NaN on MPS, rerun with `--device cpu` to compare.
 
-Then copy `data/fire-seg/models/fire-seg-v1.onnx` to the drone, install the runtime with `uv sync
---all-packages --extra yolo` and set `EMBER_YOLO_MODEL` to the file. Keep the `.json` model card
-beside it: it says which commit, dataset version and scores produced it.
+To release a model, commit its `.onnx` and `.json` model card under `data/fire-seg/models/`; the
+card says which commit, dataset version and scores produced it. drone-runtime picks up
+`fire-seg-v1.onnx` from a checkout; to run another, set `EMBER_YOLO_MODEL` to its file.
 
 To time the model on a Pi 5 against the drone's 2 Hz frame budget: `uv sync --package
 ember-fire-seg --extra eval`, then `fire-seg evaluate <model.onnx> --split <images folder> --limit

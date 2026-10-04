@@ -95,7 +95,9 @@ def _edge_args(p: argparse.ArgumentParser, home_help: str) -> None:
         default=os.environ.get("EMBER_EDGE_ID"),
         help="with --edge auto, connect only to this edge server id",
     )
-    p.add_argument("--home", default=DEFAULT_CENTER, help=home_help)
+    p.add_argument(
+        "--home", default=os.environ.get("EMBER_DRONE_HOME", DEFAULT_CENTER), help=home_help
+    )
     p.add_argument("--time-scale", type=float, default=1.0)
     _sensor_args(p)
 

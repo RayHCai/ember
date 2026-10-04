@@ -1,4 +1,4 @@
-"""YOLO risk detector on ONNX Runtime (the `yolo` extra), for an Ultralytics YOLOv8/11 export.
+"""YOLO risk detector on ONNX Runtime, for an Ultralytics YOLOv8/11 export.
 
 The model sees any RGB view, oblique or nadir, so it is trained on mixed ground, aerial and drone
 imagery (tools/fire-seg). Class names come from the model's `names` metadata and map to a risk by
@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
+import onnxruntime as ort
 from numpy.typing import NDArray
 from PIL import Image
 
@@ -151,12 +152,6 @@ class YoloDetector:
         iou: float = 0.5,
         names: list[str] | None = None,
     ) -> None:
-        try:
-            import onnxruntime as ort
-        except ImportError as exc:
-            raise RuntimeError(
-                "YOLO needs onnxruntime: uv sync --all-packages --extra yolo"
-            ) from exc
         if not model_path.is_file():
             raise FileNotFoundError(f"YOLO model {model_path} not found")
         self.session: Any = ort.InferenceSession(
