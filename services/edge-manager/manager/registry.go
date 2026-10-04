@@ -1,5 +1,5 @@
 // Package manager is the edge plane's one link to the API: a live registry of edge connectors,
-// task fan-out to them, and their updates forwarded to drone-info.
+// task fan-out to them, and their updates forwarded to drone-info and recorded at the api.
 package manager
 
 import (

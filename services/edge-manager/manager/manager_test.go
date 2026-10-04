@@ -26,12 +26,20 @@ func quiet() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)
 
 func newManager(t *testing.T, droneInfoURL string) (*Manager, *httptest.Server) {
 	t.Helper()
-	m := New(testKey, droneInfoURL, quiet())
+	return newManagerWithAPI(t, droneInfoURL, "")
+}
+
+func newManagerWithAPI(t *testing.T, droneInfoURL, apiURL string) (*Manager, *httptest.Server) {
+	t.Helper()
+	m := New(testKey, droneInfoURL, apiURL, quiet())
+	m.Recorder.retryMin, m.Recorder.retryMax = 5*time.Millisecond, 20*time.Millisecond
 	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan struct{})
-	go func() { m.Forwarder.Run(ctx); close(done) }()
+	var running sync.WaitGroup
+	running.Add(2)
+	go func() { defer running.Done(); m.Forwarder.Run(ctx) }()
+	go func() { defer running.Done(); m.Recorder.Run(ctx) }()
 	srv := httptest.NewServer(m.Handler())
-	t.Cleanup(func() { srv.Close(); cancel(); <-done; m.Wait() })
+	t.Cleanup(func() { srv.Close(); cancel(); running.Wait(); m.Wait() })
 	return m, srv
 }
 

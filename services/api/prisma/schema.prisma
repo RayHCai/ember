@@ -17,3 +17,318 @@ model Civilian {
 
   @@map("civilians")
 }
+
+model Operator {
+  id           String            @id @default(uuid()) @db.Uuid
+  /// Lowercased.
+  email        String            @unique
+  name         String
+  /// scrypt$N$r$p$saltB64$hashB64
+  passwordHash String            @map("password_hash")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  sessions     OperatorSession[]
+
+  @@map("operators")
+}
+
+model OperatorSession {
+  /// SHA-256 hex of the bearer token; the token itself is never stored.
+  id         String   @id
+  operatorId String   @map("operator_id") @db.Uuid
+  operator   Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+  expiresAt  DateTime @map("expires_at")
+
+  @@index([operatorId])
+  @@map("operator_sessions")
+}
+
+model WatchZone {
+  id              String                @id @default(uuid()) @db.Uuid
+  name            String
+  /// Where it is, in words.
+  region          String?
+  /// LatLng[] ring, first point not repeated.
+  boundary        Json
+  scanEveryHours  Int?                  @map("scan_every_hours")
+  nextScanAt      DateTime?             @map("next_scan_at")
+  /// The operator who created it; null when a service did.
+  createdBy       String?               @map("created_by") @db.Uuid
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  edgeServers     EdgeServer[]
+  mappingRuns     MappingRun[]
+  detectionFrames DetectionFrame[]
+  plannerJobs     PlannerJob[]
+  placements      EdgeServerPlacement[]
+  scans           Scan[]
+  surroundings    ZoneSurroundings?
+  blasts          Blast[]
+
+  @@map("watch_zones")
+}
+
+model EdgeServer {
+  /// The connector's token.
+  id                  String     @id
+  /// Where edge-manager reaches the connector.
+  url                 String
+  name                String?
+  zoneId              String?    @map("zone_id") @db.Uuid
+  zone                WatchZone? @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  lat                 Float?
+  lng                 Float?
+  connectivityRadiusM Float?     @map("connectivity_radius_m")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+  drones              Drone[]
+
+  @@index([zoneId])
+  @@map("edge_servers")
+}
+
+model Drone {
+  id           String      @id
+  edgeServerId String?     @map("edge_server_id")
+  edgeServer   EdgeServer? @relation(fields: [edgeServerId], references: [id], onDelete: SetNull)
+  name         String?
+  /// `DroneKind`: simulated or physical.
+  kind         String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@index([edgeServerId])
+  @@map("drones")
+}
+
+enum MappingRunState {
+  mapping
+  stopping
+  done
+
+  @@map("mapping_run_state")
+}
+
+/// One edge server's share of a mapping run. Cells index the grid `MappingMission` defines.
+model MappingRun {
+  runId               String          @map("run_id")
+  edgeServerId        String          @map("edge_server_id")
+  zoneId              String          @map("zone_id") @db.Uuid
+  zone                WatchZone       @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  state               MappingRunState
+  startedAt           DateTime        @map("started_at")
+  /// The edge server's ground position: the grid's centre.
+  lat                 Float
+  lng                 Float
+  connectivityRadiusM Float           @map("connectivity_radius_m")
+  cellSizeM           Float           @map("cell_size_m")
+  coverage            Float
+  cells               Int[]
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  @@id([runId, edgeServerId])
+  @@index([zoneId])
+  @@map("mapping_runs")
+}
+
+/// One `DroneDetections` message as the drone sent it.
+model DetectionFrame {
+  id           String      @id @default(uuid()) @db.Uuid
+  droneId      String      @map("drone_id")
+  frameId      Int         @map("frame_id")
+  capturedAt   DateTime    @map("captured_at")
+  /// Kept as sent: ISO 8601 with the scenario's offset.
+  scenarioTime String      @map("scenario_time")
+  pose         Json
+  camera       Json
+  detector     String
+  zoneId       String?     @map("zone_id") @db.Uuid
+  zone         WatchZone?  @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  edgeServerId String?     @map("edge_server_id")
+  receivedAt   DateTime    @default(now()) @map("received_at")
+  detections   Detection[]
+
+  @@unique([droneId, frameId, capturedAt])
+  @@index([zoneId, capturedAt])
+  @@map("detection_frames")
+}
+
+enum Risk {
+  at_risk
+  on_fire
+
+  @@map("risk")
+}
+
+model Detection {
+  id          String         @id @default(uuid()) @db.Uuid
+  frameId     String         @map("frame_id") @db.Uuid
+  frame       DetectionFrame @relation(fields: [frameId], references: [id], onDelete: Cascade)
+  /// The drone's id for the region, unique within its frame.
+  detectionId String         @map("detection_id")
+  risk        Risk
+  confidence  Float
+  /// [x0, y0, x1, y1] in the frame's camera pixels.
+  bboxPx      Float[]        @map("bbox_px")
+  /// LatLng[] outline on the ground.
+  ground      Json
+  centerLat   Float          @map("center_lat")
+  centerLng   Float          @map("center_lng")
+  areaM2      Float          @map("area_m2")
+  peakTempK   Float?         @map("peak_temp_k")
+
+  @@index([frameId])
+  @@map("detections")
+}
+
+enum PlannerJobState {
+  queued
+  gathering
+  planning
+  succeeded
+  failed
+
+  @@map("planner_job_state")
+}
+
+model PlannerJob {
+  id          String          @id @default(uuid()) @db.Uuid
+  zoneId      String          @map("zone_id") @db.Uuid
+  zone        WatchZone       @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  state       PlannerJobState @default(queued)
+  requestedBy String          @map("requested_by")
+  requestedAt DateTime        @default(now()) @map("requested_at")
+  options     Json?
+  message     String?
+  result      Json?
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@index([zoneId, requestedAt])
+  @@map("planner_jobs")
+}
+
+/// A planned edge server site in a zone, until an operator assigns a registered connector to it.
+model EdgeServerPlacement {
+  id                  String    @id @default(uuid()) @db.Uuid
+  zoneId              String    @map("zone_id") @db.Uuid
+  zone                WatchZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  name                String
+  lat                 Float
+  lng                 Float
+  connectivityRadiusM Float     @map("connectivity_radius_m")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@index([zoneId])
+  @@map("edge_server_placements")
+}
+
+enum ScanState {
+  starting
+  mapping
+  stopping
+  done
+  failed
+
+  @@map("scan_state")
+}
+
+/// One mapping run of a zone across its edge servers; `mapping_runs` holds each edge server's share.
+model Scan {
+  runId       String    @id @map("run_id")
+  zoneId      String    @map("zone_id") @db.Uuid
+  zone        WatchZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  /// Operator id, or `schedule`.
+  requestedBy String    @map("requested_by")
+  state       ScanState
+  startedAt   DateTime  @map("started_at")
+  endedAt     DateTime? @map("ended_at")
+  cellSizeM   Float     @map("cell_size_m")
+  /// edge-manager's `EdgeServerTaskResult[]`.
+  results     Json
+  error       String?
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([zoneId, startedAt])
+  @@index([state])
+  @@map("scans")
+}
+
+enum SurroundingsStatus {
+  pending
+  ready
+  failed
+
+  @@map("surroundings_status")
+}
+
+/// What OpenStreetMap shows around a zone, fetched when its boundary is set.
+model ZoneSurroundings {
+  zoneId        String             @id @map("zone_id") @db.Uuid
+  zone          WatchZone          @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  status        SurroundingsStatus
+  source        String
+  fetchedAt     DateTime?          @map("fetched_at")
+  error         String?
+  civilianAreas Json               @map("civilian_areas")
+  roads         Json
+  safeZones     Json               @map("safe_zones")
+  stations      Json
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  @@map("zone_surroundings")
+}
+
+enum BlastAudience {
+  civilians
+  responders
+  both
+
+  @@map("blast_audience")
+}
+
+enum BlastPriority {
+  routine
+  urgent
+  critical
+
+  @@map("blast_priority")
+}
+
+enum BlastArea {
+  zone
+  near_fire
+
+  @@map("blast_area")
+}
+
+enum BlastState {
+  pending_approval
+  queued
+
+  @@map("blast_state")
+}
+
+/// A message to a zone's civilians or responders. One that reaches civilians is queued only with
+/// an operator's approval (`blasts_civilians_need_approval` in the migration).
+model Blast {
+  id           String        @id @default(uuid()) @db.Uuid
+  zoneId       String        @map("zone_id") @db.Uuid
+  zone         WatchZone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  audience     BlastAudience
+  priority     BlastPriority
+  area         BlastArea
+  state        BlastState
+  title        String
+  body         String
+  /// Operator id, or `service`.
+  createdBy    String        @map("created_by")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  approvedBy   String?       @map("approved_by") @db.Uuid
+  approverName String?       @map("approver_name")
+  approvedAt   DateTime?     @map("approved_at")
+
+  @@index([zoneId, createdAt])
+  @@map("blasts")
+}

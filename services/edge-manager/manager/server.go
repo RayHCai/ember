@@ -29,18 +29,21 @@ const (
 type Manager struct {
 	Registry  *Registry
 	Forwarder *Forwarder
+	Recorder  *Recorder
 	key       string
 	client    *http.Client
 	log       *slog.Logger
 	links     sync.WaitGroup
 }
 
-// New builds a manager; key is the shared edge key, droneInfoURL where updates go ("" for nowhere).
-func New(key, droneInfoURL string, log *slog.Logger) *Manager {
+// New builds a manager; key is the shared edge key, droneInfoURL and apiURL where updates go ("" for
+// nowhere).
+func New(key, droneInfoURL, apiURL string, log *slog.Logger) *Manager {
 	client := &http.Client{Timeout: clientTimeout}
 	return &Manager{
 		Registry:  NewRegistry(),
 		Forwarder: NewForwarder(droneInfoURL, client, log),
+		Recorder:  NewRecorder(apiURL, key, client, log),
 		key:       key,
 		client:    client,
 		log:       log,
@@ -123,6 +126,7 @@ func (m *Manager) serveUplink(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	m.Recorder.Register(reg.EdgeServerID, reg.URL)
 	m.log.Info("edge server registered", "edgeServer", reg.EdgeServerID, "url", reg.URL, "remote", r.RemoteAddr)
 
 	for {
@@ -138,6 +142,7 @@ func (m *Manager) serveUplink(w http.ResponseWriter, r *http.Request) {
 		}
 		m.Registry.seen(reg.EdgeServerID, link, &u)
 		m.Forwarder.enqueue(&u)
+		m.Recorder.Update(&u)
 	}
 }
 

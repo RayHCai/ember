@@ -96,6 +96,14 @@ export type DroneInfoMessage = FleetSnapshot | DroneTelemetry | DroneDetections;
 export type FollowDrone = { type: 'follow'; droneId: string | null };
 
 /**
+ * Viewer -> drone-info: also stream `telemetry` and `detections` for each of these drones, as for
+ * a followed one. Each `watch` replaces the previous list; an empty list stops it.
+ */
+export type WatchDrones = { type: 'watch'; droneIds: string[] };
+
+export type DroneInfoViewerMessage = FollowDrone | WatchDrones;
+
+/**
  * Edge-manager -> drone-info: what drones reported through their edge, forwarded unchanged and
  * batched. `POST http://<drone-info>${DRONE_INFO_INGEST_PATH}`; drone-info answers
  * `DroneInfoIngestResult`. `hello` gives a drone its name and kind in the fleet.

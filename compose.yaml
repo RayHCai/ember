@@ -73,9 +73,15 @@ services:
         environment:
             <<: *db
             PORT: 4001
+            EMBER_REDIS_URL: redis://redis:6379/0
+            EMBER_EDGE_MANAGER_URL: http://edge-manager:8060
+            EMBER_EDGE_KEY: ${EMBER_EDGE_KEY:-local-dev-edge-key}
+            EMBER_PLANNER_KEY: ${EMBER_PLANNER_KEY:-local-dev-planner-key}
+            EMBER_AGENT_KEY: ${EMBER_AGENT_KEY:-local-dev-agent-key}
         ports: ['4001:4001']
         depends_on:
             api-migrate: { condition: service_completed_successfully }
+            redis: { condition: service_healthy }
 
     drone-info:
         <<: *node
@@ -90,7 +96,14 @@ services:
         build:
             <<: *node-build
             args: { PACKAGE: '@ember/operator-agent', DIR: services/operator-agent }
-        environment: { PORT: 4006 }
+        environment:
+            PORT: 4006
+            EMBER_API_URL: http://api:4001
+            EMBER_AGENT_KEY: ${EMBER_AGENT_KEY:-local-dev-agent-key}
+            EMBER_AGENT_CHAT_KEY: ${EMBER_AGENT_CHAT_KEY:-local-dev-agent-chat-key}
+            EMBER_CIVILIAN_MAP_URL: ${EMBER_CIVILIAN_MAP_URL:-}
+            PHOTON_PROJECT_ID: ${PHOTON_PROJECT_ID:-}
+            PHOTON_PROJECT_SECRET: ${PHOTON_PROJECT_SECRET:-}
         ports: ['4006:4006']
         depends_on: [api]
 
@@ -102,8 +115,9 @@ services:
         environment:
             EMBER_EDGE_KEY: ${EMBER_EDGE_KEY:-local-dev-edge-key}
             EMBER_DRONE_INFO_URL: http://drone-info:4002
+            EMBER_API_URL: http://api:4001
         ports: ['8060:8060']
-        depends_on: [drone-info]
+        depends_on: [drone-info, api]
 
     edge-connector:
         <<: *go
@@ -166,23 +180,28 @@ services:
             interval: 5s
             retries: 60
 
-    # Stand-in for edge-manager until the API dispatches runs: flies a swarm over the scenario
-    # and posts what it sees to drone-info, which the dashboard and drone-sim watch.
-    drone-runtime:
+    # Two simulated drones over Lahaina (sim-1 Osprey, sim-2 Harrier) in one process. They pair
+    # with the edge-connector and fly the runs the api starts through edge-manager, alongside any
+    # real drone that pairs there too. Their camera is Demo Data's sensor stream.
+    drone-fleet:
         <<: *python
         build:
             <<: *python-build
             args: { PACKAGE: ember-drone-runtime, SCRIPT: drone-runtime }
         command:
-            - swarm-sim
-            - --drone-info
-            - http://drone-info:4002
+            - fleet
+            - --drones
+            - '2'
+            - --home
+            - '20.8838,-156.6670'
+            - --edge
+            - ws://edge-connector:8070/v1/drone
             - --camera
             - sensor-stream
             - --sensor-url
             - ws://demo-data:8090/v1/stream
         depends_on:
-            drone-info: { condition: service_started }
+            edge-connector: { condition: service_started }
             demo-data: { condition: service_healthy }
 
     # No dependencies: runs its Vercel stand-in straight from the source tree.

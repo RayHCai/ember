@@ -129,3 +129,22 @@ test('stream sends the fleet, then the followed drone only', async () => {
     const later = await next('fleet');
     expect(later.drones.find((d) => d.droneId === 'd2')?.batteryPct).toBe(50);
 });
+
+test('stream sends every watched drone, and a new watch list replaces the old one', async () => {
+    await ingest([telemetry('d1'), telemetry('d2'), telemetry('d3')]);
+    const { next, send } = await open();
+    await next('fleet');
+
+    send({ type: 'watch', droneIds: ['d1', 'd2'] });
+    const first = [(await next('telemetry')).droneId, (await next('telemetry')).droneId];
+    expect(first.toSorted()).toEqual(['d1', 'd2']);
+
+    await ingest([telemetry('d3', 30), telemetry('d2', 31)]);
+    expect((await next('telemetry')).droneId).toBe('d2');
+
+    send({ type: 'watch', droneIds: ['d3'] });
+    expect((await next('telemetry')).droneId).toBe('d3');
+    await ingest([telemetry('d1', 20), telemetry('d3', 21)]);
+    const live = await next('telemetry');
+    expect([live.droneId, live.batteryPct]).toEqual(['d3', 21]);
+});

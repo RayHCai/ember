@@ -1,4 +1,6 @@
 export type { LatLng, RiskLevel, WatchZoneId } from './common.js';
+export * from './agent.js';
+export * from './api.js';
 export * from './droneInfo.js';
 export * from './droneLink.js';
 export * from './edge.js';
