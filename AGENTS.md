@@ -19,15 +19,16 @@ Read only what the task touches. Do not preload the whole `docs/` tree.
 ## Layout
 
 ```
-apps/        dashboard (Tauri), responder (Expo), civilian-map (web), contact-collector (web), drone-sim (Tauri)
+apps/        dashboard (Tauri), civilian-map (web), contact-collector (web), drone-sim (Tauri)
 services/    api, drone-info, operator-agent  (Fastify, TS)
              edge-manager, edge-connector                                            (Go, one root module)
              planner, drone-runtime, demo-data                                       (Python, uv workspace)
 packages/    contracts (shared TS types)
 tools/       asset-builder, seed-data, fire-seg (Python)
-assets/      generated 3D models for the sim (.glb); built by tools/asset-builder, never edited by hand
+assets/      generated 3D models for the sim (.glb); built by tools/asset-builder, never edited by hand.
+             brand/ holds the Ember mark every app uses
 internal/    Go packages shared by the Go services (@ember/go-internal, so turbo sees the dependency)
-docker/      one Dockerfile per language; .github/workflows/images.yml maps each service to one
+docker/      one Dockerfile per language; .github/workflows/images.yml and compose.yaml map services to them
 docs/        architecture, style, work tracking
 ```
 
@@ -39,7 +40,8 @@ toolchain skips with a line locally and fails in CI (`EMBER_REQUIRE_TOOLCHAIN`).
 
 ```
 pnpm install && uv sync --all-packages     # deps; also installs git hooks
-docker compose up -d                       # postgres+postgis, redis
+docker compose up -d postgres redis        # stores only, for services run with pnpm dev
+docker compose up -d --build               # all services (needs ./data from `uv run demo-data build`); desktop apps via pnpm
 pnpm run lint | format:check | typecheck | build | test
 pnpm run test --filter @ember/api          # one package
 ```

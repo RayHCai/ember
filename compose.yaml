@@ -1,7 +1,37 @@
-# Local stores. `docker compose up -d` before running services with `pnpm dev`.
+# Whole stack for local development and demos: `docker compose up -d --build`.
+# Infra only (when running services with `pnpm dev`): `docker compose up -d postgres redis`.
+# The desktop apps (dashboard, drone-sim) run on the host with pnpm and reach these at localhost:<port>.
+
+x-env: &env
+    env_file:
+        - path: .env
+          required: false
+
+x-node: &node
+    <<: *env
+    restart: unless-stopped
+    build: &node-build
+        context: .
+        dockerfile: docker/node.Dockerfile
+
+x-go: &go
+    <<: *env
+    restart: unless-stopped
+    build: &go-build
+        context: .
+        dockerfile: docker/go.Dockerfile
+
+x-python: &python
+    <<: *env
+    restart: unless-stopped
+    build: &python-build
+        context: .
+        dockerfile: docker/python.Dockerfile
+
 services:
     postgres:
         image: postgis/postgis:17-3.5
+        restart: unless-stopped
         environment:
             POSTGRES_USER: ember
             POSTGRES_PASSWORD: ember
@@ -9,13 +39,168 @@ services:
         ports: ['5432:5432']
         volumes: [pgdata:/var/lib/postgresql/data]
         healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U ember']
-            interval: 5s
+            test: ['CMD-SHELL', 'pg_isready -U ember -d ember']
+            interval: 2s
+            retries: 30
+
     redis:
         image: redis:8-alpine
+        restart: unless-stopped
         ports: ['6379:6379']
         healthcheck:
             test: ['CMD', 'redis-cli', 'ping']
+            interval: 2s
+            retries: 30
+
+    api-migrate:
+        <<: *env
+        build:
+            <<: *node-build
+            target: build
+            args: { PACKAGE: '@ember/api', DIR: services/api }
+        working_dir: /repo/services/api
+        command: ['pnpm', 'run', 'db:deploy']
+        environment: &db
+            DATABASE_URL: postgres://ember:ember@postgres:5432/ember
+        depends_on:
+            postgres: { condition: service_healthy }
+
+    api:
+        <<: *node
+        build:
+            <<: *node-build
+            args: { PACKAGE: '@ember/api', DIR: services/api }
+        environment:
+            <<: *db
+            PORT: 4001
+        ports: ['4001:4001']
+        depends_on:
+            api-migrate: { condition: service_completed_successfully }
+
+    drone-info:
+        <<: *node
+        build:
+            <<: *node-build
+            args: { PACKAGE: '@ember/drone-info', DIR: services/drone-info }
+        environment: { PORT: 4002 }
+        ports: ['4002:4002']
+
+    operator-agent:
+        <<: *node
+        build:
+            <<: *node-build
+            args: { PACKAGE: '@ember/operator-agent', DIR: services/operator-agent }
+        environment: { PORT: 4006 }
+        ports: ['4006:4006']
+        depends_on: [api]
+
+    edge-manager:
+        <<: *go
+        build:
+            <<: *go-build
+            args: { SERVICE: edge-manager }
+        environment:
+            EMBER_EDGE_KEY: ${EMBER_EDGE_KEY:-local-dev-edge-key}
+            EMBER_DRONE_INFO_URL: http://drone-info:4002
+        ports: ['8060:8060']
+        depends_on: [drone-info]
+
+    edge-connector:
+        <<: *go
+        build:
+            <<: *go-build
+            args: { SERVICE: edge-connector }
+        environment:
+            EMBER_EDGE_KEY: ${EMBER_EDGE_KEY:-local-dev-edge-key}
+            EMBER_EDGE_MANAGER_URL: http://edge-manager:8060
+            EMBER_EDGE_PUBLIC_URL: http://edge-connector:8070
+            EMBER_EDGE_DB: /data/edge-connector.db
+        ports: ['8070:8070']
+        volumes: [edge-connector:/data]
+        depends_on: [edge-manager]
+
+    planner-orchestrator:
+        <<: *python
+        build:
+            <<: *python-build
+            args: { PACKAGE: ember-planner, SCRIPT: ember-planner }
+        command: [orchestrator]
+        environment: &planner
+            EMBER_REDIS_URL: redis://redis:6379/0
+            EMBER_API_URL: http://api:4001
+            EMBER_PLANNER_KEY: ${EMBER_PLANNER_KEY:-local-dev-planner-key}
+        ports: ['4007:4007']
+        depends_on:
+            redis: { condition: service_healthy }
+
+    planner-worker:
+        <<: *python
+        build:
+            <<: *python-build
+            args: { PACKAGE: ember-planner, SCRIPT: ember-planner }
+        command: [worker]
+        environment: *planner
+        ports: ['4008:4008']
+        depends_on:
+            redis: { condition: service_healthy }
+
+    # Needs the scenario built on the host first (`uv run demo-data build`, writes ./data).
+    demo-data:
+        <<: *python
+        build:
+            <<: *python-build
+            args: { PACKAGE: ember-demo-data, SCRIPT: demo-data }
+        command: [serve, --host, 0.0.0.0, --port, '8090']
+        environment:
+            EMBER_DATA_DIR: /data
+        ports: ['8090:8090']
+        volumes: [./data:/data]
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'python',
+                    '-c',
+                    "import urllib.request; urllib.request.urlopen('http://localhost:8090/health')",
+                ]
             interval: 5s
+            retries: 60
+
+    # Stand-in for edge-manager until the API dispatches runs: flies a swarm over the scenario
+    # and posts what it sees to drone-info, which the dashboard and drone-sim watch.
+    drone-runtime:
+        <<: *python
+        build:
+            <<: *python-build
+            args: { PACKAGE: ember-drone-runtime, SCRIPT: drone-runtime }
+        command:
+            - swarm-sim
+            - --drone-info
+            - http://drone-info:4002
+            - --camera
+            - sensor-stream
+            - --sensor-url
+            - ws://demo-data:8090/v1/stream
+        depends_on:
+            drone-info: { condition: service_started }
+            demo-data: { condition: service_healthy }
+
+    # No dependencies: runs its Vercel stand-in straight from the source tree.
+    contact-collector:
+        image: node:24-slim
+        restart: unless-stopped
+        working_dir: /repo/apps/contact-collector
+        command: [node, dev.mjs]
+        environment:
+            PORT: 4010
+            HOST: 0.0.0.0
+            API_URL: http://api:4001
+        ports: ['4010:4010']
+        volumes:
+            - ./apps/contact-collector:/repo/apps/contact-collector
+            - ./assets/brand:/repo/assets/brand:ro
+        depends_on: [api]
+
 volumes:
     pgdata:
+    edge-connector:

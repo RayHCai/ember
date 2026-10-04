@@ -15,7 +15,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Same base Python as the uv image, at the same path, so the venv's interpreter links stay valid.
 FROM python:3.12-slim-bookworm
 ARG SCRIPT
-RUN useradd --system --uid 10001 ember
+# rasterio's wheel links the system libexpat, which the slim image leaves out.
+RUN apt-get update && apt-get install -y --no-install-recommends libexpat1 && rm -rf /var/lib/apt/lists/* \n    && useradd --system --uid 10001 ember
 COPY --from=build --chown=ember:ember /repo/.venv /repo/.venv
 RUN ln -s "/repo/.venv/bin/${SCRIPT}" /usr/local/bin/service
 ENV PATH=/repo/.venv/bin:$PATH PYTHONUNBUFFERED=1

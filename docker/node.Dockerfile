@@ -19,12 +19,15 @@ COPY --from=prune /repo/out/json/ .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 COPY --from=prune /repo/out/full/ .
 RUN pnpm turbo run build --filter="${PACKAGE}"
+
+# Compose runs one-off dev tooling (e.g. prisma migrate deploy) from `build`, which keeps dev deps.
+FROM build AS prod-deps
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prod --offline
 
 FROM node:${NODE_VERSION}-slim
 ARG DIR
 ENV NODE_ENV=production
-COPY --from=build --chown=node:node /repo /repo
+COPY --from=prod-deps --chown=node:node /repo /repo
 WORKDIR /repo/${DIR}
 USER node
 CMD ["node", "dist/main.js"]
