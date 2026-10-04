@@ -16,3 +16,5 @@ allowBuilds:
     workerd: true
     '@prisma/engines': true
     prisma: true
+    '@google/genai': false
+    protobufjs: false

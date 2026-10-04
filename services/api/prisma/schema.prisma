@@ -9,11 +9,217 @@ datasource db {
 }
 
 model Civilian {
-  id        String   @id @default(uuid()) @db.Uuid
+  id             String   @id @default(uuid()) @db.Uuid
+  number         Int      @unique @default(autoincrement())
   /// Lowercased.
-  email     String   @unique
-  zipCode   String   @map("zip_code")
-  createdAt DateTime @default(now()) @map("created_at")
+  email          String   @unique
+  zipCode        String   @map("zip_code")
+  civilianAreaId String?  @map("civilian_area_id")
+  zoneId         String?  @map("zone_id")
+  /// LatLng.
+  location       Json?
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
 
+  @@index([zoneId])
   @@map("civilians")
+}
+
+model Counter {
+  name  String @id
+  value Int
+
+  @@map("counters")
+}
+
+// Record tables: the contract shape as jsonb, read and written by src/store/collection.ts.
+
+model WatchZoneRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("watch_zones")
+}
+
+model ZoneGeographyRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("zone_geography")
+}
+
+model RoadObservationRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("road_observations")
+}
+
+model DetectionRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("detections")
+}
+
+model RiskZoneRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("risk_zones")
+}
+
+model EdgeServerRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("edge_servers")
+}
+
+model ScanRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("scans")
+}
+
+model PlannerJobRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("planner_jobs")
+}
+
+model PlannerResultRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("planner_results")
+}
+
+model IncidentRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("incidents")
+}
+
+model IncidentEventRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("incident_events")
+}
+
+model ApprovalRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("approvals")
+}
+
+model CivilianMessageRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("civilian_messages")
+}
+
+model ResponderRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("responders")
+}
+
+model ResponderAssignmentRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("responder_assignments")
+}
+
+model ResponderMessageRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("responder_messages")
+}
+
+model ResponderPairingCodeRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("responder_pairing_codes")
+}
+
+model ResponderSessionRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("responder_sessions")
+}
+
+model FieldReportRecord {
+  id        String   @id
+  zoneId    String?  @map("zone_id")
+  doc       Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([zoneId])
+  @@map("field_reports")
 }
