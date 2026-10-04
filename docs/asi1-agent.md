@@ -36,6 +36,32 @@ fires, reopens roads) before trying it again.
 Replies carry cards: tables for risk ranking, crews, civilians, plan diffs and the decision log. Every
 number in them comes from the planner or the api record, never from a language model.
 
+## The full demo: dashboard, drones, 3D view, and a text to your phone
+
+With `EMBER_DEMO_SERVICES=true` (the default) `start` also runs the Lahaina world (demo-data), a
+simulated drone swarm reporting through drone-info, the operator dashboard and the 3D drone view.
+The world data is downloaded once: `uv run --package ember-demo-data demo-data download` then
+`demo-data build` (about 270 MB and a few minutes).
+
+| Open                                                                           | What it shows                                                                                      |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| http://localhost:5173 (sign in `operator@ember.dev` / `wildfire`)              | Dashboard. The **Lahaina · Live** zone is the real system; other zones are the built-in simulation |
+| http://localhost:5180/?droneInfo=localhost:4002&demoData=http://localhost:8090 | 3D view following a drone of the simulated swarm over Lahaina                                      |
+
+To have Ember text your phone, put `EMBER_DEMO_PHONE=+1…` (E.164, the number allowed on your Photon
+project) and `PHOTON_PROJECT_ID` / `PHOTON_PROJECT_SECRET` in `~/.ember/secrets.env` and `restart`.
+Your number becomes Civilian 4, who lives in Lahaina Bypass Homes, upslope (east) of the town.
+
+1. In the live zone, use **Start a fire here** and click upslope of Lahaina Bypass Homes (east of
+   Highway 30). Anywhere whose forecast spread reaches the homes works; the further east, the later.
+2. Within about 30 s Ember verifies the fire, opens an incident, plans spread, attack zones and
+   evacuation routes, assigns crews and drafts an alert for the homes. The dashboard draws all of it.
+3. Hold **Approve** on the alert (or `approve <n> <code>` on ASI:One). Your phone gets the alert
+   and a map of the route out, drawn from the plan.
+4. Text back: "Do I need to evacuate?", "Can I take Highway 30?", "Road blocked", a photo of smoke.
+   Ember answers from your area's plan, and reports become observations it acts on.
+5. **Reset the demo** on ASI:One (or `reset_demo`) clears the incident and fires for the next run.
+
 ## How the agent works
 
 ```

@@ -66,6 +66,13 @@ const DEFAULTS = {
     EMBER_ASI1_OPEN_OPERATOR: 'true',
     EMBER_CLAUDE_MODEL: 'claude-haiku-4-5',
     EMBER_GEMINI_IMAGE_MODEL: 'gemini-2.5-flash-image',
+    // The demo frontends and simulated drones; false runs only what ASI:One needs.
+    EMBER_DEMO_SERVICES: 'true',
+    // Scenario time the Lahaina world starts at (the town fire rekindles at 14:52).
+    EMBER_DEMO_CLOCK_START: '2023-08-08T12:00:00-10:00',
+    EMBER_DEMO_CLOCK_SPEED: '1',
+    // Drone detections reach Ember only when true; false keeps fires to the ones an operator places.
+    EMBER_DEMO_FORWARD_DETECTIONS: 'false',
 };
 
 function readEnv(path) {
@@ -115,6 +122,8 @@ function setup() {
         '@ember/api',
         '--filter',
         '@ember/operator-agent',
+        '--filter',
+        '@ember/drone-info',
         'run',
         'build',
     ]);
@@ -177,6 +186,25 @@ function rotate(path) {
     if (existsSync(path) && statSync(path).size > MAX_LOG_BYTES) renameSync(path, `${path}.1`);
 }
 
+const GROUPS_FILE = join(HOME, 'groups.json');
+
+function killGroup(pid, signal) {
+    if (!pid) return;
+    try {
+        process.kill(-pid, signal);
+    } catch {}
+}
+
+/** A supervisor killed hard leaves its services running; the next one clears them first. */
+function clearStaleGroups() {
+    if (!existsSync(GROUPS_FILE)) return;
+    for (const pid of JSON.parse(readFileSync(GROUPS_FILE, 'utf8'))) killGroup(pid, 'SIGKILL');
+}
+
+function recordGroups(services) {
+    writeFileSync(GROUPS_FILE, JSON.stringify(services.map((s) => s.child?.pid).filter(Boolean)));
+}
+
 class Service {
     constructor(name, { cmd, args, cwd = REPO, env = {}, health }) {
         Object.assign(this, {
@@ -200,6 +228,8 @@ class Service {
         this.child = spawn(this.cmd, this.args, {
             cwd: this.cwd,
             env: childEnv(this.env),
+            // Its own process group: `uv run` and pnpm start children that must stop with it.
+            detached: true,
             stdio: ['ignore', 'pipe', 'pipe'],
         });
         this.child.stdout.pipe(out);
@@ -213,7 +243,7 @@ class Service {
 
     stop() {
         this.stopping = true;
-        this.child?.kill('SIGTERM');
+        killGroup(this.child?.pid, 'SIGTERM');
     }
 
     /** Dead, or failing health three checks in a row: restart, backing off up to a minute. */
@@ -225,7 +255,7 @@ class Service {
         this.restarts += 1;
         const wait = Math.min(60, 2 ** Math.min(this.restarts, 6));
         log(`${this.name} unhealthy; restarting in ${wait}s (restart ${this.restarts})`);
-        this.child?.kill('SIGKILL');
+        killGroup(this.child?.pid, 'SIGKILL');
         this.child = null;
         this.failures = 0;
         await new Promise((r) => setTimeout(r, wait * 1000));
@@ -237,6 +267,83 @@ const uv = (pkg, ...rest) => ({
     cmd: 'uv',
     args: ['run', '--no-sync', '--package', pkg, pkg, ...rest],
 });
+
+/** Vite's own binary, so stopping the service stops the dev server (pnpm would leave it running). */
+const vite = (app) => ({
+    cmd: join(REPO, 'apps', app, 'node_modules/.bin/vite'),
+    args: [],
+    cwd: join(REPO, 'apps', app),
+});
+
+function droneInfoEnv(cfg) {
+    const env = { ...cfg.shared, PORT: '4002' };
+    if (cfg.env.EMBER_DEMO_FORWARD_DETECTIONS !== 'true') delete env.EMBER_API_URL;
+    return env;
+}
+
+/** Lahaina world, drone reports, a simulated swarm, the dashboard and the 3D drone view. */
+function demoServices(cfg) {
+    const world =
+        existsSync(join(REPO, 'data', 'world')) || existsSync(join(REPO, 'data', 'derived'));
+    if (!world)
+        log(
+            'demo data not built: run `uv run --package ember-demo-data demo-data download` then `build`',
+        );
+    return [
+        new Service('demo-data', {
+            cmd: 'uv',
+            args: [
+                'run',
+                '--no-sync',
+                '--package',
+                'ember-demo-data',
+                'demo-data',
+                'serve',
+                '--start',
+                cfg.env.EMBER_DEMO_CLOCK_START,
+                '--speed',
+                cfg.env.EMBER_DEMO_CLOCK_SPEED,
+            ],
+            env: cfg.shared,
+            health: 'http://localhost:8090/v1/scenario',
+        }),
+        new Service('drone-info', {
+            cmd: process.execPath,
+            args: ['dist/main.js'],
+            cwd: join(REPO, 'services/drone-info'),
+            env: droneInfoEnv(cfg),
+            health: 'http://localhost:4002/healthz',
+        }),
+        new Service('drone-swarm', {
+            cmd: 'uv',
+            args: [
+                'run',
+                '--no-sync',
+                '--package',
+                'ember-drone-runtime',
+                'drone-runtime',
+                'swarm-sim',
+                '--drone-info',
+                'http://localhost:4002',
+                '--drones',
+                '4',
+                '--radius',
+                '600',
+            ],
+            env: cfg.shared,
+        }),
+        new Service('dashboard', {
+            ...vite('dashboard'),
+            env: { ...cfg.shared, NODE_ENV: 'development' },
+            health: 'http://localhost:5173/',
+        }),
+        new Service('drone-sim', {
+            ...vite('drone-sim'),
+            env: { ...cfg.shared, NODE_ENV: 'development' },
+            health: 'http://localhost:5180/',
+        }),
+    ];
+}
 
 async function startPostgres(cfg) {
     if (!cfg.embedded) return null;
@@ -263,6 +370,7 @@ async function startPostgres(cfg) {
 async function start() {
     mkdirSync(LOGS, { recursive: true });
     const cfg = config();
+    clearStaleGroups();
     writeFileSync(PID_FILE, String(process.pid));
     const pg = await startPostgres(cfg);
     log('applying api migrations');
@@ -319,6 +427,7 @@ async function start() {
             health: 'http://localhost:4009/healthz',
         }),
     );
+    if (cfg.env.EMBER_DEMO_SERVICES === 'true') services.push(...demoServices(cfg));
     for (const s of services) {
         s.start();
         if (s.name === 'api') {
@@ -337,6 +446,7 @@ async function start() {
                         cfg.api,
                         '--key',
                         cfg.env.EMBER_OPERATOR_KEY,
+                        ...(cfg.env.EMBER_DEMO_PHONE ? ['--phone', cfg.env.EMBER_DEMO_PHONE] : []),
                     ],
                     { cwd: REPO, env: childEnv({}), stdio: 'ignore' },
                 );
@@ -354,16 +464,20 @@ async function start() {
         log('stopping');
         for (const s of services.toReversed()) s.stop();
         await new Promise((r) => setTimeout(r, 3000));
+        // Some services (the planner orchestrator mid-poll) ignore SIGTERM.
+        for (const s of services) killGroup(s.child?.pid, 'SIGKILL');
         await pg?.stop();
         process.exit(0);
     };
     process.on('SIGTERM', shutdown);
     process.on('SIGINT', shutdown);
+    recordGroups(services);
     log('all services started; supervising');
     for (;;) {
         await new Promise((r) => setTimeout(r, 15_000));
         if (stopping) return;
         for (const s of services) await s.check();
+        recordGroups(services);
     }
 }
 
@@ -375,6 +489,14 @@ async function status() {
         ['planner-worker', 'http://localhost:4008/healthz'],
         ['operator-agent', 'http://localhost:4006/healthz'],
         ['operator-uagent', 'http://localhost:4009/healthz'],
+        ...(cfg?.env.EMBER_DEMO_SERVICES === 'true'
+            ? [
+                  ['demo-data', 'http://localhost:8090/v1/clock'],
+                  ['drone-info', 'http://localhost:4002/healthz'],
+                  ['dashboard', 'http://localhost:5173/'],
+                  ['drone-sim', 'http://localhost:5180/'],
+              ]
+            : []),
     ];
     let allOk = true;
     for (const [name, url] of checks) {
@@ -382,7 +504,10 @@ async function status() {
             const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
             const body = await res.text();
             allOk &&= res.ok;
-            console.log(`${res.ok ? 'ok  ' : 'FAIL'} ${name.padEnd(21)} ${body.slice(0, 400)}`);
+            const shown = body.trimStart().startsWith('<')
+                ? `HTTP ${res.status}`
+                : body.slice(0, 400);
+            console.log(`${res.ok ? 'ok  ' : 'FAIL'} ${name.padEnd(21)} ${shown}`);
         } catch (err) {
             allOk = false;
             console.log(`DOWN ${name.padEnd(21)} ${err.cause?.code ?? err.message}`);
