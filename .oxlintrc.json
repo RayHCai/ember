@@ -13,7 +13,11 @@
         "typescript/consistent-type-imports": "error",
         "typescript/no-explicit-any": "warn",
         "import/no-cycle": "error",
-        "react/react-in-jsx-scope": "off"
+        "react/react-in-jsx-scope": "off",
+        // An Express rule: Fastify awaits async handlers and routes their errors itself.
+        "oxc/no-async-endpoint-handlers": "off",
+        // `{ field: _, ...rest }` is how a field is dropped from a record.
+        "no-unused-vars": ["error", { "ignoreRestSiblings": true }]
     },
     "ignorePatterns": [
         "**/dist/**",
@@ -24,6 +28,11 @@
         "**/src/generated/**"
     ],
     "overrides": [
+        // These act in order: each api write or agent step reads what the one before it wrote.
+        {
+            "files": ["services/api/**", "services/operator-agent/**", "scripts/asi1/**"],
+            "rules": { "no-await-in-loop": "off" }
+        },
         // Reanimated shared values are mutable by design, RNGH builds gestures with Gesture.Pan(),
         // and expo-status-bar takes a string style.
         {
