@@ -1,139 +1,169 @@
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const ZIP = /^\d{5}$/;
+const ORDER = ['email', 'zip', 'done'];
+
 const form = document.querySelector('#signup');
 const status = document.querySelector('#status');
-const button = form.querySelector('button');
-const phoneInput = form.querySelector('input[name="phone"]');
-const zipInput = form.querySelector('input[name="zip"]');
-const confirmSheet = document.querySelector('#confirm');
-const confirmClose = document.querySelector('#confirm-close');
+const back = document.querySelector('#back');
+const again = document.querySelector('#again');
+const doneDetail = document.querySelector('#done-detail');
 const flash = document.querySelector('#flash');
+const steps = Object.fromEntries(
+    ORDER.map((name) => [name, form.querySelector(`[data-step="${name}"]`)]),
+);
+const emailInput = form.elements.namedItem('email');
+const zipInput = form.elements.namedItem('zip');
+const next = form.querySelector('.next');
+const submit = form.querySelector('.submit');
+const submitLabel = submit.textContent;
 
-bindMask(phoneInput, formatPhone);
-bindMask(zipInput, formatZip);
+let current = 'email';
+let sending = false;
 
-form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    phoneInput.value = formatPhone(phoneInput.value);
-    zipInput.value = formatZip(zipInput.value);
+form.noValidate = true;
+show('email', false);
+arm();
+intro();
+
+emailInput.addEventListener('input', () => {
     status.textContent = '';
-    button.disabled = true;
-    const label = button.textContent;
-    button.textContent = 'Sending…';
+    arm();
+});
 
-    const data = new FormData(form);
+zipInput.addEventListener('input', () => {
+    zipInput.value = zipInput.value.replace(/\D/g, '').slice(0, 5);
+    status.textContent = '';
+    arm();
+});
+
+// A disabled submit button blocks implicit submission, so Enter is handled here.
+for (const input of [emailInput, zipInput]) {
+    input.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        advance();
+    });
+}
+
+next.addEventListener('click', advance);
+back.addEventListener('click', () => show('email'));
+again.addEventListener('click', () => {
+    form.reset();
+    arm();
+    show('email');
+});
+
+form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    advance();
+});
+
+function advance() {
+    if (sending) return;
+    if (current === 'email') {
+        emailInput.value = emailInput.value.trim();
+        if (!EMAIL.test(emailInput.value)) return reject('email', 'Enter a valid email address.');
+        show('zip');
+        return;
+    }
+    if (current === 'zip') {
+        if (!ZIP.test(zipInput.value)) return reject('zip', 'Enter a 5-digit ZIP code.');
+        send();
+    }
+}
+
+async function send() {
+    sending = true;
+    submit.disabled = true;
+    submit.textContent = 'Sending…';
+    status.textContent = '';
 
     try {
         const response = await fetch('/api/subscribe', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-                phone: data.get('phone'),
-                zip: data.get('zip'),
-                website: data.get('website'),
+                email: emailInput.value,
+                zip: zipInput.value,
+                website: form.elements.namedItem('website').value,
             }),
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
             status.textContent = payload.error || 'Something went wrong. Try again.';
-            button.disabled = false;
-            button.textContent = label;
             return;
         }
-        form.reset();
-        button.disabled = false;
-        button.textContent = label;
-        openConfirm();
+        doneDetail.textContent = `We'll email ${emailInput.value} if a wildfire threatens ${zipInput.value}.`;
+        show('done');
+        burst();
     } catch {
         status.textContent = 'Check your connection and try again.';
-        button.disabled = false;
-        button.textContent = label;
+    } finally {
+        sending = false;
+        submit.textContent = submitLabel;
+        arm();
     }
-});
+}
 
-confirmSheet.addEventListener('click', (event) => {
-    if (event.target instanceof Element && event.target.closest('[data-close]')) {
-        closeConfirm();
+function arm() {
+    const emailReady = EMAIL.test(emailInput.value.trim());
+    const zipReady = ZIP.test(zipInput.value);
+    steps.email.classList.toggle('armed', emailReady);
+    steps.zip.classList.toggle('armed', zipReady);
+    next.disabled = !emailReady;
+    submit.disabled = !zipReady || sending;
+}
+
+function show(name, focus = true) {
+    current = name;
+    const at = ORDER.indexOf(name);
+    for (const [index, step] of ORDER.entries()) {
+        const element = steps[step];
+        element.dataset.state = index < at ? 'past' : index > at ? 'ahead' : 'active';
+        element.inert = index !== at;
     }
-});
+    status.textContent = '';
+    back.hidden = name !== 'zip';
+    back.textContent = name === 'zip' ? `${emailInput.value} · Change` : '';
+    if (!focus) return;
+    const target = name === 'email' ? emailInput : name === 'zip' ? zipInput : steps.done;
+    target.focus({ preventScroll: true });
+}
 
-function openConfirm() {
+function reject(name, message) {
+    status.textContent = message;
+    const element = steps[name];
+    element.classList.remove('shake');
+    void element.offsetWidth;
+    element.classList.add('shake');
+}
+
+function burst() {
     flash.classList.remove('burst');
     void flash.offsetWidth;
     flash.classList.add('burst');
-    confirmSheet.hidden = false;
-    document.body.style.overflow = 'hidden';
-    confirmClose.focus();
-    document.addEventListener('keydown', onConfirmKey);
+    window.dispatchEvent(new Event('ember:flare'));
 }
 
-function closeConfirm() {
-    confirmSheet.hidden = true;
-    document.body.style.overflow = '';
-    document.removeEventListener('keydown', onConfirmKey);
-    phoneInput.focus();
-}
+// The curtain lifts once the wordmark has landed and the scene has a frame, or after a cap.
+function intro() {
+    const started = performance.now();
+    let lit = false;
 
-function onConfirmKey(event) {
-    if (event.key === 'Escape') closeConfirm();
-}
-
-function bindMask(input, format) {
-    input.addEventListener('input', () => {
-        const cursor = input.selectionStart ?? input.value.length;
-        const digitsBefore = countDigits(input.value.slice(0, cursor));
-        const formatted = format(input.value);
-        input.value = formatted;
-        const next = cursorAfterDigits(formatted, digitsBefore);
-        input.setSelectionRange(next, next);
-    });
-
-    input.addEventListener('keydown', (event) => {
-        if (event.key !== 'Backspace') return;
-        const start = input.selectionStart ?? 0;
-        const end = input.selectionEnd ?? start;
-        if (start !== end || start === 0) return;
-        if (/\d/.test(input.value.charAt(start - 1))) return;
-
-        event.preventDefault();
-        const digits = digitsOnly(input.value);
-        const digitsBefore = countDigits(input.value.slice(0, start));
-        const nextDigits =
-            digits.slice(0, Math.max(0, digitsBefore - 1)) + digits.slice(digitsBefore);
-        const formatted = format(nextDigits);
-        input.value = formatted;
-        const next = cursorAfterDigits(formatted, Math.max(0, digitsBefore - 1));
-        input.setSelectionRange(next, next);
-    });
-}
-
-function formatPhone(value) {
-    let digits = digitsOnly(value);
-    if (digits.startsWith('1')) digits = digits.slice(1);
-    digits = digits.slice(0, 10);
-
-    if (digits.length === 0) return '';
-    if (digits.length < 4) return `(${digits}`;
-    if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-
-function formatZip(value) {
-    return digitsOnly(value).slice(0, 5);
-}
-
-function digitsOnly(value) {
-    return value.replace(/\D/g, '');
-}
-
-function countDigits(value) {
-    return digitsOnly(value).length;
-}
-
-function cursorAfterDigits(formatted, digitCount) {
-    if (digitCount <= 0) return 0;
-    let seen = 0;
-    for (let index = 0; index < formatted.length; index += 1) {
-        if (/\d/.test(formatted.charAt(index))) seen += 1;
-        if (seen === digitCount) return index + 1;
+    function ignite() {
+        if (lit) return;
+        lit = true;
+        const wait = Math.max(0, 1000 - (performance.now() - started));
+        setTimeout(() => {
+            document.body.classList.add('lit');
+            window.dispatchEvent(new Event('ember:ignite'));
+            if (window.matchMedia('(pointer: fine)').matches) {
+                setTimeout(() => emailInput.focus({ preventScroll: true }), 1500);
+            }
+        }, wait);
     }
-    return formatted.length;
+
+    window.addEventListener('ember:scene-ready', ignite, { once: true });
+    if (document.body.classList.contains('gl')) ignite();
+    setTimeout(ignite, 2200);
 }

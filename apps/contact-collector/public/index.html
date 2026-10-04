@@ -3,66 +3,73 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#140804" />
+        <meta name="theme-color" content="#e5321f" />
         <title>Ember</title>
+        <script>
+            document.documentElement.classList.add('js');
+        </script>
         <link rel="stylesheet" href="/styles.css" />
     </head>
     <body>
         <canvas id="bg" aria-hidden="true"></canvas>
+        <div id="curtain" aria-hidden="true"></div>
         <div id="flash" aria-hidden="true"></div>
-        <main id="signup-screen">
-            <h1>Ember</h1>
+        <main>
+            <h1 id="wordmark">Ember</h1>
+            <p class="tagline">Wildfire alerts for where you live.</p>
             <form id="signup" action="/api/subscribe" method="post">
-                <label>
-                    Phone number
-                    <input
-                        name="phone"
-                        type="tel"
-                        inputmode="tel"
-                        autocomplete="tel"
-                        placeholder="(555) 555-5555"
-                        required
-                        maxlength="20"
-                    />
-                </label>
-                <label>
-                    ZIP code
-                    <input
-                        name="zip"
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="postal-code"
-                        placeholder="10001"
-                        required
-                        maxlength="10"
-                        pattern="[0-9]{5}"
-                    />
-                </label>
-                <div class="hp" aria-hidden="true">
-                    <label>
-                        Website
-                        <input name="website" type="text" tabindex="-1" autocomplete="off" />
-                    </label>
+                <div class="steps">
+                    <div class="step field" data-step="email" data-state="active">
+                        <input
+                            name="email"
+                            type="email"
+                            inputmode="email"
+                            autocomplete="email"
+                            autocapitalize="off"
+                            spellcheck="false"
+                            enterkeyhint="next"
+                            placeholder="Email address"
+                            aria-label="Email address"
+                            required
+                            maxlength="254"
+                        />
+                        <button type="button" class="action next" aria-label="Next" disabled>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M5 12h14M13 6l6 6-6 6" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="step field" data-step="zip" data-state="ahead">
+                        <input
+                            name="zip"
+                            type="text"
+                            inputmode="numeric"
+                            autocomplete="postal-code"
+                            enterkeyhint="done"
+                            placeholder="ZIP code"
+                            aria-label="ZIP code"
+                            required
+                            maxlength="5"
+                            pattern="[0-9]{5}"
+                        />
+                        <button type="submit" class="action submit">Notify me</button>
+                    </div>
+                    <div class="step thanks" data-step="done" data-state="ahead" tabindex="-1">
+                        <p class="done-title">You're on the list.</p>
+                        <p id="done-detail"></p>
+                        <button type="button" class="link" id="again">Add another email</button>
+                    </div>
                 </div>
-                <button type="submit">Enter</button>
-                <p id="status" class="error" role="alert"></p>
+                <div class="hp" aria-hidden="true">
+                    <input name="website" type="text" tabindex="-1" autocomplete="off" />
+                </div>
+                <div class="under">
+                    <button type="button" class="link" id="back" hidden></button>
+                    <p id="status" class="error" role="alert"></p>
+                </div>
             </form>
         </main>
-        <div id="confirm" class="sheet" hidden>
-            <div class="sheet-backdrop" data-close></div>
-            <div
-                class="sheet-panel"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="confirm-title"
-            >
-                <p id="confirm-title">
-                    Submitted! We'll notice you of natural calamities in your area.
-                </p>
-                <button type="button" id="confirm-close" data-close>Close</button>
-            </div>
-        </div>
         <script type="module" src="/scene.js"></script>
-        <script src="/app.js"></script>
+        <script type="module" src="/app.js"></script>
     </body>
 </html>

@@ -1,4 +1,4 @@
-const SUCCESS_MESSAGE = "Submitted! We'll notice you of natural calamities in your area.";
+const SUCCESS_MESSAGE = "You're on the list. We'll email you if a wildfire threatens your area.";
 
 interface Env {
     API_URL: string;
@@ -26,20 +26,20 @@ async function subscribe(request: Request, env: Env): Promise<Response> {
         submission = await readSubmission(request);
     } catch (error) {
         if (error instanceof Response) return error;
-        return json({ error: 'Enter a phone number and ZIP code.' }, 400);
+        return json({ error: 'Enter an email address and ZIP code.' }, 400);
     }
 
     if (submission.website) {
         return respond(submission.html, 200);
     }
 
-    const phone = normalizePhone(submission.phone);
+    const email = normalizeEmail(submission.email);
     const zipCode = normalizeZip(submission.zip);
-    if (!phone || !zipCode) {
+    if (!email || !zipCode) {
         return respond(
             submission.html,
             400,
-            !phone ? 'Enter a 10-digit US phone number.' : 'Enter a 5-digit ZIP code.',
+            !email ? 'Enter a valid email address.' : 'Enter a 5-digit ZIP code.',
         );
     }
 
@@ -49,7 +49,7 @@ async function subscribe(request: Request, env: Env): Promise<Response> {
         response = await fetch(`${apiUrl}/civilians`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ phone, zipCode }),
+            body: JSON.stringify({ email, zipCode }),
         });
     } catch {
         return respond(submission.html, 500, 'Something went wrong. Try again.');
@@ -63,7 +63,7 @@ async function subscribe(request: Request, env: Env): Promise<Response> {
 }
 
 type Submission = {
-    phone: unknown;
+    email: unknown;
     zip: unknown;
     website: unknown;
     html: boolean;
@@ -81,14 +81,14 @@ async function readSubmission(request: Request): Promise<Submission> {
         try {
             body = JSON.parse(text);
         } catch {
-            throw json({ error: 'Enter a phone number and ZIP code.' }, 400);
+            throw json({ error: 'Enter an email address and ZIP code.' }, 400);
         }
         if (!body || typeof body !== 'object') {
-            throw json({ error: 'Enter a phone number and ZIP code.' }, 400);
+            throw json({ error: 'Enter an email address and ZIP code.' }, 400);
         }
         const record = body as Record<string, unknown>;
         return {
-            phone: record.phone,
+            email: record.email,
             zip: record.zip,
             website: record.website,
             html: false,
@@ -97,19 +97,18 @@ async function readSubmission(request: Request): Promise<Submission> {
 
     const form = await request.formData();
     return {
-        phone: form.get('phone'),
+        email: form.get('email'),
         zip: form.get('zip'),
         website: form.get('website'),
         html: true,
     };
 }
 
-function normalizePhone(value: unknown): string | null {
+function normalizeEmail(value: unknown): string | null {
     if (typeof value !== 'string') return null;
-    const digits = value.replace(/\D/g, '');
-    const national = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
-    if (!/^[2-9]\d{9}$/.test(national)) return null;
-    return `+1${national}`;
+    const email = value.trim().toLowerCase();
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return null;
+    return email;
 }
 
 function normalizeZip(value: unknown): string | null {
