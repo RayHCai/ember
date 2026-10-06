@@ -8,3 +8,4 @@ data/
 **/src-tauri/gen/**
 assets/manifest.json
 **/src/generated/**
+docs/presentation.html
