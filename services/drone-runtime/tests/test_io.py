@@ -150,7 +150,8 @@ def test_edge_link_resolves_again_on_every_connect() -> None:
             pass
 
         task = asyncio.create_task(link.run(ignore))
-        for _ in range(150):
+        # Windows takes about 2 s to refuse the first connect, then the link backs off 1 s.
+        for _ in range(500):
             await asyncio.sleep(0.02)
             if heard:
                 break
