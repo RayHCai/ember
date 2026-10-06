@@ -1,4 +1,4 @@
-# Development
+# Contributing
 
 How to work in the repo. The product spec is `docs/product.md`; service boundaries are in
 `docs/architecture.md`.
@@ -12,6 +12,8 @@ How to work in the repo. The product spec is `docs/product.md`; service boundari
 | What the product does                      | `docs/product.md`          |
 | One service's contract                     | that service's `README.md` |
 | Cross-service wire shapes                  | `packages/contracts/src/`  |
+| Running the full demo on one machine       | `docs/demo.md`             |
+| Running drone-runtime on a Raspberry Pi    | `docs/raspberry-pi.md`     |
 
 ## Layout
 
@@ -28,7 +30,7 @@ assets/      generated 3D models for the sim (.glb), built by tools/asset-builde
 data/        released model weights; demo data built by `uv run demo-data build`
 docker/      one Dockerfile per language; compose.yaml and .github/workflows/images.yml map services to them
 scripts/     toolchain shims, git hooks, demo launcher, Raspberry Pi setup
-docs/        product, architecture, style, development, Raspberry Pi
+docs/        product, architecture, style, demo, Raspberry Pi
 ```
 
 One monorepo, one gate. Every package, whatever its language, has a `package.json` whose scripts shell

@@ -159,7 +159,7 @@ host's `./data`, built beforehand.
 
 ## Invariants
 
-- Outbound civilian alerts require an operator approval record (see `docs/development.md`): the api keeps a
+- Outbound civilian alerts require an operator approval record (see `CONTRIBUTING.md`): the api keeps a
   blast that reaches civilians `pending_approval` until a signed-in operator approves it, and
   operator-agent texts a blast only once it is `queued` with that approval.
 - The API is the only writer of watch zones, edge servers and drone registrations. A connector's
