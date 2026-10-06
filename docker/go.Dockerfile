@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Any Go service: --build-arg SERVICE=edge-manager, from the repo root.
-ARG GO_VERSION=1.24
+ARG GO_VERSION=1.26
 
 FROM golang:${GO_VERSION} AS build
 WORKDIR /src

@@ -1,7 +1,7 @@
 // One module for every Go service, so edge-manager and edge-connector share internal/ without a replace.
 module ember
 
-go 1.24.0
+go 1.26.8
 
 require (
 	github.com/coder/websocket v1.8.15
