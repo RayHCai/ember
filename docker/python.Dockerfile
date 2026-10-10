@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable --package "${PACKAGE}"
 
 # Same base Python as the uv image, at the same path, so the venv's interpreter links stay valid.
-FROM python:3.12-slim-bookworm
+FROM python:3.14-slim-bookworm
 ARG SCRIPT
 # rasterio's wheel links the system libexpat, which the slim image leaves out.
 RUN apt-get update && apt-get install -y --no-install-recommends libexpat1 && rm -rf /var/lib/apt/lists/* \n    && useradd --system --uid 10001 ember
