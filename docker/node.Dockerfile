@@ -9,7 +9,8 @@ WORKDIR /repo
 
 FROM base AS prune
 ARG PACKAGE
-ARG TURBO_VERSION=2
+# The turbo the lockfile installs: a newer prune writes turbo.json keys the build stage cannot parse.
+ARG TURBO_VERSION=2.11.5
 COPY . .
 RUN pnpm dlx "turbo@${TURBO_VERSION}" prune "${PACKAGE}" --docker
 
