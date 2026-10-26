@@ -14,7 +14,7 @@ dependencies = [
 [project.optional-dependencies]
 eval = ["onnxruntime>=1.18"]
 train = [
-  "ultralytics>=8.3.0,<9",
+  "ultralytics>=8.4.174,<9",
   "opencv-python-headless>=4.9,<5",
   "onnx>=1.16",
   "onnxslim>=0.1.31",
